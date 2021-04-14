@@ -266,7 +266,7 @@ void ResetIDs::command(int narg, char **arg)
 
   // need to update exclusions with new atom IDs
 
-  if (atom->molecular == Atom::MOLECULAR) {
+  if (atom->special_flag) {
     Special special(lmp);
     special.build();
   }

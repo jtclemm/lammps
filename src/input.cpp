@@ -1800,7 +1800,7 @@ void Input::special_bonds()
 
   // if simulation box defined and saved values changed, redo special list
 
-  if (domain->box_exist && atom->molecular == Atom::MOLECULAR) {
+  if (domain->box_exist && atom->special_flag) {
     if (lj2 != force->special_lj[2] || lj3 != force->special_lj[3] ||
         coul2 != force->special_coul[2] || coul3 != force->special_coul[3] ||
         angle != force->special_angle ||

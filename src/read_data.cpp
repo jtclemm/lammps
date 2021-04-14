@@ -776,7 +776,7 @@ void ReadData::command(int narg, char **arg)
 
   // create special bond lists for molecular systems
 
-  if (atom->molecular == Atom::MOLECULAR) {
+  if (atom->special_flag) {
     Special special(lmp);
     special.build();
   }

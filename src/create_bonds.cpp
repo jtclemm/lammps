@@ -119,7 +119,7 @@ void CreateBonds::command(int narg, char **arg)
 
   // optional args
 
-  int specialflag = 1;
+  int specialflag = atom->special_flag;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg],"special") == 0) {

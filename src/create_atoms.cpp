@@ -585,7 +585,7 @@ void CreateAtoms::command(int narg, char **arg)
   // only if onemol added bonds but not special info
 
   if (mode == MOLECULE) {
-    if (atom->molecular == Atom::MOLECULAR && onemol->bondflag && !onemol->specialflag) {
+    if (atom->special_flag && onemol->bondflag && !onemol->specialflag) {
       Special special(lmp);
       special.build();
 

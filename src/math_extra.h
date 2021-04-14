@@ -88,6 +88,7 @@ namespace MathExtra {
   void rotate(double matrix[3][3], int i, int j, int k, int l,
               double s, double tau);
   void richardson(double *q, double *m, double *w, double *moments, double dtq);
+  void richardson_sphere(double *q, double *w, double dtq);
   void no_squish_rotate(int k, double *p, double *q, double *inertia,
                         double dt);
 
@@ -105,6 +106,7 @@ namespace MathExtra {
   inline void quatvec(double *a, double *b, double *c);
   inline void quatquat(double *a, double *b, double *c);
   inline void invquatvec(double *a, double *b, double *c);
+  inline void quatrotvec(double *a, double *b, double *c);
   inline void axisangle_to_quat(const double *v, const double angle,
                                 double *quat);
 
@@ -654,6 +656,29 @@ inline void MathExtra::invquatvec(double *a, double *b, double *c)
   c[0] = -a[1]*b[0] + a[0]*b[1] + a[3]*b[2] - a[2]*b[3];
   c[1] = -a[2]*b[0] - a[3]*b[1] + a[0]*b[2] + a[1]*b[3];
   c[2] = -a[3]*b[0] + a[2]*b[1] - a[1]*b[2] + a[0]*b[3];
+}
+
+/* ----------------------------------------------------------------------
+   quaternion rotation of vector: c = a*b*conj(a)
+   a is a quaternion
+   b is a three component vector
+   c is a three component vector
+------------------------------------------------------------------------- */
+
+inline void MathExtra::quatrotvec(double *a, double *b, double *c)
+{
+  double temp[4];
+
+  // temp = a*b
+  temp[0] = -a[1]*b[0] - a[2]*b[1] - a[3]*b[2];
+  temp[1] = a[0]*b[0] + a[2]*b[2] - a[3]*b[1];
+  temp[2] = a[0]*b[1] + a[3]*b[0] - a[1]*b[2];
+  temp[3] = a[0]*b[2] + a[1]*b[1] - a[2]*b[0];
+
+  // c = temp*conj(a)
+  c[0] = -a[1]*temp[0] + a[0]*temp[1] - a[3]*temp[2] + a[2]*temp[3];
+  c[1] = -a[2]*temp[0] + a[3]*temp[1] + a[0]*temp[2] - a[1]*temp[3];
+  c[2] = -a[3]*temp[0] - a[2]*temp[1] + a[1]*temp[2] + a[0]*temp[3];
 }
 
 /* ----------------------------------------------------------------------

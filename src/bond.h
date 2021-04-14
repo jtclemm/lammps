@@ -24,6 +24,7 @@ class Bond : protected Pointers {
  public:
   int allocated;
   int *setflag;
+  int partial_flag;               // 1 if bond type can be set to 0 and deleted
   int writedata;                  // 1 if writes coeffs to data file
   double energy;                  // accumulated energies
   double virial[6];               // accumulated virial

@@ -42,6 +42,7 @@ Bond::Bond(LAMMPS *lmp) : Pointers(lmp)
 
   allocated = 0;
   suffix_flag = Suffix::NONE;
+  partial_flag = 0;
 
   maxeatom = maxvatom = 0;
   eatom = nullptr;
