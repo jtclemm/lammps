@@ -34,7 +34,7 @@ using namespace FixConst;
 
 FixBondStore::FixBondStore(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  new_fix_id(NULL), index(NULL)
+  new_fix_id(NULL)
 {  
   if (narg != 5) error->all(FLERR,"Illegal fix BOND STORE command");
   update_flag = utils::inumeric(FLERR,arg[3],false,lmp);
@@ -84,20 +84,19 @@ void FixBondStore::post_constructor()
   char **newarg = new char*[5];
   int nvalue = 0;
   int tmp1, tmp2;
-  
+    
   int nn = strlen(id) + strlen("_FIX_PROP_ATOM") + 1;
   new_fix_id = new char[nn];  
   strcpy(new_fix_id, "FIX_PROP_ATOM_");
   strcat(new_fix_id, id);
-  
-  nn = strlen(id) + 3 ; //Supports up to 99
+    
+  nn = strlen(id) + 4 ;
   array_id = new char[nn];
-  strcpy(array_id, "d_");
+  strcpy(array_id, "d2_");
   strcat(array_id, id);  
   
-  char ncols[16];
+  char ncols[16]; 
   sprintf(ncols,"%d",nbond*ndata);
-  
   newarg[0] = new_fix_id;
   newarg[1] = group->names[igroup];
   newarg[2] = (char *) "property/atom";
@@ -105,8 +104,7 @@ void FixBondStore::post_constructor()
   newarg[4] = ncols;
 
   modify->add_fix(5,newarg); 
-  
-  index = atom->find_custom(array_id,tmp1,tmp2);
+  index = atom->find_custom(&array_id[3],tmp1,tmp2);
   
   delete [] newarg;  
 }
