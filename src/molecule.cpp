@@ -639,7 +639,7 @@ void Molecule::read(int flag)
       error->all(FLERR,"Cannot auto-generate special bonds before "
                        "simulation box is defined");
 
-    if (flag) {
+    if (flag && atom->special_flag) {
       special_generate();
       specialflag = 1;
       nspecialflag = 1;

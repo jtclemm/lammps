@@ -121,9 +121,9 @@ void BondDEMGeneric::store_data()
       r = sqrt(delx*delx + dely*dely + delz*delz);
       rinv = 1.0/r;
       fix_bond_store->update_atom_value(i, m, 0, r);
-      fix_bond_store->update_atom_value(i, m, 1, delx); 
-      fix_bond_store->update_atom_value(i, m, 2, dely); 
-      fix_bond_store->update_atom_value(i, m, 3, delz); 
+      fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
       if(r > max_r0) max_r0 = r;
     }
   }
@@ -377,6 +377,10 @@ void BondDEMGeneric::compute(int eflag, int vflag)
       r0[1] = -r0[1];
       r0[2] = -r0[2];      
     }    
+
+    r0[0] *= r0_mag;
+    r0[1] *= r0_mag;
+    r0[2] *= r0_mag;
     
     q1[0] = quat[i1][0];
     q1[1] = quat[i1][1]; 
