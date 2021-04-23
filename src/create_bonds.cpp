@@ -60,7 +60,7 @@ void CreateBonds::command(int narg, char **arg)
   int iarg = 0;
   if (strcmp(arg[0],"many") == 0) {
     style = MANY;
-    if (narg != 6) error->all(FLERR,"Illegal create_bonds command");
+    if (narg < 6) error->all(FLERR,"Illegal create_bonds command");
     igroup = group->find(arg[1]);
     if (igroup == -1) error->all(FLERR,"Cannot find create_bonds group ID");
     group1bit = group->bitmask[igroup];
@@ -120,6 +120,7 @@ void CreateBonds::command(int narg, char **arg)
   // optional args
 
   int specialflag = atom->special_flag;
+  duplicate_check = 0;
 
   while (iarg < narg) {
     if (strcmp(arg[iarg],"special") == 0) {
@@ -128,6 +129,9 @@ void CreateBonds::command(int narg, char **arg)
       else if (strcmp(arg[iarg+1],"no") == 0) specialflag = 0;
       else error->all(FLERR,"Illegal create_bonds command");
       iarg += 2;
+    } else if (strcmp(arg[iarg],"duplicate/check") == 0) {
+      duplicate_check = 1;
+      iarg += 1;
     } else error->all(FLERR,"Illegal create_bonds command");
   }
 
@@ -136,8 +140,8 @@ void CreateBonds::command(int narg, char **arg)
   if (style == MANY) {
     if (btype <= 0 || btype > atom->nbondtypes)
       error->all(FLERR,"Invalid bond type in create_bonds command");
-    if (specialflag == 0)
-      error->all(FLERR,"Cannot use special no with create_bonds many");
+    if (specialflag == 0 and duplicate_check == 0)
+      error->all(FLERR,"Cannot use special no without duplicate checking with create_bonds many");
   } else if (style == SBOND) {
     if (btype <= 0 || btype > atom->nbondtypes)
       error->all(FLERR,"Invalid bond type in create_bonds command");
@@ -151,6 +155,9 @@ void CreateBonds::command(int narg, char **arg)
     if (dtype <= 0 || dtype > atom->nimpropertypes)
       error->all(FLERR,"Invalid improper type in create_bonds command");
   }
+  
+  if (duplicate_check == 1 && specialflag == 1)
+    error->warning(FLERR,"Checking for duplicates is unnecessary with special yes in create_bonds command");
 
   // invoke creation method
 
@@ -207,12 +214,15 @@ void CreateBonds::many()
   // require special_bonds 1-2 weights = 0.0 and KSpace = nullptr
   // so that already bonded atom pairs do not appear in neighbor list
   // otherwise with newton_bond = 1,
-  //   would be hard to check if I-J bond already existed
+  //   only check if I-J bond already existed (hard) if requested
   // note that with KSpace, pair with weight = 0 could still be in neigh list
 
-  if (force->special_lj[1] != 0.0 || force->special_coul[1] != 0.0)
-    error->all(FLERR,"Create_bonds command requires "
+  if(! duplicate_check) {
+    if (force->special_lj[1] != 0.0 || force->special_coul[1] != 0.0)
+      error->all(FLERR,"Create_bonds command requires "
                "special_bonds 1-2 weights be 0.0");
+  }
+  
   if (force->kspace)
     error->all(FLERR,"Create_bonds command requires "
                "no kspace_style be defined");
@@ -248,8 +258,9 @@ void CreateBonds::many()
   tagint **bond_atom = atom->bond_atom;
   double newton_bond = force->newton_bond;
   int nlocal = atom->nlocal;
+  int create_bond;
 
-  int i,j,ii,jj,inum,jnum,flag;
+  int i,j,k,ii,jj,inum,jnum,flag;
   double xtmp,ytmp,ztmp,delx,dely,delz,rsq;
   int *ilist,*jlist,*numneigh,**firstneigh;
 
@@ -300,9 +311,22 @@ void CreateBonds::many()
         if (num_bond[i] == atom->bond_per_atom)
           error->one(FLERR,fmt::format("New bond exceeded bonds per atom limit "
                                        " of {} in create_bonds",atom->bond_per_atom));
-        bond_type[i][num_bond[i]] = btype;
-        bond_atom[i][num_bond[i]] = tag[j];
-        num_bond[i]++;
+        create_bond = true;                       
+        if (duplicate_check) {
+          for (k = 0; k < num_bond[i]; k ++) {
+            if (atom->bond_atom[i][k] == tag[j]) {
+              create_bond = false;
+              break;
+            }
+          }
+        }
+          
+        if (create_bond) {
+          bond_type[i][num_bond[i]] = btype;
+          bond_atom[i][num_bond[i]] = tag[j];
+          num_bond[i]++;
+          if((tag[i] == 53 or tag[j] == 53) and (tag[i] == 77 or tag[j] == 77)) printf("Adding bond %d-%d - under bond number %d (indices %d %d)\n", atom->tag[i], atom->tag[j], num_bond[i]-1, i, j);
+        }
       }
     }
   }

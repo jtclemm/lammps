@@ -50,6 +50,7 @@ using namespace MathConst;
 
 BondDEMBeam::BondDEMBeam(LAMMPS *lmp) : Bond(lmp)
 {
+  partial_flag = 1;
   fix_broken_bonds = NULL;
   fix_bond_store = NULL;
   

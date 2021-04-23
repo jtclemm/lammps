@@ -43,7 +43,7 @@ class BondDEMGeneric : public Bond {
  protected:
   double *Kr, *Ks, *Kt, *Kb, *gamma, *gammaw, *Fcr, *Fcs, *Gct, *Gcb, *C_exp;
   double max_r0;
-
+int printflag;
   int overlay_pair_flag; // 1 => dont' subtract pair forces
   void calc_forces(int, double, double, double*, double*, double*,double*, double*, double*, double*, double &, double &, double &, double &);
   double acos_limit(double);

@@ -247,7 +247,7 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
         f[i][0] += fx;
         f[i][1] += fy;
         f[i][2] += fz;
-
+        
         tor1 = rinv * (dely*fs3 - delz*fs2);
         tor2 = rinv * (delz*fs1 - delx*fs3);
         tor3 = rinv * (delx*fs2 - dely*fs1);

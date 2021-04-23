@@ -44,6 +44,7 @@ using namespace MathConst;
 
 BondDEMGeneric::BondDEMGeneric(LAMMPS *lmp) : Bond(lmp)
 {
+  partial_flag = 1;
   fix_broken_bonds = NULL;
   fix_bond_store = NULL;
   
@@ -135,18 +136,22 @@ void BondDEMGeneric::store_data()
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *q1, double *q2, double *r0, double *r, double *force2on1, double *torque1on2, double *torque2on1, double &Fs_mag, double &Fr_mag, double &Tb_mag, double &Tt_mag)  
+void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *q1, double *q2, double *r0, double *r, double *force1on2, double *torque1on2, double *torque2on1, double &Fs_mag, double &Fr_mag, double &Tb_mag, double &Tt_mag)  
 {
-  double q1inv[4], rb[3], rb_x_r0[3], s[3], t[3], Fs[3], q12[4], qp12[4], Tbp[3], Ttp[3];
+  double q2inv[4], rb[3], rb_x_r0[3], s[3], t[3], Fs[3], q21[4], qp21[4], Tbp[3], Ttp[3];
   double Tsp[3], Fsp[3], m[4], minv[4], Ttmp[3], Ftmp[3], Tt[3], Tb[3], Ts[3], F_rot[3], T_rot[3], qtmp[4];
   double r0_dot_rb, gamma, c, psi, theta, sin_phi, cos_phi, temp, mag_in_plane, mag_out_plane;
   double r_mag_inv = 1.0/r_mag;
   
   // Calculate normal forces, rb = bond vector in particle 1's frame
-  MathExtra::qconjugate(q1, q1inv);
-  MathExtra::quatrotvec(q1inv, r, rb);
+  MathExtra::qconjugate(q2, q2inv);
+  MathExtra::quatrotvec(q2inv, r, rb);
   
   Fr_mag = Kr[type]*(r_mag - r0_mag);
+  
+  if (r_mag < r0_mag) 
+    Fr_mag *= exp(C_exp[type]*(r0_mag*r_mag_inv-1.0));
+  
   F_rot[0] = Fr_mag*rb[0]*r_mag_inv;
   F_rot[1] = Fr_mag*rb[1]*r_mag_inv;
   F_rot[2] = Fr_mag*rb[2]*r_mag_inv; 
@@ -175,11 +180,17 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   // Relative rotation force/torque
   // Use representation of X'Y'Z' rotations from Wang, Mora 2009
   
-  m[0] = sqrt(2)*0.5*sqrt((r_mag + rb[2])*r_mag_inv);
+  temp = r_mag + rb[2];
+  if (temp < 0.0) temp = 0.0;
+  m[0] = sqrt(2)*0.5*sqrt(temp*r_mag_inv);
 
   temp = sqrt(rb[0]*rb[0]+rb[1]*rb[1]);
   if (temp != 0.0) {
-    m[1] = -sqrt(2)*0.5*sqrt((r_mag - rb[2])*r_mag_inv)/temp;
+    //m[1] = -sqrt(2)*0.5*sqrt((r_mag - rb[2])*r_mag_inv)/temp;
+    m[1] = -sqrt(2)*0.5/temp;
+    temp = r_mag - rb[2];
+    if (temp < 0.0) temp = 0.0;
+    m[1] *= sqrt(temp*r_mag_inv);    
     m[2] = -m[1];
     m[1] *= rb[1];
     m[2] *= rb[0];    
@@ -190,16 +201,16 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   }
   m[3] = 0.0;  
 
-  // qp12 = opposite of r^\circ_21 in Wang
-  // q12 = opposite of r_21 in Wang
-  MathExtra::quatquat(q1inv, q2, qp12);
+  // qp21 = opposite of r^\circ_21 in Wang
+  // q21 = opposite of r_21 in Wang
+  MathExtra::quatquat(q2inv, q1, qp21);
   MathExtra::qconjugate(m, minv);
-  MathExtra::quatquat(minv,qp12,qtmp);
-  MathExtra::quatquat(qtmp,m,q12);
+  MathExtra::quatquat(minv,qp21,qtmp);
+  MathExtra::quatquat(qtmp,m,q21);
   
-  temp = sqrt(q12[0]*q12[0] + q12[3]*q12[3]);
+  temp = sqrt(q21[0]*q21[0] + q21[3]*q21[3]);
   if (temp != 0.0) {
-    c = q12[0]/temp;
+    c = q21[0]/temp;
     psi = 2.0*acos_limit(c);
   } else {
     c = 0.0;
@@ -207,19 +218,19 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   }
   
   // Map negative rotations
-  if(q12[3] < 0.0) // sin = q12[3]/temp
+  if(q21[3] < 0.0) // sin = q21[3]/temp
     psi = -psi;
     
-  if(q12[3] == 0.0)
+  if(q21[3] == 0.0)
     psi = 0.0;
   
-  c = q12[0]*q12[0] - q12[1]*q12[1] - q12[2]*q12[2] + q12[3]*q12[3];
+  c = q21[0]*q21[0] - q21[1]*q21[1] - q21[2]*q21[2] + q21[3]*q21[3];
   theta = acos_limit(c);
   
   // Separately calculte magnitude of quaternion in x-y and out of x-y planes
   // to avoid dividing by zero
-  mag_out_plane = (q12[0]*q12[0] + q12[3]*q12[3]);
-  mag_in_plane = (q12[1]*q12[1] + q12[2]*q12[2]);
+  mag_out_plane = (q21[0]*q21[0] + q21[3]*q21[3]);
+  mag_in_plane = (q21[1]*q21[1] + q21[2]*q21[2]);
     
   if (mag_in_plane == 0.0) {
     // No rotation => no bending/shear torque or extra shear force
@@ -228,12 +239,12 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
     sin_phi = 0.0;
   } else if (mag_out_plane == 0.0) {
     // Calculate angle in plane
-    cos_phi =  q12[2]/sqrt(mag_in_plane);
-    sin_phi = -q12[1]/sqrt(mag_in_plane);
+    cos_phi =  q21[2]/sqrt(mag_in_plane);
+    sin_phi = -q21[1]/sqrt(mag_in_plane);
   } else {
     // Default equations in Mora, Wang 2009
-    cos_phi = q12[1]*q12[3] + q12[0]*q12[2];
-    sin_phi = q12[2]*q12[3] - q12[0]*q12[1];
+    cos_phi = q21[1]*q21[3] + q21[0]*q21[2];
+    sin_phi = q21[2]*q21[3] - q21[0]*q21[1];
     
     cos_phi /= sqrt(mag_out_plane*mag_in_plane);
     sin_phi /= sqrt(mag_out_plane*mag_in_plane);
@@ -283,19 +294,19 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   F_rot[1] += Fs[1];
   F_rot[2] += Fs[2];
   
-  MathExtra::quatrotvec(q1, F_rot, force2on1);  
+  MathExtra::quatrotvec(q2, F_rot, force1on2);  
   
   T_rot[0] = Ts[0] + Tt[0] + Tb[0];;
   T_rot[1] = Ts[1] + Tt[1] + Tb[1];;
   T_rot[2] = Ts[2] + Tt[2] + Tb[2];;
 
-  MathExtra::quatrotvec(q1, T_rot, torque2on1);  
+  MathExtra::quatrotvec(q2, T_rot, torque1on2);  
 
   T_rot[0] = Ts[0] - Tt[0] - Tb[0];;
   T_rot[1] = Ts[1] - Tt[1] - Tb[1];;
   T_rot[2] = Ts[2] - Tt[2] - Tb[2];;
 
-  MathExtra::quatrotvec(q1, T_rot, torque1on2);  
+  MathExtra::quatrotvec(q2, T_rot, torque2on1);  
 
   Fs_mag = MathExtra::len3(Fs);
   Tt_mag = MathExtra::len3(Tt);
@@ -317,7 +328,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
   double q1[4], q2[4], r[3], r0[3];
   double r0_mag, r_mag, r_mag_inv, Fr_mag, Fs_mag;
   double Tt_mag, Tb_mag;
-  double force2on1[3], torque1on2[3], torque2on1[3];
+  double force1on2[3], torque1on2[3], torque2on1[3];
   double breaking, wd, wd2;
   double r2inv, wr[3], wrn[3], wrt[3], tdamp, dot;
   double fdrag, delvx, delvy, delvz;
@@ -360,8 +371,8 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     r0[2] = bondstore[n][3];
     
     //Stored nb points towards small tag
-    //Reexpress so points towards atom i2
-    if(tag[i2] > tag[i1]){
+    //Reexpress so points towards atom i1
+    if(tag[i2] < tag[i1]){
       r0[0] = -r0[0];    
       r0[1] = -r0[1];
       r0[2] = -r0[2];      
@@ -377,15 +388,16 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     q2[2] = quat[i2][2];
     q2[3] = quat[i2][3];
     
-    r[0] = x[i2][0] - x[i1][0];
-    r[1] = x[i2][1] - x[i1][1];
-    r[2] = x[i2][2] - x[i1][2];
+    // Note this is the reverse of Mora & Wang
+    r[0] = x[i1][0] - x[i2][0];
+    r[1] = x[i1][1] - x[i2][1];
+    r[2] = x[i1][2] - x[i2][2];
 
-    rsq = MathExtra::len3(r);
+    rsq = MathExtra::lensq3(r);
     r_mag = sqrt(rsq);
     
     // Calculate forces from Wang 2009
-    calc_forces(type, r_mag, r0_mag, q1, q2, r0, r, force2on1, torque1on2, torque2on1, Fs_mag, Fr_mag, Tb_mag, Tt_mag);
+    calc_forces(type, r_mag, r0_mag, q1, q2, r0, r, force1on2, torque1on2, torque2on1, Fs_mag, Fr_mag, Tb_mag, Tt_mag);
     
     breaking = Fr_mag/Fcr[type] + Fs_mag/Fcs[type] + Tb_mag/Gcb[type] + Tt_mag/Gct[type];
 
@@ -418,7 +430,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     dot = MathExtra::dot3(wr, r);
     dot /= r_mag;
     
-    wrt[0] = wr[0] - dot*r[0];
+    wrt[0] = wr[0] - dot*r[0]; 
     wrt[1] = wr[1] - dot*r[1];
     wrt[2] = wr[2] - dot*r[2];
     
@@ -437,7 +449,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     
     dot = MathExtra::dot3(wr, r);
     dot /= r_mag;
-    wrn[0] = dot*r[0];
+    wrn[0] = dot*r[0]; 
     wrn[1] = dot*r[1];
     wrn[2] = dot*r[2];    
     
@@ -457,15 +469,15 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     dot = r[0]*delvx + r[1]*delvy + r[2]*delvz;
     fdrag = -gamma[type]*dot*r2inv;
 
-    force2on1[0] += r[0]*fdrag;
-    force2on1[1] += r[1]*fdrag;
-    force2on1[2] += r[2]*fdrag;
+    force1on2[0] -= r[0]*fdrag;
+    force1on2[1] -= r[1]*fdrag;
+    force1on2[2] -= r[2]*fdrag;
 
     if (newton_bond || i1 < nlocal) {
 
-      f[i1][0] += force2on1[0]*wd2;
-      f[i1][1] += force2on1[1]*wd2;
-      f[i1][2] += force2on1[2]*wd2;   
+      f[i1][0] -= force1on2[0]*wd2;
+      f[i1][1] -= force1on2[1]*wd2;
+      f[i1][2] -= force1on2[2]*wd2;   
       
       torque[i1][0] += torque2on1[0]*wd2;
       torque[i1][1] += torque2on1[1]*wd2; 
@@ -474,9 +486,9 @@ void BondDEMGeneric::compute(int eflag, int vflag)
 
     if (newton_bond || i2 < nlocal) {
       
-      f[i2][0] -= force2on1[0]*wd2;
-      f[i2][1] -= force2on1[1]*wd2;
-      f[i2][2] -= force2on1[2]*wd2; 
+      f[i2][0] += force1on2[0]*wd2;
+      f[i2][1] += force1on2[1]*wd2;
+      f[i2][2] += force1on2[2]*wd2; 
 
       torque[i2][0] += torque1on2[0]*wd2;
       torque[i2][1] += torque1on2[1]*wd2; 
@@ -496,6 +508,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     if (rsq < cutsq[itype][jtype]) {
       evdwl = -force->pair->single(i1,i2,itype,jtype,rsq,1.0,1.0,fpair);
       fpair = -fpair;
+      
       r_mag_inv = 1/r_mag;
       fs1 = -force->pair->svector[0];
       fs2 = -force->pair->svector[1];
@@ -523,7 +536,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
         torque[i2][1] -= radi2*tor2;
         torque[i2][2] -= radi2*tor3;
       }
-    
+      
       if (evflag) force->pair->ev_tally(i1,i2,nlocal,newton_bond,
                                         evdwl,0.0,fpair,r[0],r[1],r[2]);
     }

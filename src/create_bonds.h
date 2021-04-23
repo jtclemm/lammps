@@ -32,6 +32,7 @@ class CreateBonds : protected Pointers {
  private:
   int igroup,group1bit,group2bit;
   int btype,atype,dtype;
+  int duplicate_check;
   tagint batom1,batom2,aatom1,aatom2,aatom3,datom1,datom2,datom3,datom4;
   double rmin,rmax;
 

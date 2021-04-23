@@ -122,7 +122,7 @@ void FixBondStore::init()
 void FixBondStore::update_atom_value(int i, int m, int idata, double value)
 {  
   if(idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");
-  atom->darray[index][m*ndata+idata][i] = value;
+  atom->darray[index][i][m*ndata+idata] = value;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -130,7 +130,7 @@ void FixBondStore::update_atom_value(int i, int m, int idata, double value)
 double FixBondStore::get_atom_value(int i, int m, int idata)
 {
    if(idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");   
-   return atom->darray[index][m*ndata+idata][i];
+   return atom->darray[index][i][m*ndata+idata];
 }
 
 /* ----------------------------------------------------------------------
@@ -166,7 +166,7 @@ void FixBondStore::pre_exchange()
       for (m = 0; m < num_bond[i1]; m++){
         if (bond_atom[i1][m] == tag[i2]){
           for (idata = 0; idata < ndata; idata++){
-            stored[m*ndata+idata][i1] = bondstore[n][idata];
+            stored[i1][m*ndata+idata] = bondstore[n][idata];
           }
         }
       }
@@ -176,7 +176,7 @@ void FixBondStore::pre_exchange()
       for (m = 0; m < num_bond[i2]; m++){
         if (bond_atom[i2][m] == tag[i1]){
           for (idata = 0; idata < ndata; idata++){
-            stored[m*ndata+idata][i2] = bondstore[n][idata];
+            stored[i1][m*ndata+idata] = bondstore[n][idata];
           }
         }
       }
@@ -238,7 +238,7 @@ void FixBondStore::post_neighbor()
       for (m = 0; m < num_bond[i1]; m++){
         if (bond_atom[i1][m] == tag[i2]){
           for (idata = 0; idata < ndata; idata++){
-            bondstore[n][idata] = stored[m*ndata+idata][i1];
+            bondstore[n][idata] = stored[i1][m*ndata+idata];
           }
         }
       }
@@ -248,7 +248,7 @@ void FixBondStore::post_neighbor()
       for (m = 0; m < num_bond[i2]; m++){
         if (bond_atom[i2][m] == tag[i1]){
           for (idata = 0; idata < ndata; idata++){
-            bondstore[n][idata] = stored[m*ndata+idata][i2];
+            bondstore[n][idata] = stored[i2][m*ndata+idata];
           }
         }
       }
