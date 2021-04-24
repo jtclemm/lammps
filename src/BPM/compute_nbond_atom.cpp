@@ -90,24 +90,23 @@ void ComputeNBondAtom::compute_peratom()
   for (i = 0; i < ntotal; i++) nbond[i] = 0;
   
   for (i = 0; i < nlocal; i++) {
-      for(j = 0; j <num_bond[i]; j ++){
-          if (bond_type[i][j] <= 0) continue;
-          k = atom->map(bond_atom[i][j]);
-          
-          if (k < 0) continue;   
-          nbond[i] += 1;
-          if (newton_bond) nbond[k] += 1;
-      }
+    for (j = 0; j <num_bond[i]; j ++) {
+      if (bond_type[i][j] <= 0) continue;
+
+      k = atom->map(bond_atom[i][j]);
+      if (k < 0) continue;   
+
+      nbond[i] += 1;
+      if (newton_bond) nbond[k] += 1;
+    }
   }
 
   // communicate ghost nbond between neighbor procs
-
   if (force->newton)
     comm->reverse_comm_compute(this);
 
   // zero nbond of atoms not in group
   // only do this after comm since ghost contributions must be included
-
   int *mask = atom->mask;
 
   for (i = 0; i < nlocal; i++)

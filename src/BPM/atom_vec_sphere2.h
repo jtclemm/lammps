@@ -13,20 +13,20 @@
 
 #ifdef ATOM_CLASS
 
-AtomStyle(beam,AtomVecBeam)
+AtomStyle(sphere2,AtomVecSphere2)
 
 #else
 
-#ifndef LMP_ATOM_VEC_BEAM_H
-#define LMP_ATOM_VEC_BEAM_H
+#ifndef LMP_ATOM_VEC_SPHERE2_H
+#define LMP_ATOM_VEC_SPHERE2_H
 
 #include "atom_vec.h"
 
 namespace LAMMPS_NS {
 
-class AtomVecBeam : public AtomVec {
+class AtomVecSphere2 : public AtomVec {
  public:
-  AtomVecBeam(class LAMMPS *);
+  AtomVecSphere2(class LAMMPS *);
   void process_args(int, char **);
   void init();
   

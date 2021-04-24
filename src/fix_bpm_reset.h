@@ -30,6 +30,7 @@ class FixBPMReset : public Fix {
   ~FixBPMReset();
   int setmask();
   void init();
+  virtual void setup_pre_force(int);
   virtual void pre_force(int);
 
  private:

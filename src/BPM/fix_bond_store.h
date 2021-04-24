@@ -49,12 +49,10 @@ class FixBondStore : public Fix {
   void allocate();
  
   int update_flag;
-  //int newton_bond;
   int nbond, maxbond, ndata;
   int index;
   char *new_fix_id;
   char *array_id;
-
 };
 
 }
@@ -68,28 +66,15 @@ E: Illegal ... command
 
 UNDOCUMENTED
 
-E: Neighbor history requires atoms have IDs
+E: Index exceeded in fix bond store
 
-UNDOCUMENTED
+Bond requested non-existant data
 
-E: Neighbor history overflow, boost neigh_modify one
+E: Cannot store bond variables without any bonds
 
-UNDOCUMENTED
+Atoms must have a nonzero number of bonds to store data
 
-E: Unsupported comm mode in neighbor history
 
-UNDOCUMENTED
-
-U: Pair style granular with history requires atoms have IDs
-
-Atoms in the simulation do not have IDs, so history effects
-cannot be tracked by the granular pair potential.
-
-U: Shear history overflow, boost neigh_modify one
-
-There are too many neighbors of a single atom.  Use the neigh_modify
-command to increase the max number of neighbors allowed for one atom.
-You may also want to boost the page size.
 
 */
 

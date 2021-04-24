@@ -36,7 +36,7 @@ FixBondStore::FixBondStore(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   new_fix_id(NULL)
 {  
-  if (narg != 5) error->all(FLERR,"Illegal fix BOND STORE command");
+  if (narg != 5) error->all(FLERR,"Illegal fix bond/store command");
   update_flag = utils::inumeric(FLERR,arg[3],false,lmp);
   ndata = utils::inumeric(FLERR,arg[4],false,lmp);
   nbond = atom->bond_per_atom;
@@ -121,7 +121,7 @@ void FixBondStore::init()
 
 void FixBondStore::update_atom_value(int i, int m, int idata, double value)
 {  
-  if(idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");
+  if (idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");
   atom->darray[index][i][m*ndata+idata] = value;
 }
 
@@ -129,13 +129,13 @@ void FixBondStore::update_atom_value(int i, int m, int idata, double value)
 
 double FixBondStore::get_atom_value(int i, int m, int idata)
 {
-   if(idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");   
+   if (idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");   
    return atom->darray[index][i][m*ndata+idata];
 }
 
 /* ----------------------------------------------------------------------
-   If you update quantities, copy to atom arrays before exchanging
-   Always (?) called before neighborlist rebuilt
+   If stored values are updated, need to copy to atom arrays before exchanging
+   Always called before neighborlist rebuilt
    Also call prior to irregular communication in other fixes (e.g. deform)
 ------------------------------------------------------------------------- */
 
@@ -154,7 +154,7 @@ void FixBondStore::pre_exchange()
   tagint *tag = atom->tag;
 
   for (n = 0; n < nbondlist; n++) {
-    i1 = bondlist[n][0];//DEL
+    i1 = bondlist[n][0];
     i2 = bondlist[n][1];
 
     // skip bond if already broken
@@ -163,9 +163,9 @@ void FixBondStore::pre_exchange()
     }
     
     if (i1 < nlocal){
-      for (m = 0; m < num_bond[i1]; m++){
-        if (bond_atom[i1][m] == tag[i2]){
-          for (idata = 0; idata < ndata; idata++){
+      for (m = 0; m < num_bond[i1]; m++) {
+        if (bond_atom[i1][m] == tag[i2]) {
+          for (idata = 0; idata < ndata; idata++) {
             stored[i1][m*ndata+idata] = bondstore[n][idata];
           }
         }
@@ -173,9 +173,9 @@ void FixBondStore::pre_exchange()
     }
       
     if (i2 < nlocal){
-      for (m = 0; m < num_bond[i2]; m++){
-        if (bond_atom[i2][m] == tag[i1]){
-          for (idata = 0; idata < ndata; idata++){
+      for (m = 0; m < num_bond[i2]; m++) {
+        if (bond_atom[i2][m] == tag[i1]) {
+          for (idata = 0; idata < ndata; idata++) {
             stored[i1][m*ndata+idata] = bondstore[n][idata];
           }
         }
@@ -234,10 +234,10 @@ void FixBondStore::post_neighbor()
         continue;
     }
         
-    if (i1 < nlocal){
-      for (m = 0; m < num_bond[i1]; m++){
-        if (bond_atom[i1][m] == tag[i2]){
-          for (idata = 0; idata < ndata; idata++){
+    if (i1 < nlocal) {
+      for (m = 0; m < num_bond[i1]; m++) {
+        if (bond_atom[i1][m] == tag[i2]) {
+          for (idata = 0; idata < ndata; idata++) {
             bondstore[n][idata] = stored[i1][m*ndata+idata];
           }
         }
@@ -245,9 +245,9 @@ void FixBondStore::post_neighbor()
     }
       
     if (i2 < nlocal){
-      for (m = 0; m < num_bond[i2]; m++){
-        if (bond_atom[i2][m] == tag[i1]){
-          for (idata = 0; idata < ndata; idata++){
+      for (m = 0; m < num_bond[i2]; m++) {
+        if (bond_atom[i2][m] == tag[i1]) {
+          for (idata = 0; idata < ndata; idata++) {
             bondstore[n][idata] = stored[i2][m*ndata+idata];
           }
         }

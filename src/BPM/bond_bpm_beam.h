@@ -13,21 +13,21 @@
 
 #ifdef BOND_CLASS
 
-BondStyle(dem/beam,BondDEMBeam)
+BondStyle(bpm/beam,BondBPMBeam)
 
 #else
 
-#ifndef LMP_BOND_DEM_BEAM_H
-#define LMP_BOND_DEM_BEAM_H
+#ifndef LMP_BOND_BPM_BEAM_H
+#define LMP_BOND_BPM_BEAM_H
 
 #include "bond.h"
 
 namespace LAMMPS_NS {
 
-class BondDEMBeam : public Bond {
+class BondBPMBeam : public Bond {
  public:
-  BondDEMBeam(class LAMMPS *);
-  virtual ~BondDEMBeam();
+  BondBPMBeam(class LAMMPS *);
+  virtual ~BondBPMBeam();
   virtual void compute(int, int);
   virtual void settings(int, char **);  
   void coeff(int, char **);
@@ -56,6 +56,7 @@ class BondDEMBeam : public Bond {
   class FixBrokenBonds *fix_broken_bonds;
   void allocate();
   void store_data();  
+  double store_bond(int, int, int);  
 };
 
 }
@@ -84,8 +85,16 @@ E: Bond style beam cannot be used with atom style template
 This bond style can change the bond topology which is not
 allowed with this atom style.
 
-E: Bond style beam requires special_bonds = 1,1,1
+E: Bond style bpm/beam requires gran pairstyle without overlay
 
-This is a restriction of the current bond beam implementation.
+Only the gran pairstyles are supportted unless pair forces are overlaid
+
+E: Special bonds must be turned off for bond style beam
+
+Special bond are not used by BPM bonds
+
+W: Bond style bpm/beam not intended for 2d use, may be inefficient
+
+This bond style will perform a lot of unnecessary calculations in 2d
 
 */

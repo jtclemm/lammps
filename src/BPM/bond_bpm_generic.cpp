@@ -15,7 +15,7 @@
    Contributing authors: Chris Lorenz and Mark Stevens (SNL)
 ------------------------------------------------------------------------- */
 
-#include "bond_dem_generic.h"
+#include "bond_bpm_generic.h"
 #include <mpi.h>
 #include <cmath>
 #include <cstring>
@@ -34,7 +34,7 @@
 #include "fix_broken_bonds.h"
 #include "update.h"
 
-#define TOLERANCE 1e-15
+#define EPSILON 1e-10
 
 using namespace LAMMPS_NS;
 using namespace MathExtra;
@@ -42,7 +42,7 @@ using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
-BondDEMGeneric::BondDEMGeneric(LAMMPS *lmp) : Bond(lmp)
+BondBPMGeneric::BondBPMGeneric(LAMMPS *lmp) : Bond(lmp)
 {
   partial_flag = 1;
   fix_broken_bonds = NULL;
@@ -54,9 +54,9 @@ BondDEMGeneric::BondDEMGeneric(LAMMPS *lmp) : Bond(lmp)
 
 /* ---------------------------------------------------------------------- */
 
-BondDEMGeneric::~BondDEMGeneric()
+BondBPMGeneric::~BondBPMGeneric()
 {
-  if(fix_bond_store) modify->delete_fix("BOND_STORE_DEM_GENERIC");    
+  if(fix_bond_store) modify->delete_fix("BOND_STORE_BPM_GENERIC");    
     
   if (allocated) {
     memory->destroy(setflag);
@@ -77,7 +77,7 @@ BondDEMGeneric::~BondDEMGeneric()
 /* ---------------------------------------------------------------------- */
 // Calculate acos after bounding quantity in range [-1, 1]
 
-double BondDEMGeneric::acos_limit(double c)
+double BondBPMGeneric::acos_limit(double c)
 {
   if (c > 1.0) c = 1.0;
   if (c < -1.0) c = -1.0;
@@ -86,7 +86,57 @@ double BondDEMGeneric::acos_limit(double c)
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::store_data()
+double BondBPMGeneric::store_bond(int n,int i,int j)
+{
+  int m,k;
+  double delx, dely, delz, r, rinv;
+  double **x = atom->x; 
+  tagint *tag = atom->tag;
+  double **bondstore = fix_bond_store->bondstore;
+
+  if (tag[i] < tag[j]) {
+    delx = x[i][0] - x[j][0]; 
+    dely = x[i][1] - x[j][1]; 
+    delz = x[i][2] - x[j][2]; 
+  } else {
+    delx = x[j][0] - x[i][0]; 
+    dely = x[j][1] - x[i][1]; 
+    delz = x[j][2] - x[i][2];
+  }
+  
+  domain->minimum_image(delx,dely,delz);        
+  r = sqrt(delx*delx + dely*dely + delz*delz);
+  rinv = 1.0/r;
+
+  bondstore[n][0] = r;
+  bondstore[n][1] = delx*rinv;
+  bondstore[n][2] = dely*rinv;
+  bondstore[n][3] = delz*rinv;
+
+  for (m = 0; m < atom->num_bond[i]; m ++) {
+    if (atom->bond_atom[i][m] == tag[j]) {
+      fix_bond_store->update_atom_value(i, m, 0, r);
+      fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
+    }
+  }
+  
+  for (m = 0; m < atom->num_bond[j]; m ++) {
+    if (atom->bond_atom[j][m] == tag[i]) {
+      fix_bond_store->update_atom_value(j, m, 0, r);
+      fix_bond_store->update_atom_value(j, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(j, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(j, m, 3, delz*rinv); 
+    }
+  }
+  
+  return r;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void BondBPMGeneric::store_data()
 {        
   int j, type;
   double delx, dely, delz, r, rinv;
@@ -95,8 +145,8 @@ void BondDEMGeneric::store_data()
   tagint *tag = atom->tag;
   
   max_r0 = 0.0;
-  for(int i = 0; i < atom->nlocal; i ++){
-    for(int m = 0; m < atom->num_bond[i]; m ++){
+  for (int i = 0; i < atom->nlocal; i ++) {
+    for (int m = 0; m < atom->num_bond[i]; m ++) {
       type = bond_type[i][m];
               
       //Skip if bond was turned off
@@ -105,7 +155,7 @@ void BondDEMGeneric::store_data()
               
       // map to find index n for tag
       j = atom->map(atom->bond_atom[i][m]);          
-      if(j == -1) error->all(FLERR, "Atom missing in DEM bond");
+      if(j == -1) error->all(FLERR, "Atom missing in BPM bond");
       
       // Save orientation as pointing towards small tag
       if(tag[i] < tag[j]){
@@ -136,7 +186,7 @@ void BondDEMGeneric::store_data()
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *q1, double *q2, double *r0, double *r, double *force1on2, double *torque1on2, double *torque2on1, double &Fs_mag, double &Fr_mag, double &Tb_mag, double &Tt_mag)  
+void BondBPMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *q1, double *q2, double *r0, double *r, double *force1on2, double *torque1on2, double *torque2on1, double &Fs_mag, double &Fr_mag, double &Tb_mag, double &Tt_mag)  
 {
   double q2inv[4], rb[3], rb_x_r0[3], s[3], t[3], Fs[3], q21[4], qp21[4], Tbp[3], Ttp[3];
   double Tsp[3], Fsp[3], m[4], minv[4], Ttmp[3], Ftmp[3], Tt[3], Tb[3], Ts[3], F_rot[3], T_rot[3], qtmp[4];
@@ -168,7 +218,7 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   Fs[0] = Ks[type]*r_mag*gamma*s[0];
   Fs[1] = Ks[type]*r_mag*gamma*s[1];
   Fs[2] = Ks[type]*r_mag*gamma*s[2];
-    
+      
   // Calculate torque due to tangential displacements
   MathExtra::cross3(r0, rb, t);
   MathExtra::norm3(t);
@@ -273,7 +323,7 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
   Fs[0] += Ftmp[0];
   Fs[1] += Ftmp[1];
   Fs[2] += Ftmp[2];
-
+  
   MathExtra::quatrotvec(m, Tbp, Ttmp);
   Tb[0] = Ttmp[0];
   Tb[1] = Ttmp[1];
@@ -315,10 +365,10 @@ void BondDEMGeneric::calc_forces(int type, double r_mag, double r0_mag, double *
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::compute(int eflag, int vflag)
+void BondBPMGeneric::compute(int eflag, int vflag)
 {
     
-  if(not fix_bond_store->stored_flag){
+  if (! fix_bond_store->stored_flag) {
     fix_bond_store->stored_flag = true;
     store_data();   
   }      
@@ -366,13 +416,18 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     i2 = bondlist[n][1];
     type = bondlist[n][2];
     r0_mag = bondstore[n][0];
+
+    // If bond hasn't been set (always initialized to zero?)
+    if (r0_mag < EPSILON || isnan(r0_mag))
+      r0_mag = store_bond(n,i1,i2);
+
     r0[0] = bondstore[n][1];
     r0[1] = bondstore[n][2];
     r0[2] = bondstore[n][3];
     
     //Stored nb points towards small tag
     //Reexpress so points towards atom i1
-    if(tag[i2] < tag[i1]){
+    if (tag[i2] < tag[i1]) {
       r0[0] = -r0[0];    
       r0[1] = -r0[1];
       r0[2] = -r0[2];      
@@ -400,9 +455,10 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     rsq = MathExtra::lensq3(r);
     r_mag = sqrt(rsq);
     
+    
     // Calculate forces from Wang 2009
     calc_forces(type, r_mag, r0_mag, q1, q2, r0, r, force1on2, torque1on2, torque2on1, Fs_mag, Fr_mag, Tb_mag, Tt_mag);
-    
+
     breaking = Fr_mag/Fcr[type] + Fs_mag/Fcs[type] + Tb_mag/Gcb[type] + Tt_mag/Gct[type];
 
     if (breaking >= 1.0) {
@@ -415,7 +471,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
           if (atom->bond_atom[i2][m] == atom->tag[i1])
             atom->bond_type[i2][m] = 0;
         
-      if(fix_broken_bonds != NULL) fix_broken_bonds->add_bond(i1, i2);          
+      if (fix_broken_bonds != NULL) fix_broken_bonds->add_bond(i1, i2);          
         
       continue;
     }
@@ -504,7 +560,7 @@ void BondDEMGeneric::compute(int eflag, int vflag)
     // subtract out pairwise contribution from 2 atoms via pair->single()
 
     // Skip if overlaying
-    if(overlay_pair_flag) continue;
+    if (overlay_pair_flag) continue;
 
     itype = atom->type[i1];
     jtype = atom->type[i2];
@@ -549,11 +605,11 @@ void BondDEMGeneric::compute(int eflag, int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::settings(int narg, char **arg)
+void BondBPMGeneric::settings(int narg, char **arg)
 {
   int iarg = 0;
-  while(iarg < narg){
-    if (strcmp(arg[iarg], "overlay/pair") == 0){
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "overlay/pair") == 0) {
       overlay_pair_flag = 1;
     } else error->all(FLERR,"Illegal pair_style command");
     iarg++;   
@@ -562,7 +618,7 @@ void BondDEMGeneric::settings(int narg, char **arg)
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMGeneric::allocate()
+void BondBPMGeneric::allocate()
 {
   allocated = 1;
   int n = atom->nbondtypes;
@@ -588,7 +644,7 @@ void BondDEMGeneric::allocate()
    set coeffs for one or more types
 ------------------------------------------------------------------------- */
 
-void BondDEMGeneric::coeff(int narg, char **arg)
+void BondBPMGeneric::coeff(int narg, char **arg)
 {
   if (narg != 12) error->all(FLERR,"Incorrect args for bond coefficients");
   if (!allocated) allocate();
@@ -633,7 +689,7 @@ void BondDEMGeneric::coeff(int narg, char **arg)
    check if pair defined and special_bond settings are valid
 ------------------------------------------------------------------------- */
 
-void BondDEMGeneric::init_style()
+void BondBPMGeneric::init_style()
 {
   if (!atom->quat_flag)
     error->all(FLERR,"Bond generic requires atom attributes quaternion");
@@ -641,7 +697,7 @@ void BondDEMGeneric::init_style()
     error->all(FLERR,"Bond generic requires ghost atoms store velocity");
 
   if (force->pair == NULL || force->pair->single_enable == 0)
-    error->all(FLERR,"Pair style does not support bond_style generic");
+    error->all(FLERR,"Pair style does not support bond_style bpm/generic");
 
   if (force->angle || force->dihedral || force->improper)
     error->all(FLERR,
@@ -650,43 +706,47 @@ void BondDEMGeneric::init_style()
     error->all(FLERR,
                "Bond style generic cannot be used with atom style template");
 
+  if (atom->specialflag)
+    error->error(FLERR, "Special bonds must be turned off for bond style generic");
+
   if(domain->dimension == 2)
     error->warning(FLERR, "Bond style generic not intended for 2d use, may be inefficient");
+
   // Determine if correct pair style is used
   if(not overlay_pair_flag) {
     int correct_pair = 0;
-    if(force->pair_match("gran/hooke",0)) correct_pair = 1;
-    if(force->pair_match("gran/hooke/history",0)) correct_pair = 1;
-    if(force->pair_match("gran/hertz",0)) correct_pair = 1;
-    if(force->pair_match("gran/hertz/history",0)) correct_pair = 1;
+    if (force->pair_match("gran/hooke",0)) correct_pair = 1;
+    if (force->pair_match("gran/hooke/history",0)) correct_pair = 1;
+    if (force->pair_match("gran/hertz",0)) correct_pair = 1;
+    if (force->pair_match("gran/hertz/history",0)) correct_pair = 1;
     if (! correct_pair) 
-      error->all(FLERR, "Bond style DEM generic requires gran pairstyle");
+      error->all(FLERR, "Bond style bpm/generic requires gran pairstyle");
   }    
     
   //Define bond store
-  if(fix_bond_store == NULL){
+  if (fix_bond_store == NULL) {
     char **fixarg = new char*[5];
-    fixarg[0] = (char *) "BOND_STORE_DEM_GENERIC";
+    fixarg[0] = (char *) "BOND_STORE_BPM_GENERIC";
     fixarg[1] = (char *) "all";
     fixarg[2] = (char *) "BOND_STORE";
     fixarg[3] = (char *) "0";
     fixarg[4] = (char *) "4";
     modify->add_fix(5,fixarg,1);
     delete [] fixarg;
-    int ifix = modify->find_fix("BOND_STORE_DEM_GENERIC");
+    int ifix = modify->find_fix("BOND_STORE_BPM_GENERIC");
     fix_bond_store = (FixBondStore *) modify->fix[ifix];
     //Note don't use most recent nfix b/c fix bond store creates a fix property atom    
   }
   
   int ifix = modify->find_fix_by_style("bonds/broken");
-  if(ifix != -1) fix_broken_bonds = (FixBrokenBonds *) modify->fix[ifix];      
+  if (ifix != -1) fix_broken_bonds = (FixBrokenBonds *) modify->fix[ifix];      
 }
 
 /* ----------------------------------------------------------------------
    return an equilbrium bond length
 ------------------------------------------------------------------------- */
 
-double BondDEMGeneric::equilibrium_distance(int i)
+double BondBPMGeneric::equilibrium_distance(int i)
 {
   return max_r0;
 }
@@ -695,7 +755,7 @@ double BondDEMGeneric::equilibrium_distance(int i)
    proc 0 writes out coeffs to restart file
 ------------------------------------------------------------------------- */
 
-void BondDEMGeneric::write_restart(FILE *fp)
+void BondBPMGeneric::write_restart(FILE *fp)
 {
   fwrite(&Kr[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&Ks[1],sizeof(double),atom->nbondtypes,fp);
@@ -714,7 +774,7 @@ void BondDEMGeneric::write_restart(FILE *fp)
    proc 0 reads coeffs from restart file, bcasts them
 ------------------------------------------------------------------------- */
 
-void BondDEMGeneric::read_restart(FILE *fp)
+void BondBPMGeneric::read_restart(FILE *fp)
 {
   allocate();
 
@@ -750,24 +810,24 @@ void BondDEMGeneric::read_restart(FILE *fp)
    proc 0 writes to data file
 ------------------------------------------------------------------------- */
 
-void BondDEMGeneric::write_data(FILE *fp)
+void BondBPMGeneric::write_data(FILE *fp)
 {
   for (int i = 1; i <= atom->nbondtypes; i++)
      fprintf(fp,"%d %g %g %g %g %g %g %g %g %g %g %g\n",i,Kr[i],Ks[i],Kt[i],Kb[i],Fcr[i], Fcs[i], Gct[i], Gcb[i], gamma[i],gammaw[i], C_exp[i]);
 }
 
 /* ---------------------------------------------------------------------- */
-// Not implemented
 
-double BondDEMGeneric::single(int type, double rsq, int i, int j,
+double BondBPMGeneric::single(int type, double rsq, int i, int j,
                            double &fforce)
 {
+  // Incomplete
   if (type <= 0) return 0.0;
   double r0; 
   
   //Access stored values - inefficient call rarely (I think only compute local)
-  for(int n = 0; n < atom->num_bond[i]; n ++){
-    if(atom->bond_atom[i][n] == atom->tag[j]){
+  for (int n = 0; n < atom->num_bond[i]; n ++) {
+    if (atom->bond_atom[i][n] == atom->tag[j]) {
         r0 = fix_bond_store->get_atom_value(i, n, 0);
     }
   }  

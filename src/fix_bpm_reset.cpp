@@ -89,6 +89,68 @@ void FixBPMReset::init()
    perform particle insertion
 ------------------------------------------------------------------------- */
 
+void FixBPMReset::setup_pre_force(int /*vflag*/)
+{
+  int i,j,m,type;
+  double delx,dely,delz,r,rsq;
+
+  int *mol = atom->molecule;
+  double **x = atom->x;
+  tagint *tag = atom->tag;
+  int *mask = atom->mask;
+  double rinv;
+
+  int **bondlist = neighbor->bondlist;
+  int nbondlist = neighbor->nbondlist;
+  int nlocal = atom->nlocal;
+  int newton_bond = force->newton_bond;
+  
+  int new_max_mol = -1;
+  double **bondstore = fix_bond_store->bondstore;
+
+  for (i = 0; i < atom->nlocal; i++) {
+    for (m = 0; m < atom->num_bond[i]; m++) {
+      type = atom->bond_type[i][m];
+      //Skip if bond was turned off
+      if(type < 0)
+          continue;    
+
+      j = atom->map(atom->bond_atom[i][m]);          
+          
+      if(j == -1) error->all(FLERR, "Atom missing in DEM bond");
+      
+      if(mol[i] <= max_mol or mol[j] <= max_mol) continue;
+      if(mol[i] > new_max_mol) new_max_mol = mol[i];
+      if(mol[j] > new_max_mol) new_max_mol = mol[j];      
+      
+      // Save orientation as pointing towards small tag
+      if(tag[i] < tag[j]){
+        delx = x[i][0] - x[j][0]; 
+        dely = x[i][1] - x[j][1]; 
+        delz = x[i][2] - x[j][2]; 
+      } else {
+        delx = x[j][0] - x[i][0]; 
+        dely = x[j][1] - x[i][1]; 
+        delz = x[j][2] - x[i][2];
+      }
+      
+      r = sqrt(delx*delx + dely*dely + delz*delz);
+      rinv = 1.0/r;
+      fix_bond_store->update_atom_value(i, m, 0, r);
+      fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(i, m, 3, delz*rinv);     
+    }
+  }
+        
+  if(max_mol < new_max_mol)
+    max_mol = new_max_mol;  
+}
+
+/* ----------------------------------------------------------------------
+   perform particle insertion
+------------------------------------------------------------------------- */
+
 void FixBPMReset::pre_force(int /*vflag*/)
 {
   int i1,i2,n,m;
@@ -107,7 +169,7 @@ void FixBPMReset::pre_force(int /*vflag*/)
   
   int new_max_mol = -1;
   double **bondstore = fix_bond_store->bondstore;
-  
+    
   for (n = 0; n < nbondlist; n++) {
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];

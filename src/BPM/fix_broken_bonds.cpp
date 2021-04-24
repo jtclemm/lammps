@@ -179,7 +179,7 @@ void FixBrokenBonds::post_constructor()
     } 
       
     ifix = modify->find_fix(id_fix);
-    if (ifix < 0) error->all(FLERR,"Could not find fix broken bonds fix ID");
+    if (ifix < 0) error->all(FLERR,"Could not find fix ID for fix broken/bond");
     if (modify->fix[ifix]->restart_reset) {
         modify->fix[ifix]->restart_reset = 0;
     } else {
@@ -191,7 +191,7 @@ void FixBrokenBonds::post_constructor()
       double **xs = atom->x;
       int nlocal = atom->nlocal;
       
-      for (int i = 0; i < nlocal; i++){
+      for (int i = 0; i < nlocal; i++) {
         xi[i] = xs[i][0];
         yi[i] = xs[i][1];
         zi[i] = xs[i][2];   
@@ -207,8 +207,8 @@ void FixBrokenBonds::init()
   // Set size of array/vector
   ncount = 0;
 
-  if (ncount >= nmax) {
-      reallocate(ncount);}
+  if (ncount >= nmax)
+    reallocate(ncount);
   size_local_rows = ncount;
  
 }
@@ -217,30 +217,29 @@ void FixBrokenBonds::init()
 
 void FixBrokenBonds::add_bond(int i, int j)
 {    
-    if(ncount == nmax) reallocate(ncount);
-    
-    index_i = i;
-    index_j = j;
-    
-    // fill vector or array with local values
-    if (nvalues == 1) {
-      (this->*pack_choice[0])(0);
-    } else {
-      for (int n = 0; n < nvalues; n++)
-        (this->*pack_choice[n])(n); 
-    }    
-//printf("%d: Adding bond at ncount %d (%d-%d tags %d %d)\n", update->ntimestep, ncount, index_i, index_j, atom->tag[index_i], atom->tag[index_j]);
-    ncount += 1;    
+  if (ncount == nmax) reallocate(ncount);
+  
+  index_i = i;
+  index_j = j;
+  
+  // fill vector or array with local values
+  if (nvalues == 1) {
+    (this->*pack_choice[0])(0);
+  } else {
+    for (int n = 0; n < nvalues; n++)
+      (this->*pack_choice[n])(n); 
+  }  
+  
+  ncount += 1;    
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixBrokenBonds::post_force(int /*vflag*/) 
 {   
-  if(update->ntimestep % nevery == 0){
+  if (update->ntimestep % nevery == 0) {
     size_local_rows = ncount;
     ncount = 0;  
-  //  printf("%d: resetting ncount\n", update->ntimestep);
   }
 }
 
@@ -250,7 +249,6 @@ void FixBrokenBonds::post_force(int /*vflag*/)
 void FixBrokenBonds::reallocate(int n)
 {
   // grow vector or array and indices array
-
   while (nmax <= n) nmax += DELTA;
   
   if (nvalues == 1) {
@@ -285,7 +283,7 @@ void FixBrokenBonds::pack_id1(int n)
   int i;
   tagint *tag = atom->tag;
   
-  if(nvalues == 1)
+  if (nvalues == 1)
     vector[ncount] = tag[index_i];
   else
     array[ncount][n] = tag[index_i];
@@ -298,7 +296,7 @@ void FixBrokenBonds::pack_id2(int n)
   int i;
   tagint *tag = atom->tag;
 
-  if(nvalues == 1)
+  if (nvalues == 1)
     vector[ncount] = tag[index_j];
   else
     array[ncount][n] = tag[index_j];
@@ -311,7 +309,7 @@ void FixBrokenBonds::pack_time(int n)
 {
   bigint time = update->ntimestep;
 
-  if(nvalues == 1)
+  if (nvalues == 1)
     vector[ncount] = time;
   else
     array[ncount][n] = time;
@@ -323,18 +321,11 @@ void FixBrokenBonds::pack_x(int n)
 {
   double lx_new = domain->xprd;
   double **x = atom->x; 
-  double xj = x[index_j][0];
     
-  if(x[index_i][0] - xj > lx_new/2){
-      xj  += -lx_new;
-  } else if (x[index_i][0] - xj < -lx_new/2){
-      xj  += lx_new;
-  }    
-  
-  if(nvalues == 1)
-    vector[ncount] = (x[index_i][0] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (x[index_i][0] + x[index_j][0])/2;
   else
-    array[ncount][n] = (x[index_i][0] + xj)/2;
+    array[ncount][n] = (x[index_i][0] + x[index_j][0])/2;
 }
 
 
@@ -344,18 +335,11 @@ void FixBrokenBonds::pack_y(int n)
 {
   double lx_new = domain->yprd;
   double **x = atom->x; 
-  double xj = x[index_j][1];
-    
-  if(x[index_i][1] - xj > lx_new/2){
-      xj  += -lx_new;
-  } else if (x[index_i][1] - xj < -lx_new/2){
-      xj  += lx_new;
-  }    
   
-  if(nvalues == 1)
-    vector[ncount] = (x[index_i][1] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (x[index_i][1] + x[index_j][1])/2;
   else
-    array[ncount][n] = (x[index_i][1] + xj)/2;
+    array[ncount][n] = (x[index_i][1] + x[index_j][1])/2;
 }
 
 
@@ -365,18 +349,11 @@ void FixBrokenBonds::pack_z(int n)
 {
   double lx_new = domain->zprd;
   double **x = atom->x; 
-  double xj = x[index_j][2];
     
-  if(x[index_i][2] - xj > lx_new/2){
-      xj  += -lx_new;
-  } else if (x[index_i][2] - xj < -lx_new/2){
-      xj  += lx_new;
-  }    
-  
-  if(nvalues == 1)
-    vector[ncount] = (x[index_i][2] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (x[index_i][2] + x[index_j][2])/2;
   else
-    array[ncount][n] = (x[index_i][2] + xj)/2;
+    array[ncount][n] = (x[index_i][2] + x[index_j][2])/2;
 }
 
 
@@ -384,19 +361,12 @@ void FixBrokenBonds::pack_z(int n)
 
 void FixBrokenBonds::pack_xstore(int n)
 {
-  double *arrayx = atom->dvector[index_x];
-  double xj = arrayx[index_j];
+  double *x = atom->dvector[index_x];
         
-  if(arrayx[index_i] - xj > lx/2){
-      xj  += -lx;
-  } else if (arrayx[index_i] - xj < -lx/2){
-      xj  += lx;
-  }     
-  
-  if(nvalues == 1)
-    vector[ncount] = (arrayx[index_i] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (x[index_i] + x[index_j])/2;
   else
-    array[ncount][n] = (arrayx[index_i] + xj)/2;
+    array[ncount][n] = (x[index_i] + x[index_j])/2;
 }
 
 
@@ -404,19 +374,12 @@ void FixBrokenBonds::pack_xstore(int n)
 
 void FixBrokenBonds::pack_ystore(int n)
 {
-  double *arrayx = atom->dvector[index_y];
-  double xj = arrayx[index_j];
+  double *y = atom->dvector[index_y];
         
-  if(arrayx[index_i] - xj > ly/2){
-      xj  += -ly;
-  } else if (arrayx[index_i] - xj < -ly/2){
-      xj  += ly;
-  }     
-  
-  if(nvalues == 1)
-    vector[ncount] = (arrayx[index_i] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (y[index_i] + y[index_j])/2;
   else
-    array[ncount][n] = (arrayx[index_i] + xj)/2;
+    array[ncount][n] = (y[index_i] + y[index_j])/2;
 }
 
 
@@ -424,18 +387,11 @@ void FixBrokenBonds::pack_ystore(int n)
 
 void FixBrokenBonds::pack_zstore(int n)
 {
-  double *arrayx = atom->dvector[index_z];
-  double xj = arrayx[index_j];
+  double *z = atom->dvector[index_z];
         
-  if(arrayx[index_i] - xj > lz/2){
-      xj  += -lz;
-  } else if (arrayx[index_i] - xj < -lz/2){
-      xj  += lz;
-  }     
-  
-  if(nvalues == 1)
-    vector[ncount] = (arrayx[index_i] + xj)/2;
+  if (nvalues == 1)
+    vector[ncount] = (z[index_i] + z[index_j])/2;
   else
-    array[ncount][n] = (arrayx[index_i] + xj)/2;
+    array[ncount][n] = (z[index_i] + z[index_j])/2;
 }
 

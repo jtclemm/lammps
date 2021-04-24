@@ -15,7 +15,7 @@
    Contributing authors: Chris Lorenz and Mark Stevens (SNL)
 ------------------------------------------------------------------------- */
 
-#include "bond_dem_beam.h"
+#include "bond_bpm_beam.h"
 #include <mpi.h>
 #include <cmath>
 #include <cstring>
@@ -35,20 +35,20 @@
 #include "update.h"
 
 #define TOLERANCE 1e-15
+#define EPSILON 1e-10
 
 using namespace LAMMPS_NS;
 using namespace MathExtra;
 using namespace MathConst;
 
-//todo write single
-//test instability
-//add support for granular? Not 
+// todo write single
+// add support for granular? Redo pair overlay...
 // Move elongational force to fbend
 // Damp tangental velocity?
 
 /* ---------------------------------------------------------------------- */
 
-BondDEMBeam::BondDEMBeam(LAMMPS *lmp) : Bond(lmp)
+BondBPMBeam::BondBPMBeam(LAMMPS *lmp) : Bond(lmp)
 {
   partial_flag = 1;
   fix_broken_bonds = NULL;
@@ -61,9 +61,9 @@ BondDEMBeam::BondDEMBeam(LAMMPS *lmp) : Bond(lmp)
 
 /* ---------------------------------------------------------------------- */
 
-BondDEMBeam::~BondDEMBeam()
+BondBPMBeam::~BondBPMBeam()
 {
-  if(fix_bond_store) modify->delete_fix("BOND_STORE_DEM_BEAM");    
+  if(fix_bond_store) modify->delete_fix("BOND_STORE_BPM_BEAM");    
     
   if (allocated) {
     memory->destroy(setflag);
@@ -81,108 +81,109 @@ BondDEMBeam::~BondDEMBeam()
 /* ---------------------------------------------------------------------- */
 // abitrary perpendicular to v, ignore smallest component, don't get 2 zeros
 
-void BondDEMBeam::get_perp_vec(double* v, double* perp)
+void BondBPMBeam::get_perp_vec(double* v, double* perp)
 {
-    // Always use z axis in 2d
-    if(domain->dimension == 2){
-      perp[0] = 0.0;    
-      perp[1] = 0.0;
-      perp[2] = 1.0;
-      return;
-    }
-    double nx_abs = fabs(v[0]);
-    double ny_abs = fabs(v[1]);
-    double nz_abs = fabs(v[2]);
-    if(nx_abs <= ny_abs and nx_abs <= nz_abs){
-        perp[0] = 0.0;
-        perp[1] = -v[2];
-        perp[2] = v[1];
-    } else if(ny_abs <= nz_abs) {
-        perp[0] = -v[2];
-        perp[1] = 0.0;
-        perp[2] = v[0];
-    } else {
-        perp[0] = -v[1];
-        perp[1] = v[0];
-        perp[2] = 0.0;
-    }    
-    
-    MathExtra::norm3(perp);  
+  // Always use z axis in 2d
+  if (domain->dimension == 2) {
+    perp[0] = 0.0;    
+    perp[1] = 0.0;
+    perp[2] = 1.0;
+    return;
+  }
+  double nx_abs = fabs(v[0]);
+  double ny_abs = fabs(v[1]);
+  double nz_abs = fabs(v[2]);
+  if (nx_abs <= ny_abs && nx_abs <= nz_abs) {
+    perp[0] = 0.0;
+    perp[1] = -v[2];
+    perp[2] = v[1];
+  } else if (ny_abs <= nz_abs) {
+    perp[0] = -v[2];
+    perp[1] = 0.0;
+    perp[2] = v[0];
+  } else {
+    perp[0] = -v[1];
+    perp[1] = v[0];
+    perp[2] = 0.0;
+  }    
+  
+  MathExtra::norm3(perp);  
 }
 
 /* ---------------------------------------------------------------------- */
 // Find quaternion to rotate u to v via the shortest distance
 // https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another
 
-void BondDEMBeam::get_rot_quat(double* u, double* v, double* rot_quat)
+void BondBPMBeam::get_rot_quat(double* u, double* v, double* rot_quat)
 {
-    double cross[3], dot;
+  double cross[3], dot;
+  
+  double dx_round = round_if_zero(u[0]-v[0]);
+  double dy_round = round_if_zero(u[1]-v[1]);
+  double dz_round = round_if_zero(u[2]-v[2]);
+  
+  //If already aligned, return identity
+  if (dx_round == 0.0 && dy_round == 0.0 && dz_round == 0.0) {
+    rot_quat[0] = 1.0;
+    rot_quat[1] = 0.0;
+    rot_quat[2] = 0.0;
+    rot_quat[3] = 0.0;
+    return;
+  }
+  
+  //If it's anti parallel, return 180 rotation around some orthogonal vector
+  if (abs(dx_round) > 0.99 && dy_round == 0.0 && dz_round == 0.0) {
+    double perp[3];
+    get_perp_vec(u, perp);
     
-    double dx_round = round_if_zero(u[0]-v[0]);
-    double dy_round = round_if_zero(u[1]-v[1]);
-    double dz_round = round_if_zero(u[2]-v[2]);
-
-    //If already aligned, return identity
-    if(dx_round == 0.0 and dy_round == 0.0 and dz_round == 0.0){
-        rot_quat[0] = 1.0;
-        rot_quat[1] = 0.0;
-        rot_quat[2] = 0.0;
-        rot_quat[3] = 0.0;
-        return;
-    }
-    
-    //If it's anti parallel, return 180 rotation around some orthogonal vector
-    if(abs(dx_round) > 0.99 and dy_round == 0.0 and dz_round == 0.0){
-        double perp[3];
-        get_perp_vec(u, perp);
-        
-        rot_quat[0] = 0;
-        rot_quat[1] = perp[0];
-        rot_quat[2] = perp[1];
-        rot_quat[3] = perp[2];
-        return;
-    }    
-     
-    // get cross product (u x v) and dot
-    MathExtra::cross3(u, v, cross);
-    // Replace cross product in 2d
-    if(domain->dimension == 2){
-      cross[0] = 0.0;    
-      cross[1] = 0.0;
-      cross[2] = (u[0]*v[1]-u[1]*v[0]);
-    } 
-    dot = dot3(u, v);
-    
-    // Construct quaternion
-    rot_quat[0] = sqrt(lensq3(u)*lensq3(v));
-    rot_quat[0] += dot;
-    rot_quat[1] = cross[0];
-    rot_quat[2] = cross[1];
-    rot_quat[3] = cross[2];
-    
-    // Normalize final quaternion
-    MathExtra::qnormalize(rot_quat);
+    rot_quat[0] = 0;
+    rot_quat[1] = perp[0];
+    rot_quat[2] = perp[1];
+    rot_quat[3] = perp[2];
+    return;
+  }    
+   
+  // get cross product (u x v) and dot
+  MathExtra::cross3(u, v, cross);
+  // Replace cross product in 2d
+  if (domain->dimension == 2) {
+    cross[0] = 0.0;    
+    cross[1] = 0.0;
+    cross[2] = (u[0]*v[1]-u[1]*v[0]);
+  } 
+  dot = dot3(u, v);
+  
+  // Construct quaternion
+  rot_quat[0] = sqrt(lensq3(u)*lensq3(v));
+  rot_quat[0] += dot;
+  rot_quat[1] = cross[0];
+  rot_quat[2] = cross[1];
+  rot_quat[3] = cross[2];
+  
+  // Normalize final quaternion
+  MathExtra::qnormalize(rot_quat);
 }
 
 /* ---------------------------------------------------------------------- */
 
-double BondDEMBeam::round_if_zero(double value){
-    double abs_value = fabs(value);
-    
-    if (abs_value < TOLERANCE) return 0.0;
-    return value;
+double BondBPMBeam::round_if_zero(double value)
+{
+  double abs_value = fabs(value);
+  
+  if (abs_value < TOLERANCE) return 0.0;
+  return value;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double BondDEMBeam::bound_pm_one(double value){
+double BondBPMBeam::bound_pm_one(double value){
     double result = value;
-    if(value < -1){
-        if(value+1 < -TOLERANCE) error->all(FLERR,"Exceeded tolerance for -1");
-        result = -1.0;
-    } else if (value > 1){
-        if(value-1 > TOLERANCE) error->all(FLERR,"Exceeded tolerance for +1");
-        result = 1.0;
+    if (value < -1) {
+      if (value+1 < -TOLERANCE) error->all(FLERR,"Exceeded tolerance for -1");
+      result = -1.0;
+    } else if (value > 1) {
+      if (value-1 > TOLERANCE) error->all(FLERR,"Exceeded tolerance for +1");
+      result = 1.0;
     }
     
     return result;
@@ -190,44 +191,95 @@ double BondDEMBeam::bound_pm_one(double value){
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMBeam::calc_theta(double* nij, double* nb, double* q_nij_ex, double* q_ex_nij, double* q_atom, double* theta)
+void BondBPMBeam::calc_theta(double* nij, double* nb, double* q_nij_ex, double* q_ex_nij, double* q_atom, double* theta)
 {
-    double q_ij_b[4], q_temp[4], q_tot[4], q_tot_rot[4], nb_current[3], dot;
-
-    //Find quaternion, rotate nij to nb, could do once...
-    get_rot_quat(nij, nb, q_ij_b);
-    
-    // Find quaternion to rotate nij to current nb
-    // nb_current = qatom*nb*qatom^-1
-    // nb = qij2b nij * qijb^-1
-    // => nb_current = qatom*qij2b* nij (qatom*qij2b)^-1
-    MathExtra::quatquat(q_atom, q_ij_b, q_tot);
-    MathExtra::qnormalize(q_tot);
-    
-    // Rotate q_tot into FoR where nij -> ex for simplicity
-    // qtot' = q_nij_to_ex * q_tot * q_ex_to_nij^-1
-    MathExtra::quatquat(q_nij_ex, q_tot, q_temp);
-    MathExtra::quatquat(q_temp, q_ex_nij, q_tot_rot);
-    MathExtra::qnormalize(q_tot_rot);
-    
-    // Calculate Euler angles
-    theta[0] = asin(q_tot_rot[1])*2.0;
-    theta[1] = asin(q_tot_rot[2])*2.0;
-    theta[2] = asin(q_tot_rot[3])*2.0;
-    
-    //Find absolute angle between current nb and nij for breaking criteria
-    MathExtra::quatrotvec(q_atom, nb, nb_current);
-    MathExtra::norm3(nb_current);    
-
-    dot = dot3(nb_current, nij);
-    dot = bound_pm_one(dot);
-    theta[3] = acos(dot);    
+  double q_ij_b[4], q_temp[4], q_tot[4], q_tot_rot[4], nb_current[3], dot;
+  
+  //Find quaternion, rotate nij to nb, could do once...
+  get_rot_quat(nij, nb, q_ij_b);
+  
+  // Find quaternion to rotate nij to current nb
+  // nb_current = qatom*nb*qatom^-1
+  // nb = qij2b nij * qijb^-1
+  // => nb_current = qatom*qij2b* nij (qatom*qij2b)^-1
+  MathExtra::quatquat(q_atom, q_ij_b, q_tot);
+  MathExtra::qnormalize(q_tot);
+  
+  // Rotate q_tot into FoR where nij -> ex for simplicity
+  // qtot' = q_nij_to_ex * q_tot * q_ex_to_nij^-1
+  MathExtra::quatquat(q_nij_ex, q_tot, q_temp);
+  MathExtra::quatquat(q_temp, q_ex_nij, q_tot_rot);
+  MathExtra::qnormalize(q_tot_rot);
+  
+  // Calculate Euler angles
+  theta[0] = asin(q_tot_rot[1])*2.0;
+  theta[1] = asin(q_tot_rot[2])*2.0;
+  theta[2] = asin(q_tot_rot[3])*2.0;
+  
+  //Find absolute angle between current nb and nij for breaking criteria
+  MathExtra::quatrotvec(q_atom, nb, nb_current);
+  MathExtra::norm3(nb_current);    
+  
+  dot = dot3(nb_current, nij);
+  dot = bound_pm_one(dot);
+  theta[3] = acos(dot);    
 }
+
 
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMBeam::store_data()
+double BondBPMBeam::store_bond(int n,int i,int j)
+{
+  int m,k;
+  double delx, dely, delz, r, rinv;
+  double **x = atom->x; 
+  tagint *tag = atom->tag;
+  double **bondstore = fix_bond_store->bondstore;
+
+  if (tag[i] < tag[j]) {
+    delx = x[i][0] - x[j][0]; 
+    dely = x[i][1] - x[j][1]; 
+    delz = x[i][2] - x[j][2]; 
+  } else {
+    delx = x[j][0] - x[i][0]; 
+    dely = x[j][1] - x[i][1]; 
+    delz = x[j][2] - x[i][2];
+  }
+  
+  domain->minimum_image(delx,dely,delz);        
+  r = sqrt(delx*delx + dely*dely + delz*delz);
+  rinv = 1.0/r;
+  
+  bondstore[n][0] = r;
+  bondstore[n][1] = delx*rinv;
+  bondstore[n][2] = dely*rinv;
+  bondstore[n][3] = delz*rinv;
+
+  for (m = 0; m < atom->num_bond[i]; m ++) {
+    if (atom->bond_atom[i][m] == tag[j]) {
+      fix_bond_store->update_atom_value(i, m, 0, r);
+      fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
+    }
+  }
+  
+  for (m = 0; m < atom->num_bond[j]; m ++) {
+    if (atom->bond_atom[j][m] == tag[i]) {
+      fix_bond_store->update_atom_value(j, m, 0, r);
+      fix_bond_store->update_atom_value(j, m, 1, delx*rinv); 
+      fix_bond_store->update_atom_value(j, m, 2, dely*rinv); 
+      fix_bond_store->update_atom_value(j, m, 3, delz*rinv); 
+    }
+  }
+  
+  return r;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void BondBPMBeam::store_data()
 {        
   int j, type;
   double delx, dely, delz, r, rinv;
@@ -236,20 +288,20 @@ void BondDEMBeam::store_data()
   tagint *tag = atom->tag;
   
   max_r0 = 0.0;
-  for(int i = 0; i < atom->nlocal; i ++){
-    for(int m = 0; m < atom->num_bond[i]; m ++){
+  for (int i = 0; i < atom->nlocal; i ++) {
+    for (int m = 0; m < atom->num_bond[i]; m ++) {
       type = bond_type[i][m];
               
       //Skip if bond was turned off
       if(type < 0)
-          continue;                
+        continue;                
               
       // map to find index n for tag
       j = atom->map(atom->bond_atom[i][m]);          
-      if(j == -1) error->all(FLERR, "Atom missing in DEM bond");
+      if (j == -1) error->all(FLERR, "Atom missing in BPM bond");
       
       // Save orientation as pointing towards small tag
-      if(tag[i] < tag[j]){
+      if (tag[i] < tag[j]) {
         delx = x[i][0] - x[j][0]; 
         dely = x[i][1] - x[j][1]; 
         delz = x[i][2] - x[j][2]; 
@@ -265,7 +317,7 @@ void BondDEMBeam::store_data()
       fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
       fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
       fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
-      if(r > max_r0) max_r0 = r;
+      if (r > max_r0) max_r0 = r;
     }
   }
   
@@ -277,9 +329,9 @@ void BondDEMBeam::store_data()
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMBeam::compute(int eflag, int vflag)
+void BondBPMBeam::compute(int eflag, int vflag)
 {
-  if (not fix_bond_store->stored_flag) {
+  if (! fix_bond_store->stored_flag) {
     fix_bond_store->stored_flag = true;
     store_data();   
   }      
@@ -330,6 +382,11 @@ void BondDEMBeam::compute(int eflag, int vflag)
     i2 = bondlist[n][1];
     type = bondlist[n][2];
     r0 = bondstore[n][0];
+    
+    // If bond hasn't been set (always initialized to zero?)
+    if (r0 < EPSILON || isnan(r0))
+      r0 = store_bond(n,i1,i2);  
+    
     nb[0] = bondstore[n][1];
     nb[1] = bondstore[n][2];
     nb[2] = bondstore[n][3];
@@ -379,7 +436,7 @@ void BondDEMBeam::compute(int eflag, int vflag)
     // Can still break in compression if beam twists
     ethinv = 1.0/eps_th[type];
     stretch = esq*ethinv*ethinv;
-    if(! break_in_comp_flag  and e < 0.0) stretch = 0.0;
+    if (! break_in_comp_flag && e < 0.0) stretch = 0.0;
     bend = std::max(thetai[3], thetaj[3])/theta_th[type];
     twist = fabs(thetai[0] - thetaj[0])/theta_th[type];
     breaking = stretch+bend+twist;
@@ -394,7 +451,7 @@ void BondDEMBeam::compute(int eflag, int vflag)
           if (atom->bond_atom[i2][m] == atom->tag[i1])
             atom->bond_type[i2][m] = 0;
         
-      if(fix_broken_bonds != NULL) fix_broken_bonds->add_bond(i1, i2);          
+      if (fix_broken_bonds != NULL) fix_broken_bonds->add_bond(i1, i2);          
         
       continue;
     }
@@ -404,7 +461,7 @@ void BondDEMBeam::compute(int eflag, int vflag)
 
     // Elongational and bend forces
     felong = -E[type]*MY_PI*R[type]*R[type]*e;
-    if (! break_in_comp_flag and e < 0.0) felong *= exp(C_exp[type]*(r0*rinv-1.0));
+    if (! break_in_comp_flag && e < 0.0) felong *= exp(C_exp[type]*(r0*rinv-1.0));
     
     I = MY_PI*0.25*pow(R[type], 4);
     force_rot[0] = felong;
@@ -422,8 +479,6 @@ void BondDEMBeam::compute(int eflag, int vflag)
 
     tori_rot[2] = E[type]*I*(thetaj[2] + 2*thetai[2])*r0inv;
     torj_rot[2] = E[type]*I*(thetai[2] + 2*thetaj[2])*r0inv;
-        
-
 
     if (eflag) ebond = -wd; //Not really, but it's just to give a sense
 
@@ -510,7 +565,7 @@ void BondDEMBeam::compute(int eflag, int vflag)
     // subtract out pairwise contribution from 2 atoms via pair->single()
 
     // Skip if overlaying
-    if(overlay_pair_flag) continue;
+    if (overlay_pair_flag) continue;
 
     itype = atom->type[i1];
     jtype = atom->type[i2];
@@ -554,13 +609,13 @@ void BondDEMBeam::compute(int eflag, int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMBeam::settings(int narg, char **arg)
+void BondBPMBeam::settings(int narg, char **arg)
 {
   int iarg = 0;
-  while(iarg < narg){
-    if(strcmp(arg[iarg], "break/compress") == 0){
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "break/compress") == 0) {
       break_in_comp_flag = 1;
-    } else if (strcmp(arg[iarg], "overlay/pair") == 0){
+    } else if (strcmp(arg[iarg], "overlay/pair") == 0) {
       overlay_pair_flag = 1;
     } else error->all(FLERR,"Illegal pair_style command");
     iarg++;   
@@ -569,7 +624,7 @@ void BondDEMBeam::settings(int narg, char **arg)
 
 /* ---------------------------------------------------------------------- */
 
-void BondDEMBeam::allocate()
+void BondBPMBeam::allocate()
 {
   allocated = 1;
   int n = atom->nbondtypes;
@@ -592,7 +647,7 @@ void BondDEMBeam::allocate()
    set coeffs for one or more types
 ------------------------------------------------------------------------- */
 
-void BondDEMBeam::coeff(int narg, char **arg)
+void BondBPMBeam::coeff(int narg, char **arg)
 {
   if (narg != 9) error->all(FLERR,"Incorrect args for bond coefficients");
   if (!allocated) allocate();
@@ -631,7 +686,7 @@ void BondDEMBeam::coeff(int narg, char **arg)
    check if pair defined and special_bond settings are valid
 ------------------------------------------------------------------------- */
 
-void BondDEMBeam::init_style()
+void BondBPMBeam::init_style()
 {
   if (!atom->quat_flag)
     error->all(FLERR,"Bond beam requires atom attributes quaternion");
@@ -639,7 +694,7 @@ void BondDEMBeam::init_style()
     error->all(FLERR,"Bond beam requires ghost atoms store velocity");
 
   if (force->pair == NULL || force->pair->single_enable == 0)
-    error->all(FLERR,"Pair style does not support bond_style beam");
+    error->all(FLERR,"Pair style does not support bond_style bpm/beam");
 
   if (force->angle || force->dihedral || force->improper)
     error->all(FLERR,
@@ -648,43 +703,47 @@ void BondDEMBeam::init_style()
     error->all(FLERR,
                "Bond style beam cannot be used with atom style template");
 
-  if(domain->dimension == 2)
+  if (atom->specialflag)
+    error->error(FLERR, "Special bonds must be turned off for bond style beam");
+
+  if (domain->dimension == 2)
     error->warning(FLERR, "Bond style beam not intended for 2d use, may be inefficient");
+
   // Determine if correct pair style is used
-  if(not overlay_pair_flag) {
+  if (not overlay_pair_flag) {
     int correct_pair = 0;
-    if(force->pair_match("gran/hooke",0)) correct_pair = 1;
-    if(force->pair_match("gran/hooke/history",0)) correct_pair = 1;
-    if(force->pair_match("gran/hertz",0)) correct_pair = 1;
-    if(force->pair_match("gran/hertz/history",0)) correct_pair = 1;
+    if (force->pair_match("gran/hooke",0)) correct_pair = 1;
+    if (force->pair_match("gran/hooke/history",0)) correct_pair = 1;
+    if (force->pair_match("gran/hertz",0)) correct_pair = 1;
+    if (force->pair_match("gran/hertz/history",0)) correct_pair = 1;
     if (! correct_pair) 
-      error->all(FLERR, "Bond style DEM beam requires gran pairstyle");
+      error->all(FLERR, "Bond style bpm/beam requires gran pairstyle without overlay");
   }    
     
   //Define bond store
-  if(fix_bond_store == NULL){
+  if (fix_bond_store == NULL) {
     char **fixarg = new char*[5];
-    fixarg[0] = (char *) "BOND_STORE_DEM_BEAM";
+    fixarg[0] = (char *) "BOND_STORE_BPM_BEAM";
     fixarg[1] = (char *) "all";
     fixarg[2] = (char *) "BOND_STORE";
     fixarg[3] = (char *) "0";
     fixarg[4] = (char *) "4";
     modify->add_fix(5,fixarg,1);
     delete [] fixarg;
-    int ifix = modify->find_fix("BOND_STORE_DEM_BEAM");
+    int ifix = modify->find_fix("BOND_STORE_BPM_BEAM");
     fix_bond_store = (FixBondStore *) modify->fix[ifix];
     //Note don't use most recent nfix b/c fix bond store creates a fix property atom    
   }
   
   int ifix = modify->find_fix_by_style("bonds/broken");
-  if(ifix != -1) fix_broken_bonds = (FixBrokenBonds *) modify->fix[ifix];      
+  if (ifix != -1) fix_broken_bonds = (FixBrokenBonds *) modify->fix[ifix];      
 }
 
 /* ----------------------------------------------------------------------
    return an equilbrium bond length
 ------------------------------------------------------------------------- */
 
-double BondDEMBeam::equilibrium_distance(int i)
+double BondBPMBeam::equilibrium_distance(int i)
 {
   return max_r0;
 }
@@ -693,7 +752,7 @@ double BondDEMBeam::equilibrium_distance(int i)
    proc 0 writes out coeffs to restart file
 ------------------------------------------------------------------------- */
 
-void BondDEMBeam::write_restart(FILE *fp)
+void BondBPMBeam::write_restart(FILE *fp)
 {
   fwrite(&E[1],sizeof(double),atom->nbondtypes,fp);
   fwrite(&G[1],sizeof(double),atom->nbondtypes,fp);
@@ -709,7 +768,7 @@ void BondDEMBeam::write_restart(FILE *fp)
    proc 0 reads coeffs from restart file, bcasts them
 ------------------------------------------------------------------------- */
 
-void BondDEMBeam::read_restart(FILE *fp)
+void BondBPMBeam::read_restart(FILE *fp)
 {
   allocate();
 
@@ -739,7 +798,7 @@ void BondDEMBeam::read_restart(FILE *fp)
    proc 0 writes to data file
 ------------------------------------------------------------------------- */
 
-void BondDEMBeam::write_data(FILE *fp)
+void BondBPMBeam::write_data(FILE *fp)
 {
   for (int i = 1; i <= atom->nbondtypes; i++)
      fprintf(fp,"%d %g %g %g %g %g %g %g %g\n",i,E[i],G[i],R[i],eps_th[i],theta_th[i],gamma[i],gammaw[i], C_exp[i]);
@@ -747,16 +806,17 @@ void BondDEMBeam::write_data(FILE *fp)
 
 /* ---------------------------------------------------------------------- */
 
-double BondDEMBeam::single(int type, double rsq, int i, int j,
+double BondBPMBeam::single(int type, double rsq, int i, int j,
                            double &fforce)
 {
+  // Incomplete
   if (type <= 0) return 0.0;
   double r0; 
   
   //Access stored values - inefficient call rarely (I think only compute local)
   for(int n = 0; n < atom->num_bond[i]; n ++){
     if(atom->bond_atom[i][n] == atom->tag[j]){
-        r0 = fix_bond_store->get_atom_value(i, n, 0);
+      r0 = fix_bond_store->get_atom_value(i, n, 0);
     }
   }  
 

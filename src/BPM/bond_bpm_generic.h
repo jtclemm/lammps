@@ -13,21 +13,21 @@
 
 #ifdef BOND_CLASS
 
-BondStyle(dem/beam,BondDEMBeam)
+BondStyle(bpm/generic,BondBPMGeneric)
 
 #else
 
-#ifndef LMP_BOND_DEM_BEAM_H
-#define LMP_BOND_DEM_BEAM_H
+#ifndef LMP_BOND_BPM_GENERIC_H
+#define LMP_BOND_BPM_GENERIC_H
 
 #include "bond.h"
 
 namespace LAMMPS_NS {
 
-class BondDEMBeam : public Bond {
+class BondBPMGeneric : public Bond {
  public:
-  BondDEMBeam(class LAMMPS *);
-  virtual ~BondDEMBeam();
+  BondBPMGeneric(class LAMMPS *);
+  virtual ~BondBPMGeneric();
   virtual void compute(int, int);
   virtual void settings(int, char **);  
   void coeff(int, char **);
@@ -41,21 +41,17 @@ class BondDEMBeam : public Bond {
   class FixBondStore *fix_bond_store;
  
  protected:
-  double *E,*G, *R,*gamma,*gammaw,*eps_th,*theta_th,*C_exp;
+  double *Kr, *Ks, *Kt, *Kb, *gamma, *gammaw, *Fcr, *Fcs, *Gct, *Gcb, *C_exp;
   double max_r0;
 
-  void get_perp_vec(double*, double*);
-  void get_rot_quat( double*, double*, double*);
-  void calc_theta( double*,  double*,  double*, double*, double*, double*);
-  double bound_pm_one(double);
-  double round_if_zero(double);
-
-  int break_in_comp_flag; // 1 => can break in compression
   int overlay_pair_flag; // 1 => dont' subtract pair forces
+  void calc_forces(int, double, double, double*, double*, double*,double*, double*, double*, double*, double &, double &, double &, double &);
+  double acos_limit(double);
 
   class FixBrokenBonds *fix_broken_bonds;
   void allocate();
   void store_data();  
+  double store_bond(int, int, int);    
 };
 
 }
@@ -69,23 +65,31 @@ E: Incorrect args for bond coefficients
 
 Self-explanatory.  Check the input script or data file.
 
-E: Pair style does not support bond_style beam
+E: Pair style does not support bond_style generic
 
 The pair style does not have a single() function, so it can
-not be invoked by bond_style beam.
+not be invoked by bond_style generic.
 
-E: Bond style beam cannot be used with 3,4-body interactions
+E: Bond style generic cannot be used with 3,4-body interactions
 
 No angle, dihedral, or improper styles can be defined when using
-bond style beam.
+bond style generic.
 
-E: Bond style beam cannot be used with atom style template
+E: Bond style generic cannot be used with atom style template
 
 This bond style can change the bond topology which is not
 allowed with this atom style.
 
-E: Bond style beam requires special_bonds = 1,1,1
+E: Bond style bpm/generic requires gran pairstyle without overlay
 
-This is a restriction of the current bond beam implementation.
+Only the gran pairstyles are supportted unless pair forces are overlaid
+
+E: Special bonds must be turned off for bond style generic
+
+Special bond are not used by BPM bonds
+
+W: Bond style bpm/generic not intended for 2d use, may be inefficient
+
+This bond style will perform a lot of unnecessary calculations in 2d
 
 */

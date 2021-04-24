@@ -46,7 +46,7 @@ endif
 # PACKINT    = subset that require an internal (provided) library
 # PACKEXT    = subset that require an external (downloaded) library
 
-PACKAGE = asphere dem-bonded body class2 colloid compress coreshell dipole \
+PACKAGE = asphere body bpm class2 colloid compress coreshell dipole \
 	  gpu granular kim kokkos kspace latte manybody mc message misc \
 	  mliap molecule mpiio mscg opt peri poems \
 	  python qeq replica rigid shock snap spin srd voronoi
