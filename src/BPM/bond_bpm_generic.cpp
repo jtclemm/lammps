@@ -706,8 +706,8 @@ void BondBPMGeneric::init_style()
     error->all(FLERR,
                "Bond style generic cannot be used with atom style template");
 
-  if (atom->specialflag)
-    error->error(FLERR, "Special bonds must be turned off for bond style generic");
+  if (atom->special_flag)
+    error->all(FLERR, "Special bonds must be turned off for bond style generic");
 
   if(domain->dimension == 2)
     error->warning(FLERR, "Bond style generic not intended for 2d use, may be inefficient");

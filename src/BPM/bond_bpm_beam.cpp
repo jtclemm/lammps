@@ -703,8 +703,8 @@ void BondBPMBeam::init_style()
     error->all(FLERR,
                "Bond style beam cannot be used with atom style template");
 
-  if (atom->specialflag)
-    error->error(FLERR, "Special bonds must be turned off for bond style beam");
+  if (atom->special_flag)
+    error->all(FLERR, "Special bonds must be turned off for bond style beam");
 
   if (domain->dimension == 2)
     error->warning(FLERR, "Bond style beam not intended for 2d use, may be inefficient");
