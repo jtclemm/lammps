@@ -33,6 +33,7 @@
 #include "fix_bond_store.h"
 #include "fix_broken_bonds.h"
 #include "update.h"
+#include "citeme.h"
 
 #define EPSILON 1e-10
 
@@ -40,16 +41,39 @@ using namespace LAMMPS_NS;
 using namespace MathExtra;
 using namespace MathConst;
 
+static const char cite_bond_bpm_generic[] =
+  "bond bpm/generic command:\n\n"
+  "@Article{Wang09,\n"
+  " author =  {Y. Wang},\n"
+  " title =   {A new algorithm to model the dynamics of 3-D bonded rigid bodies with rotations},\n"
+  " journal = {Acta Geotechnica},\n"
+  " year =    2009,\n"
+  " volume =  4,\n"
+  " number =  2,\n"
+  " pages =   {117--127}\n"
+  "}\n"
+  "@Article{Mora09,\n"
+  " author =  {P. Mora and Y. Wang},\n"
+  " title =   {The ESyS_Particle: A New 3-D Discrete Element Model with Single Particle Rotation},\n"
+  " journal = {Advances in Geocomputing},\n"
+  " year =    2009,\n"
+  " volume =  19,\n"
+  " issue =   {1--3},\n"
+  " pages =   {61--87}\n"  
+  "}\n\n";
+
 /* ---------------------------------------------------------------------- */
 
 BondBPMGeneric::BondBPMGeneric(LAMMPS *lmp) : Bond(lmp)
 {
+  if (lmp->citeme) lmp->citeme->add(cite_bond_bpm_generic);
+  
   partial_flag = 1;
   fix_broken_bonds = NULL;
   fix_bond_store = NULL;
   
   overlay_pair_flag = 0;
-  max_r0 = 1.0; // Placeholder
+  r0_max_estimate = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -104,7 +128,6 @@ double BondBPMGeneric::store_bond(int n,int i,int j)
     delz = x[j][2] - x[i][2];
   }
   
-  domain->minimum_image(delx,dely,delz);        
   r = sqrt(delx*delx + dely*dely + delz*delz);
   rinv = 1.0/r;
 
@@ -143,8 +166,7 @@ void BondBPMGeneric::store_data()
   double **x = atom->x; 
   int **bond_type = atom->bond_type;    
   tagint *tag = atom->tag;
-  
-  max_r0 = 0.0;
+
   for (int i = 0; i < atom->nlocal; i ++) {
     for (int m = 0; m < atom->num_bond[i]; m ++) {
       type = bond_type[i][m];
@@ -155,7 +177,7 @@ void BondBPMGeneric::store_data()
               
       // map to find index n for tag
       j = atom->map(atom->bond_atom[i][m]);          
-      if(j == -1) error->all(FLERR, "Atom missing in BPM bond");
+      if(j == -1) error->one(FLERR, "Atom missing in BPM bond");
       
       // Save orientation as pointing towards small tag
       if(tag[i] < tag[j]){
@@ -167,21 +189,16 @@ void BondBPMGeneric::store_data()
         dely = x[j][1] - x[i][1]; 
         delz = x[j][2] - x[i][2];
       }
-      domain->minimum_image(delx,dely,delz);        
       r = sqrt(delx*delx + dely*dely + delz*delz);
       rinv = 1.0/r;
       fix_bond_store->update_atom_value(i, m, 0, r);
       fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
       fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
       fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
-      if(r > max_r0) max_r0 = r;
     }
   }
-  
-  double temp;
-  MPI_Allreduce(&max_r0,&temp,1,MPI_DOUBLE,MPI_MAX,world);
-  max_r0 = temp;
-  fix_bond_store->post_neighbor();    
+
+  fix_bond_store->post_neighbor();  
 }
 
 /* ---------------------------------------------------------------------- */
@@ -713,7 +730,7 @@ void BondBPMGeneric::init_style()
     error->warning(FLERR, "Bond style generic not intended for 2d use, may be inefficient");
 
   // Determine if correct pair style is used
-  if(not overlay_pair_flag) {
+  if (not overlay_pair_flag) {
     int correct_pair = 0;
     if (force->pair_match("gran/hooke",0)) correct_pair = 1;
     if (force->pair_match("gran/hooke/history",0)) correct_pair = 1;
@@ -743,12 +760,48 @@ void BondBPMGeneric::init_style()
 }
 
 /* ----------------------------------------------------------------------
-   return an equilbrium bond length
+   used to check bond communiction cutoff - not perfect, estimates based on local-local only
 ------------------------------------------------------------------------- */
 
 double BondBPMGeneric::equilibrium_distance(int i)
-{
-  return max_r0;
+{  
+  // Ghost atoms not yet communicated, so some will be skipped
+  if (r0_max_estimate == 0) {
+    int type, j;
+    double delx, dely, delz, r;
+    double **x = atom->x; 
+    for (int i = 0; i < atom->nlocal; i ++) {
+      for (int m = 0; m < atom->num_bond[i]; m ++) {
+        type = atom->bond_type[i][m];
+        if (type == 0)
+            continue;                
+                
+        j = atom->map(atom->bond_atom[i][m]);        
+        if(j == -1) continue;
+        
+        delx = x[i][0] - x[j][0]; 
+        dely = x[i][1] - x[j][1]; 
+        delz = x[i][2] - x[j][2]; 
+        
+        r = sqrt(delx*delx + dely*dely + delz*delz);
+        if(r > r0_max_estimate) r0_max_estimate = r;
+      }
+    }
+
+    double temp;
+    MPI_Allreduce(&r0_max_estimate,&temp,1,MPI_DOUBLE,MPI_MAX,world);
+    r0_max_estimate = temp;  
+  
+    if (comm->me == 0)
+      utils::logmesg(lmp,fmt::format("Estimating longest bond = {}\n",r0_max_estimate));
+  }
+
+
+  // Bond breaks at Felong/Fcr == 1
+  double r_break = Fcr[i]/Kr[i] + r0_max_estimate;
+  
+  // Divide out heuristic prefactor added in comm class
+  return r_break/1.5;
 }
 
 /* ----------------------------------------------------------------------

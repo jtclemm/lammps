@@ -42,7 +42,7 @@ class BondBPMBeam : public Bond {
  
  protected:
   double *E,*G, *R,*gamma,*gammaw,*eps_th,*theta_th,*C_exp;
-  double max_r0;
+  double r0_max_estimate;
 
   void get_perp_vec(double*, double*);
   void get_rot_quat( double*, double*, double*);

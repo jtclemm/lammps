@@ -29,7 +29,7 @@ using namespace MathExtra;
 
 /* ---------------------------------------------------------------------- */
 
-FixNVEBeam::FixNVEBeam(LAMMPS *lmp, int narg, char **arg) :
+FixNVESphere2::FixNVESphere2(LAMMPS *lmp, int narg, char **arg) :
   FixNVE(lmp, narg, arg)
 {
   if (narg < 3) error->all(FLERR,"Illegal fix nve/beam command");
@@ -62,7 +62,7 @@ FixNVEBeam::FixNVEBeam(LAMMPS *lmp, int narg, char **arg) :
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVEBeam::init()
+void FixNVESphere2::init()
 {
   FixNVE::init();
 
@@ -81,7 +81,7 @@ void FixNVEBeam::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVEBeam::initial_integrate(int /*vflag*/)
+void FixNVESphere2::initial_integrate(int /*vflag*/)
 {
   double dtq,dtfm,dtirotate,particle_inertia;
 
@@ -126,7 +126,7 @@ void FixNVEBeam::initial_integrate(int /*vflag*/)
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVEBeam::final_integrate()
+void FixNVESphere2::final_integrate()
 {
   double dtfm,dtirotate,particle_inertia;
 

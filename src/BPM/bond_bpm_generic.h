@@ -42,8 +42,7 @@ class BondBPMGeneric : public Bond {
  
  protected:
   double *Kr, *Ks, *Kt, *Kb, *gamma, *gammaw, *Fcr, *Fcs, *Gct, *Gcb, *C_exp;
-  double max_r0;
-
+  double r0_max_estimate;
   int overlay_pair_flag; // 1 => dont' subtract pair forces
   void calc_forces(int, double, double, double*, double*, double*,double*, double*, double*, double*, double &, double &, double &, double &);
   double acos_limit(double);

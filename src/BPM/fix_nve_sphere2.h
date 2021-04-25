@@ -13,21 +13,21 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(nve/beam,FixNVEBeam)
+FixStyle(nve/sphere2,FixNVESphere2)
 
 #else
 
-#ifndef LMP_FIX_NVE_BEAM_H
-#define LMP_FIX_NVE_BEAM_H
+#ifndef LMP_FIX_NVE_SPHERE2_H
+#define LMP_FIX_NVE_SPHERE2_H
 
 #include "fix_nve.h"
 
 namespace LAMMPS_NS {
 
-class FixNVEBeam : public FixNVE {
+class FixNVESphere2 : public FixNVE {
  public:
-  FixNVEBeam(class LAMMPS *, int, char **);
-  virtual ~FixNVEBeam() {}
+  FixNVESphere2(class LAMMPS *, int, char **);
+  virtual ~FixNVESphere2() {}
   void init();
   virtual void initial_integrate(int);
   virtual void final_integrate();

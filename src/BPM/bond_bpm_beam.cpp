@@ -33,6 +33,7 @@
 #include "fix_bond_store.h"
 #include "fix_broken_bonds.h"
 #include "update.h"
+#include "citeme.h"
 
 #define TOLERANCE 1e-15
 #define EPSILON 1e-10
@@ -46,17 +47,39 @@ using namespace MathConst;
 // Move elongational force to fbend
 // Damp tangental velocity?
 
+static const char cite_bond_bpm_beam[] =
+  "bond bpm/beam command:\n\n"
+  "@Article{Carmona08,\n"
+  " author =  {Carmona, H. A. and Wittel, F. K. and Kun, F. and Herrmann, H. J.},\n"
+  " title =   {Fragmentation processes in impact of spheres},\n"
+  " journal = {Physical Review E},\n"
+  " year =    2008,\n"
+  " number =  5,\n"
+  " pages =   {051302}\n"
+  "}\n"
+  "@Article{Andre12,\n"
+  " author =  {Andre, Damien and Iordanoff, Ivan and Charles, Jean Luc and Neauport, Jerome},\n"
+  " title =   {Discrete element method to simulate continuous material by using the cohesive beam model},\n"
+  " journal = {Computer Methods in Applied Mechanics and Engineering},\n"
+  " year =    2012,\n"
+  " volume =  {213--216},\n"
+  " issue =   {1--3},\n"
+  " pages =   {113--125}\n"  
+  "}\n\n";
+
 /* ---------------------------------------------------------------------- */
 
 BondBPMBeam::BondBPMBeam(LAMMPS *lmp) : Bond(lmp)
 {
+  if (lmp->citeme) lmp->citeme->add(cite_bond_bpm_beam);    
+    
   partial_flag = 1;
   fix_broken_bonds = NULL;
   fix_bond_store = NULL;
   
   break_in_comp_flag = 0; 
   overlay_pair_flag = 0;
-  max_r0 = 1.0; // Placeholder
+  r0_max_estimate = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -179,10 +202,10 @@ double BondBPMBeam::round_if_zero(double value)
 double BondBPMBeam::bound_pm_one(double value){
     double result = value;
     if (value < -1) {
-      if (value+1 < -TOLERANCE) error->all(FLERR,"Exceeded tolerance for -1");
+      if (value+1 < -TOLERANCE) error->one(FLERR,"Exceeded tolerance for -1");
       result = -1.0;
     } else if (value > 1) {
-      if (value-1 > TOLERANCE) error->all(FLERR,"Exceeded tolerance for +1");
+      if (value-1 > TOLERANCE) error->one(FLERR,"Exceeded tolerance for +1");
       result = 1.0;
     }
     
@@ -247,7 +270,6 @@ double BondBPMBeam::store_bond(int n,int i,int j)
     delz = x[j][2] - x[i][2];
   }
   
-  domain->minimum_image(delx,dely,delz);        
   r = sqrt(delx*delx + dely*dely + delz*delz);
   rinv = 1.0/r;
   
@@ -287,7 +309,6 @@ void BondBPMBeam::store_data()
   int **bond_type = atom->bond_type;    
   tagint *tag = atom->tag;
   
-  max_r0 = 0.0;
   for (int i = 0; i < atom->nlocal; i ++) {
     for (int m = 0; m < atom->num_bond[i]; m ++) {
       type = bond_type[i][m];
@@ -298,7 +319,7 @@ void BondBPMBeam::store_data()
               
       // map to find index n for tag
       j = atom->map(atom->bond_atom[i][m]);          
-      if (j == -1) error->all(FLERR, "Atom missing in BPM bond");
+      if (j == -1) error->one(FLERR, "Atom missing in BPM bond");
       
       // Save orientation as pointing towards small tag
       if (tag[i] < tag[j]) {
@@ -310,20 +331,16 @@ void BondBPMBeam::store_data()
         dely = x[j][1] - x[i][1]; 
         delz = x[j][2] - x[i][2];
       }
-      domain->minimum_image(delx,dely,delz);        
+
       r = sqrt(delx*delx + dely*dely + delz*delz);
       rinv = 1.0/r;
       fix_bond_store->update_atom_value(i, m, 0, r);
       fix_bond_store->update_atom_value(i, m, 1, delx*rinv); 
       fix_bond_store->update_atom_value(i, m, 2, dely*rinv); 
       fix_bond_store->update_atom_value(i, m, 3, delz*rinv); 
-      if (r > max_r0) max_r0 = r;
     }
   }
-  
-  double temp;
-  MPI_Allreduce(&max_r0,&temp,1,MPI_DOUBLE,MPI_MAX,world);
-  max_r0 = temp;
+
   fix_bond_store->post_neighbor();    
 }
 
@@ -740,12 +757,46 @@ void BondBPMBeam::init_style()
 }
 
 /* ----------------------------------------------------------------------
-   return an equilbrium bond length
+   return an equilbrium bond length - not perfect, estimates based on local-local only
 ------------------------------------------------------------------------- */
 
 double BondBPMBeam::equilibrium_distance(int i)
 {
-  return max_r0;
+  // Ghost atoms not yet communicated, so some will be skipped
+  if (r0_max_estimate == 0) {
+    int type, j;
+    double delx, dely, delz, r;
+    double **x = atom->x;
+    for (int i = 0; i < atom->nlocal; i ++) {
+      for (int m = 0; m < atom->num_bond[i]; m ++) {
+        type = atom->bond_type[i][m];
+        if (type == 0)
+            continue;                
+                
+        j = atom->map(atom->bond_atom[i][m]);        
+        if(j == -1) continue;
+        
+        delx = x[i][0] - x[j][0]; 
+        dely = x[i][1] - x[j][1]; 
+        delz = x[i][2] - x[j][2]; 
+        
+        r = sqrt(delx*delx + dely*dely + delz*delz);
+        if(r > r0_max_estimate) r0_max_estimate = r;
+      }
+    }
+    
+    double temp;
+    MPI_Allreduce(&r0_max_estimate,&temp,1,MPI_DOUBLE,MPI_MAX,world);
+    r0_max_estimate = temp;  
+    
+    if (comm->me == 0)
+      utils::logmesg(lmp,fmt::format("Estimating longest bond = {}\n",r0_max_estimate));
+  }
+  
+  double r_break = r0_max_estimate*(1+eps_th[i]);
+  
+  // Divide out heuristic prefactor added in comm class
+  return r_break/1.5;
 }
 
 /* ----------------------------------------------------------------------
