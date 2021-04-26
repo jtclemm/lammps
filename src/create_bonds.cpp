@@ -325,7 +325,6 @@ void CreateBonds::many()
           bond_type[i][num_bond[i]] = btype;
           bond_atom[i][num_bond[i]] = tag[j];
           num_bond[i]++;
-          if((tag[i] == 53 or tag[j] == 53) and (tag[i] == 77 or tag[j] == 77)) printf("Adding bond %d-%d - under bond number %d (indices %d %d)\n", atom->tag[i], atom->tag[j], num_bond[i]-1, i, j);
         }
       }
     }
