@@ -46,7 +46,8 @@ FixBondStore::FixBondStore(LAMMPS *lmp, int narg, char **arg) :
 
   stored_flag = false;
   restart_global = 1;
- 
+  create_attribute = 1;
+
   bondstore = NULL; 
   maxbond = 0;
   allocate();
@@ -287,4 +288,14 @@ void FixBondStore::restart(char *buf)
   stored_flag = static_cast<int> (list[n++]);
 }
 
+/* ----------------------------------------------------------------------
+   initialize bond values to zero, called when atom is created
+------------------------------------------------------------------------- */
 
+void FixBondStore::set_arrays(int i)
+{
+  double **stored = atom->darray[index];    
+  for (int m = 0; m < nbond; m++)
+    for (int idata = 0; idata < ndata; idata++)
+      stored[i][m*ndata+idata] = 0.0;
+}

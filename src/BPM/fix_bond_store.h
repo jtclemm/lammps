@@ -38,6 +38,7 @@ class FixBondStore : public Fix {
   double memory_usage();
   void write_restart(FILE *fp);
   void restart(char *buf);
+  void set_arrays(int);
   
   void update_atom_value(int, int, int, double);
   double get_atom_value(int, int, int);
