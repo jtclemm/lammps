@@ -107,6 +107,7 @@ OPT.
    * :doc:`gauss/cut (o) <pair_gauss>`
    * :doc:`gayberne (gio) <pair_gayberne>`
    * :doc:`gran/hertz/history (o) <pair_gran>`
+   * :doc:`gran/hertz/history/bpm (o) <pair_gran>`
    * :doc:`gran/hooke (o) <pair_gran>`
    * :doc:`gran/hooke/history (ko) <pair_gran>`
    * :doc:`granular <pair_granular>`

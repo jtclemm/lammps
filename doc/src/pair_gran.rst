@@ -5,6 +5,7 @@
 .. index:: pair_style gran/hooke/history/kk
 .. index:: pair_style gran/hertz/history
 .. index:: pair_style gran/hertz/history/omp
+.. index:: pair_style gran/hertz/history/bpm
 
 pair_style gran/hooke command
 =============================
@@ -26,7 +27,7 @@ Syntax
 
 .. code-block:: LAMMPS
 
-   pair_style style Kn Kt gamma_n gamma_t xmu dampflag
+   pair_style style Kn Kt gamma_n gamma_t xmu dampflag (c_stiff)
 
 * style = *gran/hooke* or *gran/hooke/history* or *gran/hertz/history*
 * Kn = elastic constant for normal particle repulsion (force/distance units or pressure units - see discussion below)
@@ -35,6 +36,7 @@ Syntax
 * gamma_t = damping coefficient for collisions in tangential direction (1/time units or 1/time-distance units - see discussion below)
 * xmu = static yield criterion (unitless value between 0.0 and 1.0e4)
 * dampflag = 0 or 1 if tangential damping force is excluded or included
+* only used by gran/hertz/history/bpm, c_stiff = exponential stiffing term 
 
 .. note::
 
@@ -208,6 +210,12 @@ potential is used as a sub-style of :doc:`pair_style hybrid <pair_hybrid>`, then
 pair_coeff command to determine which atoms interact via a granular
 potential.
 
+For pair gran/hertz/history/bpm, normal forces in compression are 
+multiplied by an extra factor of math::`e^{c \delta}` where math::`c`
+is set by the *c_stiff* variable. This can be used to artificially 
+stiffen forces in compression to reduce particle overlap.
+       
+where 
 ----------
 
 .. include:: accel_styles.rst
@@ -249,6 +257,9 @@ Restrictions
 
 All the granular pair styles are part of the GRANULAR package.  It is
 only enabled if LAMMPS was built with that package.  See the :doc:`Build package <Build_package>` doc page for more info.
+
+The the gran/hertz/history/bpm pair styles is also part of the BPM package.  It is
+only enabled if LAMMPS was also built with that package.  See the :doc:`Build package <Build_package>` doc page for more info.
 
 These pair styles require that atoms store torque and angular velocity
 (omega) as defined by the :doc:`atom_style <atom_style>`.  They also

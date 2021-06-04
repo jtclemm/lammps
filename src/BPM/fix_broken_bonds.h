@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -13,7 +13,7 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(bonds/broken,FixBrokenBonds)
+FixStyle(broken/bonds,FixBrokenBonds)
 
 #else
 
@@ -28,7 +28,7 @@ class FixBrokenBonds : public Fix {
  public:
   FixBrokenBonds(class LAMMPS *, int, char **);
   ~FixBrokenBonds();
-  int setmask();  
+  int setmask();
   void post_constructor();
   void init();
   void post_force(int);
@@ -40,13 +40,14 @@ class FixBrokenBonds : public Fix {
   int nmax;
   int store_flag;
   int index_i, index_j;
-  
+  double rmin, rave, ntimestep;
+
   double *vector;
   double **array;
-  
+
   double lx;
   double ly;
-  double lz;    
+  double lz;
 
   int ncount;
 
@@ -54,23 +55,23 @@ class FixBrokenBonds : public Fix {
 
   typedef void (FixBrokenBonds::*FnPtrPack)(int);
   FnPtrPack *pack_choice;              // ptrs to pack functions
-  
+
   void pack_id1(int);
   void pack_id2(int);
-  
-  void pack_time(int);  
-  
-  void pack_x(int);  
-  void pack_y(int);  
-  void pack_z(int);  
-  
-  void pack_xstore(int);  
-  void pack_ystore(int);  
-  void pack_zstore(int);   
-  
-   
+
+  void pack_time(int);
+
+  void pack_x(int);
+  void pack_y(int);
+  void pack_z(int);
+
+  void pack_xstore(int);
+  void pack_ystore(int);
+  void pack_zstore(int);
+
+
   char *id_fix;
-  int index_x, index_y, index_z;  
+  int index_x, index_y, index_z;
 };
 
 }

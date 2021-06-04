@@ -11,7 +11,7 @@ Syntax
    atom_modify keyword values ...
 
 * one or more keyword/value pairs may be appended
-* keyword = *id* or *map* or *first* or *sort*
+* keyword = *id* or *map* or *first* or *sort* or *special*
 
   .. parsed-literal::
 
@@ -21,6 +21,7 @@ Syntax
         *sort* values = Nfreq binsize
           Nfreq = sort atoms spatially every this many time steps
           binsize = bin size for spatial sorting (distance units)
+        *special* value = *yes* or *no*
 
 Examples
 """"""""
@@ -153,6 +154,13 @@ cache locality will be undermined.
    order of atoms in a :doc:`dump <dump>` file will also typically change
    if sorting is enabled.
 
+The *speical* keyword determines whether special bond lists will be
+generated. If the value is *yes*\ , which is the default, special bond
+lists are built. If the value is *no$\ , special bonds are not built.
+When using bonded particle models, special lists are unnecessary so 
+turning them off saves time and memory. See the 
+:doc:`Howto bpm <Howto_bpm>` page for more details
+
 Restrictions
 """"""""""""
 
@@ -176,7 +184,7 @@ larger than 1 million, otherwise the default is hash.  By default, a
 "first" group is not defined.  By default, sorting is enabled with a
 frequency of 1000 and a binsize of 0.0, which means the neighbor
 cutoff will be used to set the bin size. If no neighbor cutoff is
-defined, sorting will be turned off.
+defined, sorting will be turned off. By default, *special* is yes.
 
 ----------
 

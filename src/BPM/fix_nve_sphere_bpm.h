@@ -1,6 +1,6 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -13,21 +13,21 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(nve/sphere2,FixNVESphere2)
+FixStyle(nve/sphere/bpm,FixNVESphereBPM)
 
 #else
 
-#ifndef LMP_FIX_NVE_SPHERE2_H
-#define LMP_FIX_NVE_SPHERE2_H
+#ifndef LMP_FIX_NVE_SPHERE_BPM_H
+#define LMP_FIX_NVE_SPHERE_BPM_H
 
 #include "fix_nve.h"
 
 namespace LAMMPS_NS {
 
-class FixNVESphere2 : public FixNVE {
+class FixNVESphereBPM : public FixNVE {
  public:
-  FixNVESphere2(class LAMMPS *, int, char **);
-  virtual ~FixNVESphere2() {}
+  FixNVESphereBPM(class LAMMPS *, int, char **);
+  virtual ~FixNVESphereBPM() {}
   void init();
   virtual void initial_integrate(int);
   virtual void final_integrate();
@@ -51,24 +51,21 @@ Self-explanatory.  Check the input script syntax and compare to the
 documentation for the command.  You can use -echo screen as a
 command-line option when running LAMMPS to see the offending line.
 
-E: Fix nve/sphere disc requires 2d simulation
+E: Fix nve/sphere/bpm disc requires 2d simulation
 
 UNDOCUMENTED
 
-E: Fix nve/sphere requires atom style sphere
+E: Fix nve/sphere/bpm requires atom style sphere/bpm
 
 Self-explanatory.
 
-E: Fix nve/sphere update dipole requires atom attribute mu
+E: Fix nve/sphere/bpm update dipole requires atom attribute mu
 
 An atom style with this attribute is needed.
 
-E: Fix nve/sphere requires extended particles
+E: Fix nve/sphere/bpm requires extended particles
 
 This fix can only be used for particles of a finite size.
 
-U: Fix nve/sphere dlm must be used with update dipole
-
-The DLM algorithm can only be used in conjunction with update dipole.
 
 */

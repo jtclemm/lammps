@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -15,10 +15,11 @@
    Contributing authors: Leo Silbert (SNL), Gary Grest (SNL)
 ------------------------------------------------------------------------- */
 
-#include "pair_gran_hertz_history_dem.h"
+#include "pair_gran_hertz_history_bpm.h"
 #include <cmath>
 #include <cstring>
 #include "atom.h"
+#include "atom_vec.h"
 #include "update.h"
 #include "force.h"
 #include "fix.h"
@@ -34,14 +35,16 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-PairGranHertzHistoryDEM::PairGranHertzHistoryDEM(LAMMPS *lmp) :
+PairGranHertzHistoryBPM::PairGranHertzHistoryBPM(LAMMPS *lmp) :
   PairGranHookeHistory(lmp) {}
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
+void PairGranHertzHistoryBPM::compute(int eflag, int vflag)
 {
-  int i,j,ii,jj,inum,jnum;
+  int i,j,ii,jj,inum,jnum,m;
+  tagint tagi, tagj;
+  int bond_flag;
   double xtmp,ytmp,ztmp,delx,dely,delz,fx,fy,fz;
   double radi,radj,radsum,rsq,r,rinv,rsqinv,dx;
   double vr1,vr2,vr3,vnnr,vn1,vn2,vn3,vt1,vt2,vt3;
@@ -79,6 +82,7 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
     comm->forward_comm_pair(this);
   }
 
+  tagint *tag = atom->tag;
   double **x = atom->x;
   double **v = atom->v;
   double **f = atom->f;
@@ -86,6 +90,9 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
   double **torque = atom->torque;
   double *radius = atom->radius;
   double *rmass = atom->rmass;
+  int **bond_type = atom->bond_type;
+  int *num_bond = atom->num_bond;
+  tagint **bond_atom = atom->bond_atom;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
   int newton_pair = force->newton_pair;
@@ -101,6 +108,7 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
 
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
+    tagi = tag[i];
     xtmp = x[i][0];
     ytmp = x[i][1];
     ztmp = x[i][2];
@@ -113,6 +121,28 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
       j &= NEIGHMASK;
+
+      tagj = tag[j];
+      bond_flag = 0;
+      for (m = 0; m < num_bond[i]; m++) {
+        if (bond_atom[i][m] == tagj) {
+          if (bond_type[i][m] != 0) {
+            bond_flag = 1;
+            break;
+          }
+        }
+      }
+      if (bond_flag) continue;
+
+      for (m = 0; m < num_bond[j]; m++) {
+        if (bond_atom[j][m] == tagi) {
+          if (bond_type[j][m] != 0) {
+            bond_flag = 1;
+            break;
+          }
+        }
+      }
+      if (bond_flag) continue;
 
       delx = xtmp - x[j][0];
       dely = ytmp - x[j][1];
@@ -277,7 +307,7 @@ void PairGranHertzHistoryDEM::compute(int eflag, int vflag)
    global settings
 ------------------------------------------------------------------------- */
 
-void PairGranHertzHistoryDEM::settings(int narg, char **arg)
+void PairGranHertzHistoryBPM::settings(int narg, char **arg)
 {
   if (narg != 7) error->all(FLERR,"Illegal pair_style command");
 
@@ -307,10 +337,22 @@ void PairGranHertzHistoryDEM::settings(int narg, char **arg)
 
 
 /* ----------------------------------------------------------------------
+   init specific to this pair style
+------------------------------------------------------------------------- */
+
+void PairGranHertzHistoryBPM::init_style()
+{
+  PairGranHookeHistory::init_style();
+
+  if (!atom->avec->bonds_allow)
+    error->all(FLERR,"Pair gran/hertz/history/bpm requires atom bonds");
+}
+
+/* ----------------------------------------------------------------------
   proc 0 writes to restart file
 ------------------------------------------------------------------------- */
 
-void PairGranHertzHistoryDEM::write_restart_settings(FILE *fp)
+void PairGranHertzHistoryBPM::write_restart_settings(FILE *fp)
 {
   fwrite(&kn,sizeof(double),1,fp);
   fwrite(&kt,sizeof(double),1,fp);
@@ -325,7 +367,7 @@ void PairGranHertzHistoryDEM::write_restart_settings(FILE *fp)
   proc 0 reads from restart file, bcasts
 ------------------------------------------------------------------------- */
 
-void PairGranHertzHistoryDEM::read_restart_settings(FILE *fp)
+void PairGranHertzHistoryBPM::read_restart_settings(FILE *fp)
 {
   if (comm->me == 0) {
     utils::sfread(FLERR,&kn,sizeof(double),1,fp,NULL,error);
@@ -348,7 +390,7 @@ void PairGranHertzHistoryDEM::read_restart_settings(FILE *fp)
 
 /* ---------------------------------------------------------------------- */
 
-double PairGranHertzHistoryDEM::single(int i, int j, int /*itype*/, int /*jtype*/,
+double PairGranHertzHistoryBPM::single(int i, int j, int /*itype*/, int /*jtype*/,
                                     double rsq,
                                     double /*factor_coul*/, double /*factor_lj*/,
                                     double &fforce)

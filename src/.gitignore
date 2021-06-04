@@ -217,22 +217,24 @@
 /pair_mesont_tpm.cpp
 /pair_mesont_tpm.h
 
-/atom_vec_sphere2.cpp
-/atom_vec_sphere2.h
-/bond_bpm_beam.cpp
-/bond_bpm_beam.h
-/bond_bpm_generic.cpp
-/bond_bpm_generic.h
+/atom_vec_sphere_bpm.cpp
+/atom_vec_sphere_bpm.h
+/bond_bpm_simple.cpp
+/bond_bpm_simple.h
+/bond_bpm_rotational.cpp
+/bond_bpm_rotational.h
 /compute_nbond_atom.cpp
 /compute_nbond_atom.h
 /fix_bond_store.cpp
 /fix_bond_store.h
 /fix_broken_bonds.cpp
 /fix_broken_bonds.h
-/fix_nve_sphere2.cpp
-/fix_nve_sphere2.h
-pair_gran_hertz_history_dem.cpp
-pair_gran_hertz_history_dem.h
+/fix_nve_sphere_bpm.cpp
+/fix_nve_sphere_bpm.h
+/pair_gran_hertz_history_bpm.cpp
+/pair_gran_hertz_history_bpm.h
+/pair_bpm_simple.cpp
+/pair_bpm_simple.h
 
 /angle_cg_cmm.cpp
 /angle_cg_cmm.h

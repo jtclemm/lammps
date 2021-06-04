@@ -1,6 +1,6 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -13,23 +13,23 @@
 
 #ifdef ATOM_CLASS
 
-AtomStyle(sphere2,AtomVecSphere2)
+AtomStyle(sphere/bpm,AtomVecSphereBPM)
 
 #else
 
-#ifndef LMP_ATOM_VEC_SPHERE2_H
-#define LMP_ATOM_VEC_SPHERE2_H
+#ifndef LMP_ATOM_VEC_SPHERE_BPM_H
+#define LMP_ATOM_VEC_SPHERE_BPM_H
 
 #include "atom_vec.h"
 
 namespace LAMMPS_NS {
 
-class AtomVecSphere2 : public AtomVec {
+class AtomVecSphereBPM : public AtomVec {
  public:
-  AtomVecSphere2(class LAMMPS *);
+  AtomVecSphereBPM(class LAMMPS *);
   void process_args(int, char **);
   void init();
-  
+
   void grow_pointers();
   void create_atom_post(int);
   void pack_restart_pre(int);
@@ -44,16 +44,16 @@ class AtomVecSphere2 : public AtomVec {
   int *num_bond;
   int **bond_type;
   int **nspecial;
-  
+
   double *radius,*rmass;
-  double **omega, **torque, **quat;  
+  double **omega, **torque, **quat;
 
   int any_bond_negative;
   int bond_per_atom;
   int *bond_negative;
-  
+
   int radvary;
-  double radius_one,rmass_one;  
+  double radius_one,rmass_one;
 };
 
 }

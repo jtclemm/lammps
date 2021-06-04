@@ -45,6 +45,7 @@ OPT.
    * :doc:`bond/create/angle <fix_bond_create>`
    * :doc:`bond/react <fix_bond_react>`
    * :doc:`bond/swap <fix_bond_swap>`
+   * :doc:`broken/bonds <fix_broken_bonds>`
    * :doc:`box/relax <fix_box_relax>`
    * :doc:`client/md <fix_client_md>`
    * :doc:`cmap <fix_cmap>`
@@ -146,6 +147,7 @@ OPT.
    * :doc:`nvt/sllod (io) <fix_nvt_sllod>`
    * :doc:`nvt/sllod/eff <fix_nvt_sllod_eff>`
    * :doc:`nvt/sphere (o) <fix_nvt_sphere>`
+   * :doc:`nvt/sphere/bpm (o) <fix_nvt_sphere_bpm>`
    * :doc:`nvt/uef <fix_nh_uef>`
    * :doc:`oneway <fix_oneway>`
    * :doc:`orient/bcc <fix_orient>`

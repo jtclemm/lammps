@@ -694,7 +694,9 @@ void FixDeposit::options(int narg, char **arg)
       iregion = domain->find_region(arg[iarg+1]);
       if (iregion == -1)
         error->all(FLERR,"Region ID for fix deposit does not exist");
-      idregion = utils::strdup(arg[iarg+1]);
+      int n = strlen(arg[iarg+1]) + 1;
+      idregion = new char[n];
+      strcpy(idregion,arg[iarg+1]);
       iarg += 2;
 
     } else if (strcmp(arg[iarg],"mol") == 0) {
@@ -723,14 +725,18 @@ void FixDeposit::options(int narg, char **arg)
       iarg += nmol+1;
     } else if (strcmp(arg[iarg],"rigid") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix deposit command");
+      int n = strlen(arg[iarg+1]) + 1;
       delete [] idrigid;
-      idrigid = utils::strdup(arg[iarg+1]);
+      idrigid = new char[n];
+      strcpy(idrigid,arg[iarg+1]);
       rigidflag = 1;
       iarg += 2;
     } else if (strcmp(arg[iarg],"shake") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix deposit command");
+      int n = strlen(arg[iarg+1]) + 1;
       delete [] idshake;
-      idshake = utils::strdup(arg[iarg+1]);
+      idshake = new char[n];
+      strcpy(idshake,arg[iarg+1]);
       shakeflag = 1;
       iarg += 2;
 

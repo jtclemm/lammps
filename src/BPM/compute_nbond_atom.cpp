@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -76,25 +76,25 @@ void ComputeNBondAtom::compute_peratom()
   // KSpace includes ghosts if tip4pflag is set
 
   int nlocal = atom->nlocal;
-  tagint **bond_atom = atom->bond_atom;  
+  tagint **bond_atom = atom->bond_atom;
   int **bond_type = atom->bond_type;
-  
-  int ntotal = nlocal;  
+
+  int ntotal = nlocal;
   if (force->newton) ntotal += atom->nghost;
 
   // set local nbond array
   int i, j, k;
   int *num_bond = atom->num_bond;
   int newton_bond = force->newton_bond;
-  
+
   for (i = 0; i < ntotal; i++) nbond[i] = 0;
-  
+
   for (i = 0; i < nlocal; i++) {
     for (j = 0; j <num_bond[i]; j ++) {
       if (bond_type[i][j] <= 0) continue;
 
       k = atom->map(bond_atom[i][j]);
-      if (k < 0) continue;   
+      if (k < 0) continue;
 
       nbond[i] += 1;
       if (newton_bond) nbond[k] += 1;

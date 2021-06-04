@@ -1,6 +1,6 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -13,26 +13,27 @@
 
 #ifdef PAIR_CLASS
 
-PairStyle(gran/hertz/history/dem,PairGranHertzHistoryDEM)
+PairStyle(gran/hertz/history/bpm,PairGranHertzHistoryBPM)
 
 #else
 
-#ifndef LMP_PAIR_GRAN_HERTZ_HISTORY_DEM_H
-#define LMP_PAIR_GRAN_HERTZ_HISTORY_DEM_H
+#ifndef LMP_PAIR_GRAN_HERTZ_HISTORY_BPM_H
+#define LMP_PAIR_GRAN_HERTZ_HISTORY_BPM_H
 
 #include "pair_gran_hooke_history.h"
 
 namespace LAMMPS_NS {
 
-class PairGranHertzHistoryDEM : public PairGranHookeHistory {
+class PairGranHertzHistoryBPM : public PairGranHookeHistory {
  public:
-  PairGranHertzHistoryDEM(class LAMMPS *);
+  PairGranHertzHistoryBPM(class LAMMPS *);
   virtual void compute(int, int);
   void settings(int, char **);
+  void init_style();
   double single(int, int, int, int, double, double, double, double &);
   void write_restart_settings(FILE *);
   void read_restart_settings(FILE *);
-  
+
   private:
   double C_exp;
 };

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "atom_vec_sphere2.h"
+#include "atom_vec_sphere_bpm.h"
 #include <cstring>
 #include "atom.h"
 #include "modify.h"
@@ -26,40 +26,40 @@ using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
-AtomVecSphere2::AtomVecSphere2(LAMMPS *lmp) : AtomVec(lmp)
+AtomVecSphereBPM::AtomVecSphereBPM(LAMMPS *lmp) : AtomVec(lmp)
 {
   mass_type = 0;
   molecular = 1; //Match bond, creates map style
   bonds_allow = 1;
-  
-  atom->molecule_flag = 1;  
+
+  atom->molecule_flag = 1;
   atom->sphere_flag = 1;
   atom->radius_flag = atom->rmass_flag = atom->omega_flag =
-    atom->torque_flag = atom->quat_flag = 1;  
+    atom->torque_flag = atom->quat_flag = 1;
 
   // strings with peratom variables to include in each AtomVec method
   // strings cannot contain fields in corresponding AtomVec default strings
   // order of fields in a string does not matter
   // except: fields_data_atom & fields_data_vel must match data file
 
-  fields_grow = (char *) 
+  fields_grow = (char *)
     "molecule num_bond bond_type bond_atom nspecial special radius rmass omega torque quat";
-  fields_copy = (char *) 
+  fields_copy = (char *)
     "molecule num_bond bond_type bond_atom nspecial special radius rmass omega quat";
   fields_comm = (char *) "";
   fields_comm_vel = (char *) "omega quat";
   fields_reverse = (char *) "torque";
   fields_border = (char *) "molecule radius rmass";
   fields_border_vel = (char *) "molecule radius rmass omega quat";
-  fields_exchange = (char *) 
+  fields_exchange = (char *)
     "molecule num_bond bond_type bond_atom nspecial special radius rmass omega quat";
-  fields_restart = (char *) 
+  fields_restart = (char *)
     "molecule num_bond bond_type bond_atom radius rmass omega quat";
-  fields_create = (char *) 
+  fields_create = (char *)
     "molecule num_bond nspecial radius rmass omega quat";
   fields_data_atom = (char *) "id molecule type radius rmass x";
   fields_data_vel = (char *) "id v omega";
- 
+
   bond_per_atom = 0;
   bond_negative = NULL;
 }
@@ -69,7 +69,7 @@ AtomVecSphere2::AtomVecSphere2(LAMMPS *lmp) : AtomVec(lmp)
    optional arg = 0/1 for static/dynamic particle radii
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::process_args(int narg, char **arg)
+void AtomVecSphereBPM::process_args(int narg, char **arg)
 {
   if (narg != 0 && narg != 1)
     error->all(FLERR,"Illegal atom_style beam command");
@@ -95,7 +95,7 @@ void AtomVecSphere2::process_args(int narg, char **arg)
 
 /* ---------------------------------------------------------------------- */
 
-void AtomVecSphere2::init()
+void AtomVecSphereBPM::init()
 {
   AtomVec::init();
 
@@ -115,16 +115,16 @@ void AtomVecSphere2::init()
    needed in replicate when 2 atom classes exist and it calls pack_restart()
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::grow_pointers()
+void AtomVecSphereBPM::grow_pointers()
 {
   radius = atom->radius;
   rmass = atom->rmass;
   omega = atom->omega;
   quat = atom->quat;
-  
+
   num_bond = atom->num_bond;
   bond_type = atom->bond_type;
-  nspecial = atom->nspecial;  
+  nspecial = atom->nspecial;
 }
 
 
@@ -132,23 +132,23 @@ void AtomVecSphere2::grow_pointers()
    initialize non-zero atom quantities
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::create_atom_post(int ilocal)
+void AtomVecSphereBPM::create_atom_post(int ilocal)
 {
   radius[ilocal] = 0.5;
   rmass[ilocal] = 4.0*MY_PI/3.0 * 0.5*0.5*0.5;
-  
+
   quat[ilocal][0] = 1.0;
   quat[ilocal][1] = 0.0;
   quat[ilocal][2] = 0.0;
   quat[ilocal][3] = 0.0;
-    
+
 }
 
 /* ----------------------------------------------------------------------
    modify values for AtomVec::pack_restart() to pack
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::pack_restart_pre(int ilocal)
+void AtomVecSphereBPM::pack_restart_pre(int ilocal)
 {
   // insure bond_negative vector is needed length
 
@@ -174,7 +174,7 @@ void AtomVecSphere2::pack_restart_pre(int ilocal)
    unmodify values packed by AtomVec::pack_restart()
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::pack_restart_post(int ilocal)
+void AtomVecSphereBPM::pack_restart_post(int ilocal)
 {
   // restore the flagged types to their negative values
 
@@ -188,7 +188,7 @@ void AtomVecSphere2::pack_restart_post(int ilocal)
    initialize other atom quantities after AtomVec::unpack_restart()
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::unpack_restart_init(int ilocal)
+void AtomVecSphereBPM::unpack_restart_init(int ilocal)
 {
   nspecial[ilocal][0] = 0;
   nspecial[ilocal][1] = 0;
@@ -200,7 +200,7 @@ void AtomVecSphere2::unpack_restart_init(int ilocal)
    or initialize other atom quantities
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::data_atom_post(int ilocal)
+void AtomVecSphereBPM::data_atom_post(int ilocal)
 {
   radius_one = 0.5 * atom->radius[ilocal];
   radius[ilocal] = radius_one;
@@ -213,23 +213,23 @@ void AtomVecSphere2::data_atom_post(int ilocal)
   omega[ilocal][0] = 0.0;
   omega[ilocal][1] = 0.0;
   omega[ilocal][2] = 0.0;
-  
+
   quat[ilocal][0] = 1.0;
   quat[ilocal][1] = 0.0;
   quat[ilocal][2] = 0.0;
   quat[ilocal][3] = 0.0;
-  
+
   num_bond[ilocal] = 0;
   nspecial[ilocal][0] = 0;
   nspecial[ilocal][1] = 0;
-  nspecial[ilocal][2] = 0;  
+  nspecial[ilocal][2] = 0;
 }
 
 /* ----------------------------------------------------------------------
    modify values for AtomVec::pack_data() to pack
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::pack_data_pre(int ilocal)
+void AtomVecSphereBPM::pack_data_pre(int ilocal)
 {
   radius_one = radius[ilocal];
   rmass_one = rmass[ilocal];
@@ -244,7 +244,7 @@ void AtomVecSphere2::pack_data_pre(int ilocal)
    unmodify values packed by AtomVec::pack_data()
 ------------------------------------------------------------------------- */
 
-void AtomVecSphere2::pack_data_post(int ilocal)
+void AtomVecSphereBPM::pack_data_post(int ilocal)
 {
   radius[ilocal] = radius_one;
   rmass[ilocal] = rmass_one;

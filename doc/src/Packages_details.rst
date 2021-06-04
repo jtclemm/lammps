@@ -29,6 +29,7 @@ page gives those details.
 
    * :ref:`ASPHERE <PKG-ASPHERE>`
    * :ref:`BODY <PKG-BODY>`
+   * :ref:`BPM <PKG-BPM>`
    * :ref:`CLASS2 <PKG-CLASS2>`
    * :ref:`COLLOID <PKG-COLLOID>`
    * :ref:`COMPRESS <PKG-COMPRESS>`
@@ -153,6 +154,33 @@ overview.
 * :doc:`atom_style body <atom_style>`
 * :doc:`fix nve/body <fix_nve_body>`
 * :doc:`pair_style body/nparticle <pair_body_nparticle>`
+* examples/body
+
+----------
+
+.. _PKG-BPM:
+
+BPM package
+------------
+
+**Contents:**
+
+Pair styles, bond styles, fixes, and computes for bonded particle 
+models to model mesoscale fracture.  See the 
+:doc:`Howto bpm <Howto_bpm>` page for an overview.
+
+**Supporting info:**
+
+* src/BPM filenames -> commands
+* :doc:`Howto_bpm <Howto_bpm>`
+* :doc:`atom_style sphere/bpm <atom_style>`
+* :doc:`bond_style bpm/rotational <bond_bpm_rotational>`
+* :doc:`bond_style bpm/simple <bond_bpm_simple>`
+* :doc:`compute nbonds/atom <compute_nbonds_atom>`
+* :doc:`fix broken/bonds <fix_broken_bonds>`
+* :doc:`fix nve/sphere/bpm <fix_nve_sphere/bpm>`
+* :doc:`pair_style gran/hertz/history/bpm <pair_gran>`
+* :doc:`pair_style bpm/simple <pair_bpm_simple>`
 * examples/body
 
 ----------

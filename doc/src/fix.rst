@@ -188,6 +188,7 @@ accelerated styles exist.
 * :doc:`bond/create/angle <fix_bond_create>` - create bonds on the fly with angle constraints
 * :doc:`bond/react <fix_bond_react>` - apply topology changes to model reactions
 * :doc:`bond/swap <fix_bond_swap>` - Monte Carlo bond swapping
+* :doc:`broken/bonds <fix_broken_bonds>` - track broken bonds in bonded particle models
 * :doc:`box/relax <fix_box_relax>` - relax box size during energy minimization
 * :doc:`client/md <fix_client_md>` - MD client for client/server simulations
 * :doc:`cmap <fix_cmap>` - enables CMAP cross-terms of the CHARMM force field
@@ -278,6 +279,7 @@ accelerated styles exist.
 * :doc:`nve/manifold/rattle <fix_nve_manifold_rattle>` -
 * :doc:`nve/noforce <fix_nve_noforce>` - NVE without forces (v only)
 * :doc:`nve/sphere <fix_nve_sphere>` - NVE for spherical particles
+* :doc:`nve/sphere/bpm <fix_nve_sphere_bpm>` - NVE for spherical particles used in bonded particle models
 * :doc:`nve/spin <fix_nve_spin>` - NVE for a spin or spin-lattice system
 * :doc:`nve/tri <fix_nve_tri>` - NVE for triangles
 * :doc:`nvk <fix_nvk>` - constant kinetic energy time integration

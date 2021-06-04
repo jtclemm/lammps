@@ -1,6 +1,6 @@
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -26,7 +26,7 @@ namespace LAMMPS_NS {
 
 class FixBondStore : public Fix {
  public:
- 
+
   FixBondStore(class LAMMPS *, int, char **);
   ~FixBondStore();
   int setmask();
@@ -39,16 +39,16 @@ class FixBondStore : public Fix {
   void write_restart(FILE *fp);
   void restart(char *buf);
   void set_arrays(int);
-  
+
   void update_atom_value(int, int, int, double);
   double get_atom_value(int, int, int);
-  double **bondstore;   
+  double **bondstore;
   int stored_flag;
 
  protected:
- 
+
   void allocate();
- 
+
   int update_flag;
   int nbond, maxbond, ndata;
   int index;

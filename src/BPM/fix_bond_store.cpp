@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -35,25 +35,25 @@ using namespace FixConst;
 FixBondStore::FixBondStore(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   new_fix_id(NULL)
-{  
+{
   if (narg != 5) error->all(FLERR,"Illegal fix bond/store command");
   update_flag = utils::inumeric(FLERR,arg[3],false,lmp);
   ndata = utils::inumeric(FLERR,arg[4],false,lmp);
   nbond = atom->bond_per_atom;
 
-  if (nbond == 0) 
+  if (nbond == 0)
     error->all(FLERR, "Cannot store bond variables without any bonds");
 
   stored_flag = false;
   restart_global = 1;
   create_attribute = 1;
 
-  bondstore = NULL; 
+  bondstore = NULL;
   maxbond = 0;
   allocate();
-  
-  new_fix_id = NULL;   
-  array_id = NULL;  
+
+  new_fix_id = NULL;
+  array_id = NULL;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -85,18 +85,18 @@ void FixBondStore::post_constructor()
   char **newarg = new char*[5];
   int nvalue = 0;
   int tmp1, tmp2;
-    
+
   int nn = strlen(id) + strlen("_FIX_PROP_ATOM") + 1;
-  new_fix_id = new char[nn];  
+  new_fix_id = new char[nn];
   strcpy(new_fix_id, "FIX_PROP_ATOM_");
   strcat(new_fix_id, id);
-    
+
   nn = strlen(id) + 4 ;
   array_id = new char[nn];
   strcpy(array_id, "d2_");
-  strcat(array_id, id);  
-  
-  char ncols[16]; 
+  strcat(array_id, id);
+
+  char ncols[16];
   sprintf(ncols,"%d",nbond*ndata);
   newarg[0] = new_fix_id;
   newarg[1] = group->names[igroup];
@@ -104,24 +104,24 @@ void FixBondStore::post_constructor()
   newarg[3] = array_id;
   newarg[4] = ncols;
 
-  modify->add_fix(5,newarg); 
+  modify->add_fix(5,newarg);
   index = atom->find_custom(&array_id[3],tmp1,tmp2);
-  
-  delete [] newarg;  
+
+  delete [] newarg;
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixBondStore::init()
 {
-  
+
 }
 
- 
+
 /* ---------------------------------------------------------------------- */
 
 void FixBondStore::update_atom_value(int i, int m, int idata, double value)
-{  
+{
   if (idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");
   atom->darray[index][i][m*ndata+idata] = value;
 }
@@ -130,7 +130,7 @@ void FixBondStore::update_atom_value(int i, int m, int idata, double value)
 
 double FixBondStore::get_atom_value(int i, int m, int idata)
 {
-   if (idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");   
+   if (idata >= ndata or m > nbond) error->all(FLERR, "Index exceeded in fix bond store");
    return atom->darray[index][i][m*ndata+idata];
 }
 
@@ -141,14 +141,14 @@ double FixBondStore::get_atom_value(int i, int m, int idata)
 ------------------------------------------------------------------------- */
 
 void FixBondStore::pre_exchange()
-{  
-  if(!update_flag) return; 
+{
+  if(!update_flag) return;
 
   int i1, i2, n, m, idata;
   int **bondlist = neighbor->bondlist;
   int nbondlist = neighbor->nbondlist;
   double **stored = atom->darray[index];
-  
+
   int nlocal = atom->nlocal;
   tagint **bond_atom = atom->bond_atom;
   int *num_bond = atom->num_bond;
@@ -162,7 +162,7 @@ void FixBondStore::pre_exchange()
     if (bondlist[n][2] <= 0) {
         continue;
     }
-    
+
     if (i1 < nlocal){
       for (m = 0; m < num_bond[i1]; m++) {
         if (bond_atom[i1][m] == tag[i2]) {
@@ -172,7 +172,7 @@ void FixBondStore::pre_exchange()
         }
       }
     }
-      
+
     if (i2 < nlocal){
       for (m = 0; m < num_bond[i2]; m++) {
         if (bond_atom[i2][m] == tag[i1]) {
@@ -181,18 +181,18 @@ void FixBondStore::pre_exchange()
           }
         }
       }
-    }  
+    }
   }
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixBondStore::allocate()
-{  
+{
   //Ideally would just ask ntopo for maxbond, but protected
   if (comm->nprocs == 1) maxbond = atom->nbonds;
   else maxbond = static_cast<int> (LB_FACTOR * atom->nbonds / comm->nprocs);
-  memory->create(bondstore,maxbond,ndata,"fix_bond_store:bondstore"); 
+  memory->create(bondstore,maxbond,ndata,"fix_bond_store:bondstore");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -208,14 +208,14 @@ void FixBondStore::setup_post_neighbor()
 ------------------------------------------------------------------------- */
 
 void FixBondStore::post_neighbor()
-{ 
-  
+{
+
   //Grow array if number of bonds has increased
   while (neighbor->nbondlist >= maxbond) {
     maxbond += DELTA;
     memory->grow(bondstore,maxbond,ndata,"fix_bond_store:bondstore");
   }
-  
+
   int i1, i2, n, m, idata;
   int **bondlist = neighbor->bondlist;
   int nbondlist = neighbor->nbondlist;
@@ -234,7 +234,7 @@ void FixBondStore::post_neighbor()
     if (bondlist[n][2] <= 0) {
         continue;
     }
-        
+
     if (i1 < nlocal) {
       for (m = 0; m < num_bond[i1]; m++) {
         if (bond_atom[i1][m] == tag[i2]) {
@@ -244,7 +244,7 @@ void FixBondStore::post_neighbor()
         }
       }
     }
-      
+
     if (i2 < nlocal){
       for (m = 0; m < num_bond[i2]; m++) {
         if (bond_atom[i2][m] == tag[i1]) {
@@ -270,13 +270,13 @@ void FixBondStore::write_restart(FILE *fp)
 {
   int n = 0;
   double list[1];
-  list[n++] = stored_flag;  
-  
+  list[n++] = stored_flag;
+
   if (comm->me == 0) {
     int size = n * sizeof(double);
     fwrite(&size,sizeof(int),1,fp);
     fwrite(list,sizeof(double),n,fp);
-  }    
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -294,7 +294,7 @@ void FixBondStore::restart(char *buf)
 
 void FixBondStore::set_arrays(int i)
 {
-  double **stored = atom->darray[index];    
+  double **stored = atom->darray[index];
   for (int m = 0; m < nbond; m++)
     for (int idata = 0; idata < ndata; idata++)
       stored[i][m*ndata+idata] = 0.0;

@@ -30,6 +30,7 @@ class FixDeposit : public Fix {
   ~FixDeposit();
   int setmask();
   void init();
+  void setup_pre_exchange();
   void pre_exchange();
   void write_restart(FILE *);
   void restart(char *);

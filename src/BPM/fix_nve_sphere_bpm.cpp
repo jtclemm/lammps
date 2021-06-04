@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
-   http://lammps.sandia.gov, Sandia National Laboratories
+   https://www.lammps.org/, Sandia National Laboratories
    Steve Plimpton, sjplimp@sandia.gov
 
    Copyright (2003) Sandia Corporation.  Under the terms of Contract
@@ -11,7 +11,7 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "fix_nve_sphere2.h"
+#include "fix_nve_sphere_bpm.h"
 #include <cmath>
 #include <cstring>
 #include "atom.h"
@@ -29,10 +29,10 @@ using namespace MathExtra;
 
 /* ---------------------------------------------------------------------- */
 
-FixNVESphere2::FixNVESphere2(LAMMPS *lmp, int narg, char **arg) :
+FixNVESphereBPM::FixNVESphereBPM(LAMMPS *lmp, int narg, char **arg) :
   FixNVE(lmp, narg, arg)
 {
-  if (narg < 3) error->all(FLERR,"Illegal fix nve/beam command");
+  if (narg < 3) error->all(FLERR,"Illegal fix nve/sphere/bpm command");
 
   time_integrate = 1;
 
@@ -46,10 +46,10 @@ FixNVESphere2::FixNVESphere2(LAMMPS *lmp, int narg, char **arg) :
     if (strcmp(arg[iarg],"disc")==0) {
       inertia = 0.5;
       if (domain->dimension != 2)
-        error->all(FLERR,"Fix nve/beam disc requires 2d simulation");
+        error->all(FLERR,"Fix nve/sphere/bpm disc requires 2d simulation");
       iarg++;
     }
-    else error->all(FLERR,"Illegal fix nve/beam command");
+    else error->all(FLERR,"Illegal fix nve/sphere/bpm command");
   }
 
   inv_inertia = 1.0/inertia;
@@ -57,12 +57,12 @@ FixNVESphere2::FixNVESphere2(LAMMPS *lmp, int narg, char **arg) :
   // error checks
 
   if (!atom->quat_flag)
-    error->all(FLERR,"Fix nve/beam requires atom style beam");
+    error->all(FLERR,"Fix nve/sphere/bpm requires atom style sphere/bpm");
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVESphere2::init()
+void FixNVESphereBPM::init()
 {
   FixNVE::init();
 
@@ -76,12 +76,12 @@ void FixNVESphere2::init()
   for (int i = 0; i < nlocal; i++)
     if (mask[i] & groupbit)
       if (radius[i] == 0.0)
-        error->one(FLERR,"Fix nve/beam requires extended particles");
+        error->one(FLERR,"Fix nve/sphere/bpm requires extended particles");
 }
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVESphere2::initial_integrate(int /*vflag*/)
+void FixNVESphereBPM::initial_integrate(int /*vflag*/)
 {
   double dtq,dtfm,dtirotate,particle_inertia;
 
@@ -118,7 +118,7 @@ void FixNVESphere2::initial_integrate(int /*vflag*/)
       omega[i][0] += dtirotate * torque[i][0];
       omega[i][1] += dtirotate * torque[i][1];
       omega[i][2] += dtirotate * torque[i][2];
-      
+
       MathExtra::richardson_sphere(quat[i],omega[i],dtq);
     }
   }
@@ -126,7 +126,7 @@ void FixNVESphere2::initial_integrate(int /*vflag*/)
 
 /* ---------------------------------------------------------------------- */
 
-void FixNVESphere2::final_integrate()
+void FixNVESphereBPM::final_integrate()
 {
   double dtfm,dtirotate,particle_inertia;
 
