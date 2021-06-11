@@ -953,14 +953,18 @@ void FixPour::options(int narg, char **arg)
 
     } else if (strcmp(arg[iarg],"rigid") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix pour command");
+      int n = strlen(arg[iarg+1]) + 1;
       delete [] idrigid;
-      idrigid = utils::strdup(arg[iarg+1]);
+      idrigid = new char[n];
+      strcpy(idrigid,arg[iarg+1]);
       rigidflag = 1;
       iarg += 2;
     } else if (strcmp(arg[iarg],"shake") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal fix pour command");
+      int n = strlen(arg[iarg+1]) + 1;
       delete [] idshake;
-      idshake = utils::strdup(arg[iarg+1]);
+      idshake = new char[n];
+      strcpy(idshake,arg[iarg+1]);
       shakeflag = 1;
       iarg += 2;
 

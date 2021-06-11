@@ -30,6 +30,7 @@ class FixPour : public Fix {
   ~FixPour();
   int setmask();
   void init();
+  void setup_pre_exchange();
   void pre_exchange();
   void reset_dt();
   void *extract(const char *, int &);
