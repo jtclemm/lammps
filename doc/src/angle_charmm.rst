@@ -23,6 +23,14 @@ Examples
    angle_style charmm
    angle_coeff 1 300.0 107.0 50.0 3.0
 
+Example input scripts available:
+
+  .. parsed-literal::
+
+       examples/peptide/in.peptide
+       examples/COUPLE/fortrancmap/in.cmap
+       examples/USER/plumed/in.peptide-plumed
+
 Description
 """""""""""
 
