@@ -16,7 +16,7 @@ Pair_style potentials
 
 All LAMMPS :doc:`pair_style <pair_style>` commands.  Some styles have
 accelerated versions.  This is indicated by additional letters in
-parenthesis: g = GPU, i = USER-INTEL, k = KOKKOS, o = USER-OMP, t =
+parenthesis: g = GPU, i = INTEL, k = KOKKOS, o = OPENMP, t =
 OPT.
 
 .. table_from_list::
@@ -190,7 +190,7 @@ OPT.
    * :doc:`lubricateU/poly <pair_lubricateU>`
    * :doc:`mdpd <pair_mesodpd>`
    * :doc:`mdpd/rhosum <pair_mesodpd>`
-   * :doc:`meam/c <pair_meamc>`
+   * :doc:`meam <pair_meam>`
    * :doc:`meam/spline (o) <pair_meam_spline>`
    * :doc:`meam/sw/spline <pair_meam_sw_spline>`
    * :doc:`mesocnt <pair_mesocnt>`
@@ -235,7 +235,7 @@ OPT.
    * :doc:`python <pair_python>`
    * :doc:`quip <pair_quip>`
    * :doc:`rann <pair_rann>`
-   * :doc:`reax/c (ko) <pair_reaxc>`
+   * :doc:`reaxff (ko) <pair_reaxff>`
    * :doc:`rebo (io) <pair_airebo>`
    * :doc:`resquared (go) <pair_resquared>`
    * :doc:`sdpd/taitwater/isothermal <pair_sdpd_taitwater_isothermal>`
@@ -273,6 +273,7 @@ OPT.
    * :doc:`tip4p/cut (o) <pair_coul>`
    * :doc:`tip4p/long (o) <pair_coul>`
    * :doc:`tip4p/long/soft (o) <pair_fep_soft>`
+   * :doc:`tracker <pair_tracker>`
    * :doc:`tri/lj <pair_tri_lj>`
    * :doc:`ufm (got) <pair_ufm>`
    * :doc:`vashishta (gko) <pair_vashishta>`

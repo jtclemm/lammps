@@ -597,6 +597,10 @@ void PairHybrid::init_style()
     }
   }
 
+  // check beyond contact (set during pair coeff) before init style
+  for (istyle = 0; istyle < nstyles; istyle++)
+    if (styles[istyle]->beyond_contact) beyond_contact = 1;
+
   // each sub-style makes its neighbor list request(s)
 
   for (istyle = 0; istyle < nstyles; istyle++) styles[istyle]->init_style();
@@ -923,7 +927,7 @@ again:
     }
 
     // if 2nd keyword (after pair) is compute/tally:
-    // set flag to register USER-TALLY computes accordingly
+    // set flag to register TALLY computes accordingly
 
     if (iarg < narg && strcmp(arg[iarg],"compute/tally") == 0) {
       if (narg < iarg+2)
@@ -975,9 +979,7 @@ void PairHybrid::modify_special(int m, int /*narg*/, char **arg)
   special[2] = utils::numeric(FLERR,arg[2],false,lmp);
   special[3] = utils::numeric(FLERR,arg[3],false,lmp);
 
-  // have to cast to PairHybrid to work around C++ access restriction
-
-  if (((PairHybrid *)styles[m])->suffix_flag & (Suffix::INTEL|Suffix::GPU))
+  if (styles[m]->suffix_flag & (Suffix::INTEL|Suffix::GPU))
     error->all(FLERR,"Pair_modify special is not compatible with "
                      "suffix version of hybrid substyle");
 

@@ -16,8 +16,8 @@ Compute commands
 
 An alphabetic list of all LAMMPS :doc:`compute <compute>` commands.
 Some styles have accelerated versions.  This is indicated by
-additional letters in parenthesis: g = GPU, i = USER-INTEL, k =
-KOKKOS, o = USER-OMP, t = OPT.
+additional letters in parenthesis: g = GPU, i = INTEL, k =
+KOKKOS, o = OPENMP, t = OPT.
 
 .. table_from_list::
    :columns: 5
@@ -72,6 +72,7 @@ KOKKOS, o = USER-OMP, t = OPT.
    * :doc:`gyration/shape/chunk <compute_gyration_shape_chunk>`
    * :doc:`heat/flux <compute_heat_flux>`
    * :doc:`heat/flux/tally <compute_tally>`
+   * :doc:`heat/flux/virial/tally <compute_tally>`
    * :doc:`hexorder/atom <compute_hexorder_atom>`
    * :doc:`hma <compute_hma>`
    * :doc:`improper <compute_improper>`
