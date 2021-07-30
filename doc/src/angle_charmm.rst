@@ -23,13 +23,6 @@ Examples
    angle_style charmm
    angle_coeff 1 300.0 107.0 50.0 3.0
 
-Used in input scripts:
-
-  .. parsed-literal::
-
-       `examples/peptide/in.peptide <https://github.com/lammps/lammps/blob/master/examples/peptide/in.peptide>`_
-       `examples/USER/plumed/in.peptide-plumed <https://github.com/lammps/lammps/blob/master/examples/USER/plumed/in.peptide-plumed>`_
-
 Description
 """""""""""
 
