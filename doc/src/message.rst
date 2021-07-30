@@ -44,6 +44,13 @@ Examples
 
    message quit
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/pour/in.pour
+       examples/pour/in.pour.2d.molecule
+
 Description
 """""""""""
 

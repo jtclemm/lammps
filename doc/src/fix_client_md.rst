@@ -20,6 +20,16 @@ Examples
 
    fix 1 all client/md
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/lammps_nwchem/ao_basis/in.client.h2o
+       examples/COUPLE/lammps_nwchem/planewave/in.client.W
+       examples/COUPLE/lammps_vasp/in.client.W
+       examples/message/in.message.client
+       examples/message/in.message.tilt.client
+
 Description
 """""""""""
 

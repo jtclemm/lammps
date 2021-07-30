@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC mesh create_elementset middle -4.1 4.1 -100 100 -100 1100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+
 Description
 """""""""""
 

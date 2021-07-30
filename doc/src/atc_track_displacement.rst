@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC track_displacement on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/multi/in.colloid
+
 Description
 """""""""""
 

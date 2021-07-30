@@ -23,6 +23,14 @@ Examples
    improper_coeff 1 100.0 0
    improper_coeff * aa 0.0 0.0 0.0 115.06 130.01 115.06
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/reaction/tiny_polystyrene/in.tiny_polystyrene.stabilized
+       examples/PACKAGES/drude/toluene/in.toluene.lang
+       examples/PACKAGES/drude/toluene/in.toluene.nh
+
 Description
 """""""""""
 

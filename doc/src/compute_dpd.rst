@@ -20,6 +20,14 @@ Examples
 
    compute 1 all dpd
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpde-shardlow/in.dpde-shardlow
+       examples/PACKAGES/dpd-react/dpde-vv/in.dpde-vv
+       examples/PACKAGES/dpd-react/dpdh-shardlow/in.dpdh-shardlow
+
 Description
 """""""""""
 

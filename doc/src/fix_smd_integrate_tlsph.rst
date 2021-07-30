@@ -28,6 +28,13 @@ Examples
    fix 1 all smd/integrate_tlsph
    fix 1 all smd/integrate_tlsph limit_velocity 1000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/fluid_structure_interaction/in.fluid_structure_interaction
+       examples/PACKAGES/machdyn/funnel_flow/in.funnel_flow
+
 Description
 """""""""""
 

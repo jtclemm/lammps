@@ -74,6 +74,14 @@ Examples
    fix 5 all wall/gran/region granular dmt 1e5 0.2 0.3 10.0 tangential mindlin NULL 1.0 0.5 rolling sds 500.0 200.0 0.5 twisting marshall damping tsuji region myCone
    fix 6 all wall/gran hooke  200000.0 NULL 50.0 NULL 0.5 0 xplane -10.0 10.0 contacts
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rigid/in.rigid.gravity
+       examples/granregion/in.granregion.funnel
+       examples/granregion/in.granregion.mixer
+
 Description
 """""""""""
 

@@ -26,6 +26,12 @@ Examples
 
    fix 1 all nve
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/ellipsoid/in.ellipsoid.mp
+
 Description
 """""""""""
 

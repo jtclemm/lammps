@@ -51,6 +51,16 @@ Examples
    fix 1 sub rattle 0.0001 20 10 t 5 6 m 1.0 a 31
    fix 1 sub rattle 0.0001 20 10 t 5 6 m 1.0 a 31 mol myMol
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peptide/in.peptide
+       examples/rdf-adf/in.spce
+       examples/template/in.hybrid
+       examples/PACKAGES/dpd-react/dpd-shardlow/in.dpd-shardlow
+       examples/PACKAGES/dpd-react/dpde-shardlow/in.dpde-shardlow
+
 Description
 """""""""""
 

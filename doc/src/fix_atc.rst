@@ -33,6 +33,16 @@ Examples
    fix AtC internal atc hardy
    fix AtC internal atc field
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/cauchy_born/in.cb_biaxial
+       examples/PACKAGES/atc/drift_diffusion/in.poisson2d_noatoms
+       examples/PACKAGES/atc/fluids/in.concentration
+       examples/PACKAGES/atc/hardy/in.eshelby_static
+       examples/PACKAGES/atc/molecule/in.quartic_bonds
+
 Description
 """""""""""
 

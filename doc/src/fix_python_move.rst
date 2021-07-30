@@ -20,6 +20,13 @@ Examples
    fix  1 all python/move py_nve.NVE
    fix  1 all python/move py_nve.NVE_OPT
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/qtb/alpha_quartz_qbmsst/in.alpha_quartz_qbmsst
+       examples/qeq/in.qeq.buck
+
 Description
 """""""""""
 

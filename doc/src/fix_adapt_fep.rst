@@ -59,6 +59,13 @@ Examples
 
 Example input scripts available: examples/PACKAGES/fep
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/C7inEthanol/fep01/in.insertion
+       examples/PACKAGES/fep/CH4hyd/fdti10/in.fdti10.lmp
+
 Description
 """""""""""
 

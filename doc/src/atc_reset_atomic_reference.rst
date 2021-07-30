@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC reset_atomic_reference_positions
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

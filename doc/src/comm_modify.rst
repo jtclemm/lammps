@@ -39,6 +39,14 @@ Examples
    comm_modify mode single cutoff 5.0 vel yes
    comm_modify cutoff/multi * 0.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/electron_density.screen
+       examples/PACKAGES/atc/elastic/electrostatic_bending_dos.screen
+       examples/PACKAGES/atc/elastic/in.bar1d_frac_step
+
 Description
 """""""""""
 

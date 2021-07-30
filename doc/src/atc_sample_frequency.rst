@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC sample_frequency 10
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/message/in.message.client
+
 Description
 """""""""""
 

@@ -52,6 +52,13 @@ Examples
 
    fix ees_cube all wall/region/ees myCube 1.0 1.0 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.flatwall
+       examples/pour/in.pour
+
 Description
 """""""""""
 

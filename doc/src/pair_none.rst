@@ -17,6 +17,13 @@ Examples
 
    pair_style none
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/pace/in.pace.product
+       examples/PACKAGES/pace/in.pace.recursive
+
 Description
 """""""""""
 

@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC mass_matrix fe
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granregion/in.granregion.funnel
+
 Description
 """""""""""
 

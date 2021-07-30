@@ -32,6 +32,13 @@ Examples
    fix kick external-field efield 1.0 0.0 0.0
    fix kick external-field efield 0.0 0.0 v_oscillate
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/molecule/in.polarize
+       examples/PACKAGES/atc/molecule/in.water
+
 Description
 """""""""""
 

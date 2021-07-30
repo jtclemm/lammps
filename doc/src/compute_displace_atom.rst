@@ -27,6 +27,13 @@ Examples
    compute 1 all displace/atom
    compute 1 all displace/atom refresh myVar
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/lammps_spparks/in.lammps
+       examples/PACKAGES/pafi/in.pafi
+
 Description
 """""""""""
 

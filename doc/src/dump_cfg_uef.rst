@@ -27,6 +27,12 @@ Examples
    dump 1 all cfg/uef 10 dump.*.cfg mass type xs ys zs
    dump 2 all cfg/uef 100 dump.*.cfg mass type xs ys zs id c_stress
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/hardy/in.eshelby_static
+
 Description
 """""""""""
 

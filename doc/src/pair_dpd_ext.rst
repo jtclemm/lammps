@@ -35,6 +35,12 @@ Examples
    pair_coeff 1 1 4.5 4.5 0.5 0.5 1.2
    pair_coeff 1 2 4.5 4.5 0.5 0.5 1.2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpd-vv/in.dpd-vv
+
 Description
 """""""""""
 

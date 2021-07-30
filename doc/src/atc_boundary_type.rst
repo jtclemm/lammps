@@ -22,6 +22,13 @@ Examples
 
    fix_modify AtC boundary type ghost_atoms
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.cubes
+       examples/body/in.pour3d
+
 Description
 """""""""""
 

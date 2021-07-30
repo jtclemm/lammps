@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC initial temperature groupNAME 10.
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.neb.sivac.fire_mod
+
 Description
 """""""""""
 

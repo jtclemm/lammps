@@ -43,6 +43,15 @@ Examples
    fix walls all wall/reflect xlo 0.0 ylo 10.0 units box
    fix top all wall/reflect zhi v_pressdown
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/deposit/in.deposit.molecule.rigid-small
+       examples/wall/in.wall.specular
+       examples/wall/in.wall.ccl
+       examples/wall/in.wall.diffusive
+
 Description
 """""""""""
 

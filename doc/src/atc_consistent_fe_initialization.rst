@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC consistent_fe_initialization on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.pour3d
+
 Description
 """""""""""
 

@@ -26,6 +26,13 @@ Examples
    minimize 1.0e-4 1.0e-6 100 1000
    minimize 0.0 1.0e-8 1000 100000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/prd/in.prd
+       examples/python/in.python
+
 Description
 """""""""""
 

@@ -29,6 +29,13 @@ Examples
    fix 1 sphere lb/momentum
    fix 1 all lb/momentum linear 1 1 0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/latboltz/microrheology/in.microrheology_set_gamma
+       examples/PACKAGES/latboltz/polymer/in.polymer_setgamma
+
 Description
 """""""""""
 

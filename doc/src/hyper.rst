@@ -38,6 +38,12 @@ Examples
    fix HG mobile hyper/global 3.0 0.3 0.4 800.0
    hyper 5000 100 HG event min 1.0e-6 1.0e-6 100 100 dump 1 dump 5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/cutout.screen
+
 Description
 """""""""""
 

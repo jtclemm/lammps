@@ -23,6 +23,14 @@ Examples
    angle_style sdk
    angle_coeff 1 300.0 107.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cgsdk/peg-verlet/in.pegc12e8-angle
+       examples/PACKAGES/cgsdk/sds-monolayer/in.sds-hybrid
+       examples/PACKAGES/cgsdk/sds-monolayer/in.sds-regular
+
 Description
 """""""""""
 

@@ -21,6 +21,12 @@ Examples
 
    compute 1 all cnp/atom 3.08
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cnp/in.cnp
+
 Description
 """""""""""
 

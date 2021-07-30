@@ -48,6 +48,15 @@ Examples
    fix 1 all electron/stopping/fit 4.63 3.3e-3 4.0e-8
    fix 1 all electron/stopping/fit 3.49 1.8e-3 9.0e-8 7.57 4.2e-3 5.0e-8
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/electron_stopping/in.elstop
+       examples/PACKAGES/electron_stopping/in.cascade_AlCu
+       examples/colloid/in.colloid
+       examples/flow/in.flow.couette
+
 Description
 """""""""""
 

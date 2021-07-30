@@ -20,6 +20,12 @@ Examples
 
    compute 1 all smd/triangle/mesh/vertices
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/funnel_flow/in.funnel_flow
+
 Description
 """""""""""
 

@@ -22,6 +22,14 @@ Examples
    bond_style class2
    bond_coeff 1 1.0 100.0 80.0 80.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/C7inEthanol/fep01/in.insertion
+       examples/PACKAGES/reaction/create_atoms_polystyrene/in.grow_styrene
+       examples/PACKAGES/reaction/tiny_nylon/in.tiny_nylon.stabilized_variable_probability
+
 Description
 """""""""""
 

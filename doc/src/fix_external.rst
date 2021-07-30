@@ -31,6 +31,14 @@ Examples
    fix 1 all external pf/callback 100 1
    fix 1 all external pf/array 10
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/python/in.fix_external
+       examples/PACKAGES/filter_corotate/in.bpti
+       examples/PACKAGES/filter_corotate/in.peptide
+
 Description
 """""""""""
 

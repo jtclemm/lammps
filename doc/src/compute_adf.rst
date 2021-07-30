@@ -42,6 +42,12 @@ Examples
    compute 1 fluid adf 32 1*2 1*2 1*2 0.5 3.5
    compute 1 fluid adf 32
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rdf-adf/in.spce
+
 Description
 """""""""""
 

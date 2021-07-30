@@ -50,6 +50,13 @@ Examples
 
 Example input scripts available: examples/PACKAGES/fep
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/CC-CO/fep01/in.fep01.lmp
+       examples/PACKAGES/fep/CH4-CF4/fep10/in.fep10.lmp
+
 Description
 """""""""""
 

@@ -54,6 +54,13 @@ Examples
    fix 2 part npt/eff temp 300.0 300.0 0.1 tri 5.0 5.0 1.0
    fix 2 ice nph/eff x 1.0 1.0 0.5 y 2.0 2.0 0.5 z 3.0 3.0 0.5 yz 0.1 0.1 0.5 xz 0.2 0.2 0.5 xy 0.3 0.3 0.5 nreset 1000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/uef/nvt_uniaxial/in.nvt_uniaxial
+       examples/PACKAGES/uef/npt_biaxial/in.npt_biaxial
+
 Description
 """""""""""
 

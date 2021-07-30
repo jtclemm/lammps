@@ -55,6 +55,13 @@ Examples
    pair_coeff * * 100.0 3.0
    pair_coeff 1 1 100.0 3.5 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.kspace
+       examples/relres/in.22DMH.real
+
 Description
 """""""""""
 

@@ -41,6 +41,17 @@ Examples
    pair_style dpd/fdt/energy 2.5 34387
    pair_coeff * * 3.0 1.0 0.1 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpdp-shardlow/in.dpdp-shardlow
+       examples/PACKAGES/dpd-react/dpde-shardlow/in.dpde-shardlow
+       examples/PACKAGES/dpd-react/dpde-vv/in.dpde-vv
+       examples/PACKAGES/dpd-react/dpdh-shardlow/in.dpdh-shardlow
+       examples/PACKAGES/atc/cauchy_born/in.cb_unistrain_eam
+       examples/shear/in.shear
+
 Description
 """""""""""
 

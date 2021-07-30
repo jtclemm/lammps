@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC mesh create_nodeset lbc -12.1 -11.9 -12 12 -12 12
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/kim/in.kim-ex.melt
+
 Description
 """""""""""
 

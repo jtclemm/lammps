@@ -30,6 +30,13 @@ Examples
 
    fix 1 all pimd method nmpimd fmass 1.0 sp 2.0 temp 300.0 nhc 4
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/plumed/in.peptide-plumed
+       examples/rigid/in.rigid.poems
+
 Description
 """""""""""
 

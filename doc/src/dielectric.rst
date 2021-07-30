@@ -19,6 +19,12 @@ Examples
 
    dielectric 2.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/in.poisson
+
 Description
 """""""""""
 

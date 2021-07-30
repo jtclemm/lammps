@@ -64,6 +64,14 @@ Examples
    pair_style gran/hooke 200000.0 70000.0 50.0 30.0 0.5 0 limit_damping
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/pour/in.pour.2d
+       examples/granular/in.pour.drum
+       examples/granular/in.pour.flatwall
+
 Description
 """""""""""
 

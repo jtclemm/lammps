@@ -41,6 +41,13 @@ Examples
    fix 1 all tdpd/source 1 sphere 5.0 0.0 0.0 5.0 0.01
    fix 1 all tdpd/source 2 cuboid 0.0 0.0 0.0 20.0 10.0 10.0 0.01
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/edpd/in.edpd
+       examples/PACKAGES/dpd-meso/tdpd/in.tdpd
+
 Description
 """""""""""
 

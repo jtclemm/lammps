@@ -21,6 +21,12 @@ Examples
    compute 1 all vacf
    compute 1 upper vacf
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/DIFFUSE/in.vacf.2d
+
 Description
 """""""""""
 

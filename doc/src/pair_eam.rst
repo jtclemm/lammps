@@ -74,6 +74,19 @@ Examples
    pair_style eam/he
    pair_coeff * * PdHHe.eam.he Pd H He
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/shear/in.shear.void
+       examples/PACKAGES/phonon/3-3D-FCC-Cu-EAM/in.EAM3D
+       examples/hyper/in.hyper.global
+       examples/hyper/in.hyper.local
+       examples/PACKAGES/entropy/in.entropy
+       examples/PACKAGES/pafi/in.pafi
+       examples/PACKAGES/edip/in.edip-Si
+       examples/PACKAGES/edip/in.edip-Si-multi
+
 Description
 """""""""""
 

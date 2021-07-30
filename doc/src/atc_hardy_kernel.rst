@@ -37,6 +37,12 @@ Examples
    fix_modify AtC kernel quartic_sphere 10.0
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.neb.sivac.fire
+
 Description
 """""""""""
 

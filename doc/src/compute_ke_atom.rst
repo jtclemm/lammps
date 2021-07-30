@@ -20,6 +20,13 @@ Examples
 
    compute 1 all ke/atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.lj.ehex
+       examples/KAPPA/in.ehex
+
 Description
 """""""""""
 

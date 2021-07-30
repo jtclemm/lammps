@@ -32,6 +32,13 @@ Examples
    dihedral_coeff  2 1.8 1   0 1.0
    dihedral_coeff  1 3.1 2 180 0.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peptide/in.peptide
+       examples/cmap/in.cmap
+
 Description
 """""""""""
 

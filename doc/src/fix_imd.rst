@@ -35,6 +35,15 @@ Examples
    fix vmd all imd 5678
    fix comm all imd 8888 trate 5 unwrap on fscale 10.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/imd/in.deca-ala_imd
+       examples/PACKAGES/imd/in.melt_imd
+       examples/indent/in.indent
+       examples/indent/in.indent.min
+
 Description
 """""""""""
 

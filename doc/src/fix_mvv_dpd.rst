@@ -38,6 +38,14 @@ Examples
    fix 1 all mvv/tdpd
    fix 1 all mvv/tdpd 0.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/tdpd/in.tdpd
+       examples/fire/in.neb.sivac.fire
+       examples/fire/in.neb.sivac.qm
+
 Description
 """""""""""
 

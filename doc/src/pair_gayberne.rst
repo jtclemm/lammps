@@ -28,6 +28,14 @@ Examples
    pair_style gayberne 1.0 1.0 1.0 10.0
    pair_coeff * * 1.0 1.7 1.7 3.4 3.4 1.0 1.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ellipse/in.ellipse.gayberne
+       examples/pour/in.pour
+       examples/rigid/in.rigid.gravity
+
 Description
 """""""""""
 

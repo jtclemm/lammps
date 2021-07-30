@@ -46,6 +46,13 @@ Examples
    displace_atoms top move 0 -5 0 units box
    displace_atoms flow ramp x 0.0 5.0 y 2.0 20.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/hardy/in.eam_kernel_convergence
+       examples/PACKAGES/atc/hardy/in.eam_kernel_convergence
+
 Description
 """""""""""
 

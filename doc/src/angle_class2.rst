@@ -28,6 +28,13 @@ Examples
    angle_coeff 1 bb 10.5872 1.0119 1.5228
    angle_coeff * ba 3.6551 24.895 1.0119 1.5228
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/C7inEthanol/fep01/in.insertion
+       examples/PACKAGES/reaction/create_atoms_polystyrene/in.grow_styrene
+
 Description
 """""""""""
 

@@ -40,6 +40,13 @@ Examples
    pair_coeff * *
    pair_coeff 2 2 20.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.body
+       examples/body/in.squares
+
 Description
 """""""""""
 

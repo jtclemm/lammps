@@ -145,6 +145,28 @@ Examples
    read_restart data.rigid fix 0 NULL Bodies
    fix 1 clump rigid/small custom i_bodyid
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rigid/in.rigid.early
+       examples/rigid/in.rigid.property
+       examples/rigid/in.rigid.tnr
+       examples/rigid/in.rigid.nve
+       examples/rigid/in.rigid.tnr
+       examples/rigid/in.rigid.tnr
+       examples/rigid/in.rigid.tnr
+       examples/deposit/in.deposit.molecule.rigid-small
+       examples/gcmc/in.gcmc.co2
+       examples/pour/in.pour.2d.molecule
+       examples/rigid/in.rigid.gravity
+       examples/deposit/in.deposit.molecule.rigid-nve-small
+       examples/deposit/in.deposit.molecule.rigid-nvt-small
+       examples/PACKAGES/drude/swm4-ndp/in.swm4-ndp.nh
+       examples/PACKAGES/drude/swm4-ndp/in.swm4-ndp.lang
+       examples/PACKAGES/dpd-smooth/2d-diffusion/in.lammps
+       examples/PACKAGES/dpd-smooth/2d-diffusion-in-shear-flow/in.lammps
+
 Description
 """""""""""
 

@@ -23,6 +23,12 @@ Examples
    fix gb all orient/eco 0.08 0.25 3.524 sigma5.ori
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/tracker/in.track
+
 Description
 """""""""""
 

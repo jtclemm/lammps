@@ -32,6 +32,13 @@ Examples
 
    compute mliap model linear descriptor sna Ta06A.mliap.descriptor
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/mliap/in.mliap.quadratic.compute
+       examples/mliap/in.mliap.snap.compute
+
 Description
 """""""""""
 

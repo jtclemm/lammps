@@ -44,6 +44,15 @@ Examples
    fix 1 all gravity 10.0 spherical v_phi v_theta
    fix 1 all gravity 100.0 vector 1 1 0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+       examples/pour/in.pour
+       examples/PACKAGES/grem/lj-6rep/in.gREM
+       examples/PACKAGES/grem/lj-single/in.gREM-npt
+
 Description
 """""""""""
 

@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC mesh delete_elements gap
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/kim/in.kim-pm-property
+
 Description
 """""""""""
 

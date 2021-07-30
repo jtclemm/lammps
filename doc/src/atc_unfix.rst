@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC unfix temperature groupNAME
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/multi/in.colloid
+
 Description
 """""""""""
 

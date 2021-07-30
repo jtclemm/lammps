@@ -26,6 +26,13 @@ Examples
    compute 1 all pair tersoff 2 epair
    compute 1 all pair reaxff
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+       examples/reaxff/in.reaxff.rdx
+
 Description
 """""""""""
 

@@ -22,6 +22,12 @@ Examples
    jump in.run2 runloop
    jump SELF runloop
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.restart
+
 Description
 """""""""""
 

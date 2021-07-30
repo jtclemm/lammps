@@ -23,6 +23,12 @@ Examples
 
    compute myFlux all heat/flux myKE myPE myStress
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/KAPPA/in.heatflux
+
 Description
 """""""""""
 

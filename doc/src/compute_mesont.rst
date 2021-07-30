@@ -23,6 +23,13 @@ Examples
 
    compute 1 all mesont estretch
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mesont/in.bundle
+       examples/PACKAGES/mesont/in.film
+
 Description
 """""""""""
 

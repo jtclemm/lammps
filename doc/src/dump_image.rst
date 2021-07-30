@@ -91,6 +91,12 @@ Examples
    dump m1 all movie 1000 movie.avi type type size 640 480
    dump m2 all movie 100 movie.m4v type type zoom 1.8 adiam v_value size 1280 720
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/mesh/in.gaussianIC2d_hex
+
 Description
 """""""""""
 

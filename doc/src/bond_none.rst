@@ -17,6 +17,12 @@ Examples
 
    bond_style none
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/quip/in.molecular
+
 Description
 """""""""""
 

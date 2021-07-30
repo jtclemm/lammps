@@ -52,6 +52,12 @@ Examples
    create_bonds single/dihedral 2 4 19 27 101
    create_bonds single/improper 3 23 26 31 57
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/conducting_interface.screen
+
 Description
 """""""""""
 

@@ -21,6 +21,13 @@ Examples
    bond_coeff 1 harmonic 80.0 1.2
    bond_coeff 2* fene 30.0 1.5 1.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mofff/in.hkust1
+       examples/PACKAGES/mofff/in.hkust1_long
+
 Description
 """""""""""
 

@@ -65,6 +65,14 @@ Examples
    create_atoms 3 single 0 0 5
    create_atoms 1 box var v set x xpos set y ypos
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/in.no_atoms_cb
+       examples/PACKAGES/atc/fluids/concentration.screen
+       examples/PACKAGES/atc/fluids/conducting_interface.screen
+
 Description
 """""""""""
 

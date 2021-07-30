@@ -22,6 +22,13 @@ Examples
 
 Example input scripts available: examples/PACKAGES/drude
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/butane/in.butane.lang
+       examples/PACKAGES/drude/swm4-ndp/in.swm4-ndp.lang
+
 Description
 """""""""""
 

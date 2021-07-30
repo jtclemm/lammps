@@ -21,6 +21,13 @@ Examples
 
    fix 1 all nve/limit 0.1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+       examples/pour/in.pour
+
 Description
 """""""""""
 

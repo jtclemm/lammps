@@ -46,6 +46,12 @@ Examples
    fix_modify AtC fields add velocity temperature
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.fire
+
 Description
 """""""""""
 

@@ -35,6 +35,12 @@ Examples
    fix 2 all nph iso 1.01325 1.01325 1
    fix 2 all qtb temp 300 damp 1 seed 47508 f_max 120.0 N_f 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/reaxff/in.reaxff.tatb-shielded
+
 Description
 """""""""""
 

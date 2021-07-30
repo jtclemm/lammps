@@ -30,6 +30,14 @@ Examples
    variable prefactor equal ramp(0,30)
    fix 1 all adapt 1 pair soft a * * v_prefactor
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/micelle/in.micelle-rigid
+       examples/SPIN/gneb/iron/in.gneb.iron
+       examples/SPIN/read_restart/in.spin.write_restart
+
 Description
 """""""""""
 

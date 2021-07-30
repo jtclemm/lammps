@@ -44,6 +44,12 @@ Examples
    fix saed/vtk 1 1 1 c_1 file Al2O3_001.saed
    fix saed/vtk 1 1 1 c_2 file Ni_000.saed
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/diffraction/in.BulkNi
+
 Description
 """""""""""
 

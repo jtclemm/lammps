@@ -85,6 +85,13 @@ Examples
    pair_coeff * * 100.0 1.5 200.0
    pair_coeff 1 1 100.0 1.5 200.0 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mofff/in.hkust1
+       examples/PACKAGES/mofff/in.hkust1_long
+
 Description
 """""""""""
 

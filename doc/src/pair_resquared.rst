@@ -24,6 +24,14 @@ Examples
    pair_style resquared 10.0
    pair_coeff * * 1.0 1.0 1.7 3.4 3.4 1.0 1.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/ees/in.fix_wall_region
+       examples/PACKAGES/cgsdk/peg-verlet/in.pegc12e8
+       examples/PACKAGES/cgsdk/peg-verlet/in.pegc12e8-angle
+
 Description
 """""""""""
 

@@ -32,6 +32,13 @@ Examples
    fix 1 all viscosity 100 x z 20
    fix 1 all viscosity 50 x z 20 swap 2 vtarget 1.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance
+       examples/PACKAGES/latboltz/confined_colloid/in.confined_colloids
+
 Description
 """""""""""
 

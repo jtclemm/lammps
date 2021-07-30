@@ -28,6 +28,13 @@ Examples
    fix 3 fluid poems group clump1 clump2 clump3
    fix 3 fluid poems file cluster.list
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granregion/in.granregion.funnel
+       examples/pour/in.pour
+
 Description
 """""""""""
 

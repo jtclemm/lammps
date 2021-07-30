@@ -36,6 +36,12 @@ Examples
    delete_bonds all bond 0*3 special
    delete_bonds all stats
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/in.conducting_interface
+
 Description
 """""""""""
 

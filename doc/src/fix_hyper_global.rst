@@ -24,6 +24,12 @@ Examples
 
    fix 1 all hyper/global 1.0 0.3 0.8 300.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/imd/in.bucky-plus-cnt
+
 Description
 """""""""""
 

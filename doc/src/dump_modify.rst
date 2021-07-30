@@ -146,6 +146,14 @@ Examples
    dump_modify 1 every v_myVar
    dump_modify 1 amap min max cf 0.0 3 min green 0.5 yellow max blue boxcolor red
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/mesh/in.mesh2d_tet
+       examples/PACKAGES/atc/mesh/in.semicircle
+       examples/PACKAGES/atc/molecule/harmonic_bonds.screen
+
 Description
 """""""""""
 

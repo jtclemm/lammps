@@ -20,6 +20,12 @@ Examples
    label xyz
    label loop
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.uniform_heating
+
 Description
 """""""""""
 

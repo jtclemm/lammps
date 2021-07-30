@@ -32,6 +32,14 @@ Examples
    pair_style mliap model nn Si.nn.mliap.model descriptor so3 Si.nn.mliap.descriptor
    pair_coeff * * In P
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/mliap/in.mliap.so3.nn.Si
+       examples/PACKAGES/dpd-react/multi-lucy/in.multi-lucy
+       examples/PACKAGES/diffraction/in.BulkNi
+
 Description
 """""""""""
 

@@ -17,6 +17,15 @@ Examples
 
    improper_style none
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rdf-adf/in.spce
+       examples/VISCOSITY/in.cos.1000SPCE
+       examples/PACKAGES/agni/in.adatom
+       examples/PACKAGES/agni/in.vacancy
+
 Description
 """""""""""
 

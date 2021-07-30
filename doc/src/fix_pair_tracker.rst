@@ -48,6 +48,12 @@ Examples
    fix 1 all pair/tracker 1000 id1 id2 time/min 100
    fix 1 all pair/tracker 1000 time/created time/broken type/include 1 * type/include 2 3,4
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/phonon/2-1D-diatomic/in.Ana
+
 Description
 """""""""""
 

@@ -21,6 +21,14 @@ Examples
 
    compute 1 all event/displace 0.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/hyper/in.hyper.global
+       examples/prd/in.prd
+       examples/tad/in.tad
+
 Description
 """""""""""
 

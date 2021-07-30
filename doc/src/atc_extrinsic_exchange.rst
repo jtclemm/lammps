@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC extrinsic exchange on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dipole/in.dipole
+
 Description
 """""""""""
 

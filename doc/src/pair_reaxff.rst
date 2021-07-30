@@ -38,6 +38,15 @@ Examples
    pair_style reaxff NULL safezone 1.6 mincap 100
    pair_coeff * * ffield.reax C H O N
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/reaxff/in.reaxff.tatb
+       examples/reaxff/in.reaxff.tatb-shielded
+       examples/ellipse/in.ellipse.resquared
+       examples/PACKAGES/ees/in.fix_wall
+
 Description
 """""""""""
 

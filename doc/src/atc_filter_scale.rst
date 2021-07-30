@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC filter scale 10.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+
 Description
 """""""""""
 

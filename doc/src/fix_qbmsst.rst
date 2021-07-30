@@ -71,6 +71,12 @@ propagates along the z direction. Restart of the *fix qbmsst* command
 is demonstrated in the example input script. Thermodynamic quantities
 stay continuous before and after the restart.
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/qeq/in.qeq.buck
+
 Description
 """""""""""
 

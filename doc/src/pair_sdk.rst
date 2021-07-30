@@ -57,6 +57,14 @@ Examples
    pair_style lj/sdk/coul/msm 10.0 12.0
    pair_coeff 1 1 lj9_6 100.0 3.5 12.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cgsdk/sds-monolayer/in.sds-regular
+       examples/PACKAGES/dpd-smooth/2d-diffusion/in.lammps
+       examples/PACKAGES/dpd-smooth/2d-diffusion-in-shear-flow/in.lammps
+
 Description
 """""""""""
 

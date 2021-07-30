@@ -23,6 +23,12 @@ Examples
    fix kick bead addtorque 2.0 3.0 5.0
    fix kick bead addtorque 0.0 0.0 v_oscillate
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/addtorque/in.addtorque
+
 Description
 """""""""""
 

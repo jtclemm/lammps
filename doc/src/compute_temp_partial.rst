@@ -21,6 +21,14 @@ Examples
 
    compute newT flow temp/partial 1 1 0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/friction/in.friction
+       examples/meam/in.meam.shear
+       examples/shear/in.shear
+
 Description
 """""""""""
 

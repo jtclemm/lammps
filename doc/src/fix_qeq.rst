@@ -54,6 +54,15 @@ Examples
    fix 1 qeq qeq/dynamic 1 12 1.0e-3 100 my_qeq
    fix 1 all qeq/fire 1 10 1.0e-3 100 my_qeq qdamp 0.2 qstep 0.1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/streitz/in.streitz.ewald
+       examples/qeq/in.qeq.buck
+       examples/comb/in.comb.Cu2O.elastic
+       examples/comb/in.comb.HfO2
+
 Description
 """""""""""
 

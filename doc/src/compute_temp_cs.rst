@@ -23,6 +23,15 @@ Examples
    compute oxygen_c-s all temp/cs O_core O_shell
    compute core_shells all temp/cs cores shells
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/coreshell/in.coreshell
+       examples/coreshell/in.coreshell.dsf
+       examples/coreshell/in.coreshell.thermostats
+       examples/coreshell/in.coreshell.wolf
+
 Description
 """""""""""
 

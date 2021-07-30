@@ -20,6 +20,13 @@ Examples
 
    fix 1 all nve/awpmd
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.body
+       examples/body/in.pour3d
+
 Description
 """""""""""
 

@@ -69,6 +69,13 @@ Used in input scripts:
       examples/PACKAGES/dielectric/in.confined
       examples/PACKAGES/dielectric/in.nopbc
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dipole/in.dipole
+       examples/PACKAGES/dpd-basic/dpdext/in.dpdext
+
 Description
 """""""""""
 

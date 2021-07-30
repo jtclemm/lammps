@@ -23,6 +23,12 @@ Examples
    fix_modify AtC read_restart restart.mydata.AtC
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

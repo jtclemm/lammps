@@ -27,6 +27,13 @@ Examples
    pair_coeff 1 2  75.398 1.0 0.0 10.0 9.0
    pair_coeff 2 2  39.478 1.0 10.0 10.0 25.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb.Cu
+       examples/comb/in.comb.Si.elastic
+
 Description
 """""""""""
 

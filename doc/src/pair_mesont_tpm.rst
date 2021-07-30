@@ -27,6 +27,13 @@ Examples
 
    pair_style mesont/tpm 30.0 MESONT-TABTP_10_10.xrs 0 0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mgpt/in.bcc0
+       examples/PACKAGES/mgpt/in.vac0-bcc
+
 Description
 """""""""""
 

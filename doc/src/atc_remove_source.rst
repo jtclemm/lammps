@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC remove_source temperature groupNAME
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

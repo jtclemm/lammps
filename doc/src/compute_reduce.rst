@@ -56,6 +56,16 @@ Examples
    compute 2 all reduce min c_press[*] f_ave v_myKE
    compute 3 fluid reduce max c_index[1] c_index[2] c_dist replace 1 3 replace 2 3
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb.Cu2O.elastic
+       examples/mliap/in.mliap.nn.Cu
+       examples/prd/in.prd
+       examples/steinhardt/in.bcc
+       examples/streitz/in.streitz.ewald
+
 Description
 """""""""""
 

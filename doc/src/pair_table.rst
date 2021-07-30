@@ -32,6 +32,14 @@ Examples
    pair_coeff * 3 morse.table ENTRY1
    pair_coeff * 3 morse.table ENTRY1 7.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/python/in.pair_python_table
+       examples/tersoff/in.hBN_shift
+       examples/tersoff/in.tersoff
+
 Description
 """""""""""
 

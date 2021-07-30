@@ -40,6 +40,13 @@ Examples
    pair_style buck6d/coul/gauss/long   0.9000  1.0000  12.0000
    pair_coeff 1  1  1030.  3.061  457.179  4.521  0.608
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peptide/in.peptide
+       examples/PACKAGES/imd/in.deca-ala_imd-gpu
+
 Description
 """""""""""
 

@@ -18,6 +18,12 @@ Examples
    pair_style extep
    pair_coeff * * BN.extep B N
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/ellipsoid/in.ellipsoid.mp
+
 Description
 """""""""""
 

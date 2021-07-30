@@ -41,6 +41,12 @@ Examples
    pair_style hdnnp 6.01 dir "./" showewsum 10000
    pair_coeff * * S Cu NULL Cu
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/relres/in.22DMH.respa
+
 Description
 """""""""""
 

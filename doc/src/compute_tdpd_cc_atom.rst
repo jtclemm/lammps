@@ -21,6 +21,12 @@ Examples
 
    compute 1 all tdpd/cc/atom 2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/tdpd/in.tdpd
+
 Description
 """""""""""
 

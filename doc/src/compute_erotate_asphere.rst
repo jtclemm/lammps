@@ -20,6 +20,12 @@ Examples
 
    compute 1 all erotate/asphere
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/line/in.line
+
 Description
 """""""""""
 

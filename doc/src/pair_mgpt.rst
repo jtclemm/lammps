@@ -22,6 +22,14 @@ Examples
    pair_coeff * * parmin potin Omega volpress yes nbody 1234 precision double
    pair_coeff * * parmin potin Omega volpress yes nbody 12
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mgpt/in.vacmin-bcc
+       examples/mliap/in.mliap.nn.Cu
+       examples/mliap/in.mliap.so3.Ni_Mo
+
 Description
 """""""""""
 

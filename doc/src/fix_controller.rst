@@ -39,6 +39,13 @@ Examples
    fix 1 all controller 100 0.2 0.5 0 100.0 v_pxxwall 1.01325 xwall
    fix 1 all controller 10000 0.2 0.5 0 2000 v_avpe -3.785 tcontrol
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/controller/in.controller.temp
+       examples/controller/in.controller.wall
+
 Description
 """""""""""
 

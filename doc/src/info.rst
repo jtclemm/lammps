@@ -26,6 +26,12 @@ Examples
    info styles all
    info styles atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.restart
+
 Description
 """""""""""
 

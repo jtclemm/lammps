@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC temperature_definition kinetic
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/min/in.min.box
+
 Description
 """""""""""
 

@@ -31,6 +31,15 @@ Examples
    fix 3 boundary temp/rescale 1 1.0 1.5 0.05 1.0
    fix 3 boundary temp/rescale 1 1.0 1.5 0.05 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/indent/in.indent
+       examples/shear/in.shear
+       examples/PACKAGES/eff/H2/in.h2
+       examples/PACKAGES/eff/Li-solid/in.Li.bohr
+
 Description
 """""""""""
 

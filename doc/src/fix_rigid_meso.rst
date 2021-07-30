@@ -51,6 +51,13 @@ Examples
    fix 1 particles rigid/meso molecule force 1*5 off off off force 6*10 off off on
    fix 2 spheres   rigid/meso group 3 sphere1 sphere2 sphere3 torque * off off off
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpdrx-shardlow/in.dpdrx-shardlow
+       examples/PACKAGES/diffraction/in.BulkNi
+
 Description
 """""""""""
 

@@ -38,6 +38,13 @@ Examples
    fix longitudinal pore spring couple ion 100.0 NULL NULL -20.0 0.0
    fix radial pore spring couple ion 100.0 0.0 0.0 NULL 5.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box
+       examples/srd/in.srd.mixture
+
 Description
 """""""""""
 

@@ -20,6 +20,13 @@ Examples
 
    fix 1 all nve/body
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/eff/Auger-Adamantane/in.adamantane_ionized.nve
+       examples/PACKAGES/eff/Li-solid/in.Li.ang
+
 Description
 """""""""""
 

@@ -27,6 +27,15 @@ Examples
 
    fix             fxgREM all grem 502 -0.15 -80000 fxnvt
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/grem/lj-single/in.gREM-nvt
+       examples/PACKAGES/grem/lj-temper/in.gREM-temper
+       examples/KAPPA/in.heat
+       examples/hyper/in.hyper.global
+
 Description
 """""""""""
 

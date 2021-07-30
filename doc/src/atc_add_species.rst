@@ -25,6 +25,12 @@ Examples
    group GOLDGROUP type 1
    fix_modify AtC add_species gold group GOLDGROUP
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.bond.fast
+
 Description
 """""""""""
 

@@ -35,6 +35,13 @@ Examples
    fix 2 bottomwall aveforce NULL -1.0 0.0 region top
    fix 2 bottomwall aveforce NULL -1.0 v_oscillate region top
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/flow/in.flow.pois
+       examples/obstacle/in.obstacle
+
 Description
 """""""""""
 

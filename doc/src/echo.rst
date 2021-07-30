@@ -20,6 +20,12 @@ Examples
    echo both
    echo log
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/thermal/in.bar1d_hoover
+
 Description
 """""""""""
 

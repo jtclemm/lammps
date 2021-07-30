@@ -39,6 +39,14 @@ Examples
    fix kick flow addforce 1.0 0.0 v_oscillate
    fix ff boundary addforce 0.0 0.0 v_push energy v_espace
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/flow/in.flow.pois
+       examples/obstacle/in.obstacle
+       examples/PACKAGES/momentum/in.momentum
+
 Description
 """""""""""
 

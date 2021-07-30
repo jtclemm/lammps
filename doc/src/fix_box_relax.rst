@@ -38,6 +38,16 @@ Examples
    fix 2 water box/relax aniso 0.0 dilate partial
    fix 2 ice box/relax tri 0.0 couple xy nreset 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb.Cu2O.elastic
+       examples/ELASTIC/in.elastic
+       examples/hugoniostat/in.hugoniostat
+       examples/latte/in.graphene.boxrel
+       examples/min/in.min.box
+
 Description
 """""""""""
 

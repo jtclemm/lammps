@@ -21,6 +21,13 @@ Examples
    angle_coeff 1 harmonic 80.0 30.0
    angle_coeff 2* cosine 50.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mofff/in.hkust1
+       examples/PACKAGES/mofff/in.hkust1_long
+
 Description
 """""""""""
 

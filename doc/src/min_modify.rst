@@ -40,6 +40,13 @@ Examples
    min_modify dmax 0.2
    min_modify integrator verlet tmax 4
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/relres/in.22DMH.respa
+       examples/rigid/in.rigid.property
+
 Description
 """""""""""
 

@@ -22,6 +22,13 @@ Examples
    pair_coeff 1 2 1.0 2.0 1.0 1.5 1.12 5.0
    pair_coeff 1 2 1.0 0.0 1.0 1.0 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/crack/in.crack
+       examples/deposit/in.deposit.atom
+
 Description
 """""""""""
 

@@ -21,6 +21,14 @@ Examples
 
    fix 1 all eos/cv 0.01
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpdh-shardlow/in.dpdh-shardlow
+       examples/PACKAGES/dpd-react/dpdrx-shardlow/in.dpdrx-shardlow
+       examples/COUPLE/fortran_dftb/in.simple
+
 Description
 """""""""""
 

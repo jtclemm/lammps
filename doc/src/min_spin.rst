@@ -26,6 +26,12 @@ Examples
    min_style  spin/lbfgs
    min_modify line spin_cubic discrete_factor 10.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/shear/in.shear
+
 Description
 """""""""""
 

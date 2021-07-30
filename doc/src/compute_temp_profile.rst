@@ -42,6 +42,12 @@ Examples
    compute myTemp flow temp/profile 1 1 1 x 10 out bin
    compute myTemp flow temp/profile 0 1 1 xyz 20 20 20
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/flow_gauss/in.GD
+
 Description
 """""""""""
 

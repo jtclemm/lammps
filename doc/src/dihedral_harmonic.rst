@@ -23,6 +23,13 @@ Examples
    dihedral_style harmonic
    dihedral_coeff 1 80.0 1 2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+       examples/template/in.mol-data-mix
+
 Description
 """""""""""
 

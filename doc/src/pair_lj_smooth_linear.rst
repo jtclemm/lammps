@@ -24,6 +24,13 @@ Examples
    pair_coeff * * 1.0 1.0
    pair_coeff 1 1 0.3 3.0 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/meam/in.meam
+       examples/meam/in.meam.shear
+
 Description
 """""""""""
 

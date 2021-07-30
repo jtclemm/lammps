@@ -54,6 +54,14 @@ Examples
    fix 5 all wall/gran/region granular dmt 1e5 0.2 0.3 10.0 tangential mindlin NULL 1.0 0.5 rolling sds 500.0 200.0 0.5 twisting marshall damping tsuji region myCone
    fix wall all wall/gran/region hooke/history 1000.0 200.0 200.0 100.0 0.5 1 region myCone contacts
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+       examples/deposit/in.deposit.atom
+       examples/deposit/in.deposit.molecule
+
 Description
 """""""""""
 

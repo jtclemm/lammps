@@ -42,6 +42,13 @@ Examples
    fix pf  all python/invoke 50 post_force post_force_callback
    fix eos all python/invoke 50 end_of_step end_of_step_callback
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/python/in.fix_python_move_nve_melt
+       examples/python/in.fix_python_move_nve_melt_opt
+
 Description
 """""""""""
 

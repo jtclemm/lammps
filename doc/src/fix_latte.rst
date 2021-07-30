@@ -21,6 +21,15 @@ Examples
 
    fix dftb all latte NULL
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/latte/in.latte.sucrose
+       examples/latte/in.latte.water
+       examples/PACKAGES/latboltz/confined_colloid/in.confined_colloids
+       examples/PACKAGES/latboltz/dragforce/in.setgamma_drag
+
 Description
 """""""""""
 

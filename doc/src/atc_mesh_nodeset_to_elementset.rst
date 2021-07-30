@@ -24,6 +24,12 @@ Examples
    fix_modify AtC mesh nodeset_to_elementset myNodeset myElementset min
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/latte/in.graphene.boxrel
+
 Description
 """""""""""
 

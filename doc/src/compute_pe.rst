@@ -23,6 +23,13 @@ Examples
    compute 1 all pe
    compute molPE all pe bond angle dihedral improper
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/line/in.line
+       examples/HEAT/in.lj.ehex
+
 Description
 """""""""""
 

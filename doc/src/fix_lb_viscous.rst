@@ -20,6 +20,15 @@ Examples
 
    fix 1 flow lb/viscous
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/latboltz/planewall/in.planewall_default_gamma
+       examples/PACKAGES/latboltz/polymer/in.polymer_default_gamma
+       examples/PACKAGES/dpd-smooth/2d-diffusion-in-shear-flow/in.lammps
+       examples/VISCOSITY/in.cos.1000SPCE
+
 Description
 """""""""""
 

@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC mesh create 10 1 1 feRegion p p p
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+
 Description
 """""""""""
 

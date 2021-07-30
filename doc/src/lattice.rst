@@ -47,6 +47,14 @@ Examples
                        basis 0.0 0.0 0.0 basis 0.5 0.5 0.5
    lattice none 2.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/no_atoms.screen
+       examples/PACKAGES/atc/two_temperature/uniform_heating.screen
+       examples/PACKAGES/interlayer/drip/in.CH_drip
+
 Description
 """""""""""
 

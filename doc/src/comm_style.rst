@@ -20,6 +20,13 @@ Examples
    comm_style brick
    comm_style tiled
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/in.electron_density
+       examples/PACKAGES/atc/elastic/in.electron_density
+
 Description
 """""""""""
 

@@ -37,6 +37,15 @@ Examples
 
 Example input scripts available: examples/PACKAGES/drude
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/swm4-ndp/in.swm4-ndp.lang
+       examples/PACKAGES/drude/toluene/in.toluene.lang
+       examples/SPIN/bfo/in.spin.bfo
+       examples/SPIN/iron/in.spin.iron
+
 Description
 """""""""""
 

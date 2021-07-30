@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC fix_flux temperature faceSet 10.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ELASTIC/displace.mod
+
 Description
 """""""""""
 

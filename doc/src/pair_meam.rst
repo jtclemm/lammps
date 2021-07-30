@@ -19,6 +19,13 @@ Examples
    pair_coeff * * ../potentials/library.meam Si ../potentials/si.meam Si
    pair_coeff * * ../potentials/library.meam Ni Al NULL Ni Al Ni Ni
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/meam_spline/in.meam-spline.Si
+       examples/PACKAGES/meam_spline/in.meam-spline.TiO2
+
 Description
 """""""""""
 

@@ -50,6 +50,12 @@ Examples
    fix 1 all momentum 100 linear 1 1 1 angular
    fix 1 all momentum/chunk 100 molchunk linear 1 1 1 angular
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/msst/in.msst
+
 Description
 """""""""""
 

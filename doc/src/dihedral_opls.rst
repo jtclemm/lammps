@@ -25,6 +25,13 @@ Examples
    dihedral_coeff 2 0.000 0.000 0.366 0.000   # CT-CT-CT-HC
    dihedral_coeff 3 0.000 0.000 0.318 0.000   # HC-CT-CT-HC
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/butane/in.butane.lang
+       examples/PACKAGES/mofff/in.hkust1
+
 Description
 """""""""""
 

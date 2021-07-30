@@ -23,6 +23,12 @@ Examples
    fix_modify AtC write_restart restart.mydata.AtC
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/nb3b/in.nb3b
+
 Description
 """""""""""
 

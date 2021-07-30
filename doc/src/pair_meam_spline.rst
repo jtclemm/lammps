@@ -22,6 +22,13 @@ Examples
    pair_coeff * * Ti.meam.spline Ti
    pair_coeff * * Ti.meam.spline Ti O
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mesont/in.cnt
+       examples/PACKAGES/dpd-meso/edpd/in.edpd
+
 Description
 """""""""""
 

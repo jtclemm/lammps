@@ -20,6 +20,12 @@ Examples
 
    compute 1 all momentum
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/momentum/in.momentum
+
 Description
 """""""""""
 

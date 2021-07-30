@@ -20,6 +20,13 @@ Examples
 
    compute 1 all erotate/sphere
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dipole/in.dipole
+       examples/pour/in.pour
+
 Description
 """""""""""
 

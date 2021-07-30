@@ -26,6 +26,12 @@ Examples
    pair_coeff * * 10.0 1.5
    pair_coeff 1 1 20.0 1.3 7.0 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/hardy/in.eshelby_static
+
 Description
 """""""""""
 

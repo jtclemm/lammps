@@ -25,6 +25,14 @@ Examples
    compute 1 all pressure NULL pair bond
    compute 1 all pressure NULL pair/hybrid lj/cut
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.cubes
+       examples/coreshell/in.coreshell
+       examples/HEAT/in.spce.ehex
+
 Description
 """""""""""
 

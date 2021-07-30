@@ -65,6 +65,15 @@ Examples
    group boundary delete
    group mine dynamic all region myRegion every 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/thermal/in.bar1d_hoover
+       examples/PACKAGES/atc/thermal/in.bar1d_hoover
+       examples/PACKAGES/atc/thermal/in.bar1d_interpolate
+       examples/PACKAGES/atc/thermal/in.bar1d_interpolate
+
 Description
 """""""""""
 

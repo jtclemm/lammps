@@ -21,6 +21,12 @@ Examples
    log log.equil
    log log.equil append
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/phonon/dynamical_matrix_command/Silicon/in.silicon
+
 Description
 """""""""""
 

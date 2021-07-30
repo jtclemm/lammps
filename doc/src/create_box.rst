@@ -35,6 +35,12 @@ Examples
    create_box 2 mybox
    create_box 2 mybox bond/types 2 extra/bond/per/atom 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/conducting_interface.screen
+
 Description
 """""""""""
 

@@ -89,6 +89,14 @@ could be replaced by:
    compute cc1 flow chunk/atom bin/1d y 0.0 1.0
    fix 1 flow ave/chunk 100 10 1000 cc1 vx vz norm sample file vel.profile
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.lj.ehex
+       examples/KAPPA/in.ehex
+       examples/VISCOSITY/in.mp.2d
+
 Description
 """""""""""
 

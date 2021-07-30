@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC source temperature middle temporal_ramp 10.0 0.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/micelle/in.micelle
+
 Description
 """""""""""
 

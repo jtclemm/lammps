@@ -46,6 +46,12 @@ Examples
    fix_modify AtC gradients delete velocity
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.fire_mod
+
 Description
 """""""""""
 

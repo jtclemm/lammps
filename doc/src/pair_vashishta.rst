@@ -43,6 +43,16 @@ Examples
    pair_style vashishta/table 100000 0.2
    pair_coeff * * SiC.vashishta Si C
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/vashishta/in.vashishta.sio2
+       examples/vashishta/in.vashishta.table.inp
+       examples/vashishta/in.vashishta.table.sio2
+       examples/mliap/in.mliap.quadratic.compute
+       examples/snap/in.snap.compute
+
 Description
 """""""""""
 

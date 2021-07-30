@@ -24,6 +24,12 @@ Examples
    group WATERGROUP type 1 2
    fix_modify AtC add_molecule small water WATERGROUP
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance
+
 Description
 """""""""""
 

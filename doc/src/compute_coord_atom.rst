@@ -38,6 +38,14 @@ Examples
    compute 1 solute coord/atom cutoff 2.0 group solvent
    compute 1 all coord/atom orientorder 2 0.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cnp/in.cnp
+       examples/prd/in.prd
+       examples/tad/in.tad
+
 Description
 """""""""""
 

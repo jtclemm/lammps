@@ -34,6 +34,16 @@ Examples
    pair_coeff * * 1 1
    pair_coeff 1 1 1 1.1 2.8
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+       examples/PACKAGES/imd/in.bucky-plus-cnt-gpu
+       examples/PACKAGES/imd/in.melt_imd-gpu
+       examples/hugoniostat/in.hugoniostat
+       examples/numdiff/in.numdiff
+
 Description
 """""""""""
 

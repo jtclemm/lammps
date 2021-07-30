@@ -45,6 +45,12 @@ Examples
    fix 2 boundary meso/move rotate 0.0 0.0 0.0 0.0 0.0 1.0 5.0
    fix 2 boundary meso/move variable v_myx v_myy NULL v_VX v_VY NULL
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/mscg/in.mscg
+
 Description
 """""""""""
 

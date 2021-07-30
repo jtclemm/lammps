@@ -30,6 +30,13 @@ Examples
    fix 1 all smd/integrate_ulsph adjust_radius 1.02 25 50
    fix 1 all smd/integrate_ulsph limit_velocity 1000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/aluminum_strip_pull/in.aluminum_strip_pull
+       examples/PACKAGES/machdyn/rubber_strip_pull/in.rubber_strip_pull
+
 Description
 """""""""""
 

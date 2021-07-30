@@ -23,6 +23,16 @@ Examples
 
    fix 1 all shardlow
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpdh-shardlow/in.dpdh-shardlow
+       examples/PACKAGES/dpd-react/dpdp-shardlow/in.dpdp-shardlow
+       examples/PACKAGES/dpd-react/dpdrx-shardlow/in.dpdrx-shardlow
+       examples/PACKAGES/machdyn/aluminum_strip_pull/in.aluminum_strip_pull
+       examples/PACKAGES/machdyn/fluid_structure_interaction/in.fluid_structure_interaction
+
 Description
 """""""""""
 

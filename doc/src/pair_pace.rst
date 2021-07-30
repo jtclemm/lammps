@@ -27,6 +27,13 @@ Examples
    pair_style pace product
    pair_coeff * * Cu-PBE-core-rep.ace Cu
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peri/in.peri-pmb
+       examples/peri/in.peri.pmb
+
 Description
 """""""""""
 

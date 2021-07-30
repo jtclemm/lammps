@@ -20,6 +20,12 @@ Examples
     pair_coeff ** Mg.rann Mg
     pair_coeff ** MgAlalloy.rann Mg Mg Al Mg
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/reaxff/in.reaxff.rdx-shielded
+
 Description
 """""""""""
 

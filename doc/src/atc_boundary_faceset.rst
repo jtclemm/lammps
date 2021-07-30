@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC boundary_faceset is obndy
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.neigh.static
+
 Description
 """""""""""
 

@@ -24,6 +24,12 @@ Examples
    fix_modify AtC output volume_integral eset1 mass_density
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

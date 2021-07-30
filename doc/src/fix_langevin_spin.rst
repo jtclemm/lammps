@@ -23,6 +23,13 @@ Examples
 
    fix 2 all langevin/spin 300.0 0.01 21
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/latte/in.graphene.boxrel
+       examples/latte/in.latte.multiple
+
 Description
 """""""""""
 

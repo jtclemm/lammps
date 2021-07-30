@@ -43,6 +43,13 @@ Examples
    fix 1 spheres lb/rigid/pc/sphere
    fix 1 all lb/rigid/pc/sphere force 1 0 0 innerNodes ForceAtoms
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/latboltz/confined_colloid/in.confined_colloids
+       examples/PACKAGES/latboltz/microrheology/in.microrheology_default_gamma
+
 Description
 """""""""""
 

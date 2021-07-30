@@ -23,6 +23,12 @@ Examples
    read_data      proteinX.data fix myCMAP crossterm CMAP
    fix_modify     myCMAP energy yes
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/cmap/in.cmap
+
 Description
 """""""""""
 

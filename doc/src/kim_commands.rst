@@ -26,6 +26,13 @@ Examples
    kim param args
    kim property args
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.restart
+       examples/PACKAGES/atc/two_temperature/in.restart
+
 Description
 """""""""""
 

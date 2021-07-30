@@ -22,6 +22,14 @@ Examples
    pair_style sdpd/taitwater/isothermal 300. 1. 28681
    pair_coeff * * 1000.0 1430.0 2.4
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-smooth/equipartition-verification/in.lammps
+       examples/PACKAGES/machdyn/aluminum_strip_pull/in.aluminum_strip_pull
+       examples/PACKAGES/machdyn/rubber_strip_pull/in.rubber_strip_pull
+
 Description
 """""""""""
 

@@ -53,6 +53,13 @@ Examples
    fix 1 all langevin 1.0 1.1 100.0 48279 scale 3 1.5
    fix 1 all langevin 1.0 1.1 100.0 48279 angmom 3.333
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/butane/in.butane.lang
+       examples/PACKAGES/drude/ethanol/in.ethanol.lang
+
 Description
 """""""""""
 

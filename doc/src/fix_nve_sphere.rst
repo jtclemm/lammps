@@ -36,6 +36,13 @@ Examples
    fix 1 all nve/sphere disc
    fix 1 all nve/sphere update dipole/dlm
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/SPIN/cobalt_fcc/in.spin.cobalt_fcc
+       examples/SPIN/dipole_spin/in.spin.iron_dipole_cut
+
 Description
 """""""""""
 

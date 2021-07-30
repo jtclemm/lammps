@@ -26,6 +26,12 @@ Examples
    fix_modify AtC output nodeset nset1 sum
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

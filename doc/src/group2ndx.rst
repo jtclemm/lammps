@@ -27,6 +27,12 @@ Examples
    ndx2group someindex.ndx
    ndx2group someindex.ndx mobile
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/thermal/in.no_atoms
+
 Description
 """""""""""
 

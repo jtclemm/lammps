@@ -21,6 +21,12 @@ Examples
    pair_coeff * * 1.0 1.0
    pair_coeff 1 1 1.0 1.5 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/vashishta/in.vashishta.inp
+
 Description
 """""""""""
 

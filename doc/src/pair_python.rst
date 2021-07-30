@@ -24,6 +24,14 @@ Examples
    pair_coeff * * coul/long
    pair_coeff * * python py_pot.LJCutSPCE OW NULL
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/python/in.pair_python_table
+       examples/PACKAGES/quip/in.gap
+       examples/PACKAGES/quip/in.sw
+
 Description
 """""""""""
 

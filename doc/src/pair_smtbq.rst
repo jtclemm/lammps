@@ -18,6 +18,14 @@ Examples
    pair_style smtbq
    pair_coeff * * ffield.smtbq.Al2O3 O Al
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/smtbq/in.smtbq.TiO2
+       examples/ASPHERE/box/in.box
+       examples/micelle/in.micelle
+
 Description
 """""""""""
 

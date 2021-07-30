@@ -32,6 +32,15 @@ Examples
    compute myTemp mobile temp/asphere bias tempCOM
    compute myTemp mobile temp/asphere dof rotate
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/ellipsoid/in.ellipsoid
+       examples/ellipse/in.ellipse.gayberne
+       examples/ellipse/in.ellipse.resquared
+       examples/PACKAGES/ees/in.fix_wall
+
 Description
 """""""""""
 

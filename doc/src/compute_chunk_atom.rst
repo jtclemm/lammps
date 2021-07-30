@@ -94,6 +94,13 @@ Examples
    compute 1 all chunk/atom bin/cylinder z lower 2 10 10 2.0 5.0 3 discard yes
    compute 1 all chunk/atom c_cluster
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.lj.ehex
+       examples/KAPPA/in.ehex
+
 Description
 """""""""""
 

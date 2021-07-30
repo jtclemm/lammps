@@ -49,6 +49,15 @@ Examples
    fix fcold all ehex 1 -0.075 region rcold constrain com
    fix frattle all rattle 1e-10 400 0 b 1 a 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.lj.ehex
+       examples/HEAT/in.lj.hex
+       examples/HEAT/in.spce.ehex
+       examples/HEAT/in.spce.hex
+
 Description
 """""""""""
 

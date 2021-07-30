@@ -47,6 +47,15 @@ Examples
    fix 1 all phonon 20 5000 200000 map.in EAM3D
    fix 1 all phonon 10 5000 500000 GAMMA EAM0D nasr 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/phonon/3-3D-FCC-Cu-EAM/in.EAM3D
+       examples/PACKAGES/phonon/4-Graphene/in.graphene
+       examples/PACKAGES/pimd/para-h2/in.scp
+       examples/PACKAGES/pimd/prot-hairpin/in.scp
+
 Description
 """""""""""
 

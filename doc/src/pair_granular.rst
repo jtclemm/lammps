@@ -37,6 +37,13 @@ Examples
    pair_coeff 1 1 dmt 1000.0 50.0 0.3 0.0 tangential mindlin NULL 0.5 0.5 rolling sds 500.0 200.0 0.5 twisting marshall
    pair_coeff 2 2 dmt 1000.0 50.0 0.3 10.0 tangential mindlin NULL 0.5 0.1 rolling sds 500.0 200.0 0.1 twisting marshall
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/hdnnp/in.hdnnp
+       examples/granregion/in.granregion.box
+
 Description
 """""""""""
 

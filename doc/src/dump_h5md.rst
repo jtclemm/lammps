@@ -50,6 +50,12 @@ Examples
    dump h5md1 all h5md 100 dump_h5md.h5 position velocity every 10
    dump h5md1 all h5md 100 dump_h5md.h5 velocity author "John Doe"
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/mesh/gaussianIC2d_hex.screen
+
 Description
 """""""""""
 

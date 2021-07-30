@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC equilibrium_start on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/crack/in.crack
+
 Description
 """""""""""
 

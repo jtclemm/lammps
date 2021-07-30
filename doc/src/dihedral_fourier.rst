@@ -22,6 +22,14 @@ Examples
    dihedral_style fourier
    dihedral_coeff 1 3 -0.846200 3 0.0 7.578800 1 0 0.138000 2 -180.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/relres/in.22DMH.real
+       examples/relres/in.22DMH.relres
+       examples/relres/in.22DMH.respa
+
 Description
 """""""""""
 

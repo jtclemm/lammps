@@ -23,6 +23,12 @@ Examples
    fix_modify AtC mesh read myComponent.mesh p p p
    fix_modify AtC mesh read myOtherComponent.exo
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/MC/in.mc
+
 Description
 """""""""""
 

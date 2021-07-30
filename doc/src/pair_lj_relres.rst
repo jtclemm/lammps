@@ -27,6 +27,13 @@ Examples
    pair_coeff 1 1 0.5 1.0 1.5 1.1
    pair_coeff 2 2 0.5 1.0 0.0 0.0 3.0 3.5 6.0 7.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/relres/in.22DMH.real
+       examples/PACKAGES/atc/cauchy_born/in.cb_shear
+
 Description
 """""""""""
 

@@ -69,6 +69,13 @@ Examples
    balance 1.0 shift x 10 1.1 weight time 0.8 weight neigh 0.5 weight store balance
    balance 1.0 shift x 20 1.0 out tmp.balance
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/adios/balance/in.adios_balance
+       examples/PACKAGES/atc/cauchy_born/ftcb_constV.screen
+
 Description
 """""""""""
 

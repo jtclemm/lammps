@@ -33,6 +33,13 @@ Examples
    fix extra all print 100 "Coords of marker atom = $x $y $z"
    fix extra all print 100 "Coords of marker atom = $x $y $z" file coord.txt
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box
+       examples/balance/in.balance.clock.dynamic
+
 Description
 """""""""""
 

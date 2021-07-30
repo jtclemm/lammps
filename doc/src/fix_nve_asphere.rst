@@ -24,6 +24,15 @@ Examples
 
    fix 1 all nve/asphere
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ellipse/in.ellipse.gayberne
+       examples/ellipse/in.ellipse.resquared
+       examples/PACKAGES/awpmd/in.h_atom
+       examples/PACKAGES/awpmd/in.h_molecule
+
 Description
 """""""""""
 

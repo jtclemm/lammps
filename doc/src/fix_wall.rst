@@ -95,6 +95,15 @@ Examples
    fix wallhi all wall/lj126 v_wiggle 23.2 1.0 1.0 2.5
    fix zwalls all wall/colloid zlo 0.0 1.0 1.0 0.858 zhi 40.0 1.0 1.0 0.858
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/molecule/in.polarize
+       examples/controller/in.controller.wall
+       examples/body/in.wall2d
+       examples/body/in.pour3d
+
 Description
 """""""""""
 

@@ -20,6 +20,13 @@ Examples
 
    compute 1 all smd/rho
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/fluid_structure_interaction/in.fluid_structure_interaction
+       examples/PACKAGES/machdyn/funnel_flow/in.funnel_flow
+
 Description
 """""""""""
 

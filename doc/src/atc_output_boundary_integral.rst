@@ -25,6 +25,12 @@ Examples
    fix_modify AtC output boundary_integral stress faceset loop1
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/MC/in.mc
+
 Description
 """""""""""
 

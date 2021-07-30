@@ -105,6 +105,17 @@ Examples
    compute 1 all property/atom ix iy iz
    compute 3 all property/atom sp spx spy spz
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/line/in.line
+       examples/balance/in.balance.clock.dynamic
+       examples/comb/in.comb.Cu2O.elastic
+       examples/ellipse/in.ellipse.gayberne
+       examples/granular/in.pour.drum
+       examples/streitz/in.streitz.wolf
+
 Description
 """""""""""
 

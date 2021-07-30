@@ -19,6 +19,12 @@ Examples
 
    dimension 2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/poisson.screen
+
 Description
 """""""""""
 

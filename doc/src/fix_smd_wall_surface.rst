@@ -28,6 +28,12 @@ Examples
 
    fix stl_surf all smd/wall_surface tool.stl 2 65535
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/colvars/in.peptide-spring2
+
 Description
 """""""""""
 

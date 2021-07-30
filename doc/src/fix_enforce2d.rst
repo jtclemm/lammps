@@ -23,6 +23,14 @@ Examples
 
    fix 5 all enforce2d
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/flow/in.flow.pois
+       examples/PACKAGES/dpd-react/dpde-shardlow/in.dpde-shardlow
+       examples/PACKAGES/dpd-react/dpde-vv/in.dpde-vv
+
 Description
 """""""""""
 

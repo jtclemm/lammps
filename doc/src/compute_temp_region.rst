@@ -21,6 +21,13 @@ Examples
 
    compute mine flow temp/region boundary
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.lj.ehex
+       examples/KAPPA/in.ehex
+
 Description
 """""""""""
 

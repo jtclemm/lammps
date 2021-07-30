@@ -18,6 +18,12 @@ Examples
    pair_style mesocnt
    pair_coeff * * 10_10.cnt
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/tdpd/in.tdpd
+
 Description
 """""""""""
 

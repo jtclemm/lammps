@@ -24,6 +24,12 @@ Examples
    fix_modify AtC set reference_potential_energy -0.05
    fix_modify AtC set reference_potential_energy myPEvalues
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/message/in.message.server
+
 Description
 """""""""""
 

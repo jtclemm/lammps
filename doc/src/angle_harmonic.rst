@@ -23,6 +23,16 @@ Examples
    angle_style harmonic
    angle_coeff 1 300.0 107.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+       examples/gcmc/in.gcmc.co2
+       examples/HEAT/in.spce.ehex
+       examples/rdf-adf/in.spce
+       examples/relres/in.22DMH.real
+
 Description
 """""""""""
 

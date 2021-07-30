@@ -20,6 +20,13 @@ Examples
 
    compute 1 all ke
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/line/in.line
+       examples/HEAT/in.lj.ehex
+
 Description
 """""""""""
 

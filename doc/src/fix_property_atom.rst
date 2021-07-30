@@ -41,6 +41,16 @@ Examples
    fix 1 all property/atom i_myflag1 i_myflag2
    fix 1 all property/atom d_sx d_sy d_sz
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/coreshell/in.coreshell
+       examples/pour/in.pour.2d.molecule
+       examples/rigid/in.rigid.gravity
+       examples/python/in.fix_python_invoke
+       examples/python/in.fix_python_invoke_neighlist
+
 Description
 """""""""""
 

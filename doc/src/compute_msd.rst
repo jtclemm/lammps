@@ -28,6 +28,12 @@ Examples
    compute 1 all msd
    compute 1 upper msd com yes average yes
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/DIFFUSE/in.msd.2d
+
 Description
 """""""""""
 

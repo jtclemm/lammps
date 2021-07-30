@@ -29,6 +29,13 @@ Examples
 
    fix top_velocity top_group smd/setvel 1.0 0.0 0.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/funnel_flow/in.funnel_flow
+       examples/PACKAGES/colvars/in.peptide-spring
+
 Description
 """""""""""
 

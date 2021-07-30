@@ -30,6 +30,14 @@ Examples
    compute 1 all stress/atom NULL pair bond
    compute 1 all centroid/stress/atom NULL bond dihedral improper
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb.Cu2O.elastic
+       examples/KAPPA/in.heatflux
+       examples/mliap/in.mliap.nn.Cu
+
 Description
 """""""""""
 

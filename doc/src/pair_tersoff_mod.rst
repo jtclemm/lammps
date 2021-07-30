@@ -41,6 +41,13 @@ Examples
    pair_style tersoff/mod/c
    pair_coeff * * Si.tersoff.modc Si Si
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/electron_stopping/in.cascade_SiSi
+       examples/PACKAGES/drude/toluene/in.toluene.lang
+
 Description
 """""""""""
 

@@ -142,6 +142,12 @@ Examples
    dump snap all cfg 100 dump.config.*.cfg mass type xs ys zs id type c_Stress[2]
    dump 1 all xtc 1000 file.xtc
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/hardy/in.eam_unistrain_cell
+
 Description
 """""""""""
 

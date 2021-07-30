@@ -34,6 +34,13 @@ Examples
    compute 1 fluid rdf 500 1 1 1 2 2 1 2 2
    compute 1 fluid rdf 500 1*3 2 5 *10 cutoff 3.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rdf-adf/in.spce
+       examples/rerun/in.rdf.first
+
 Description
 """""""""""
 

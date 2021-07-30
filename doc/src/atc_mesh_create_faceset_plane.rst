@@ -26,6 +26,12 @@ Examples
    fix_modify AtC mesh create_faceset xyplane plane y 0 x -4 0
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/hyper/in.hyper.global
+
 Description
 """""""""""
 

@@ -18,6 +18,13 @@ Examples
    improper_style inversion/harmonic
    improper_coeff 1 18.776340 0.000000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+       examples/nb3b/in.nb3b
+
 Description
 """""""""""
 

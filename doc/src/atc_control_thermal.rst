@@ -37,6 +37,12 @@ Examples
    fix_modify AtC control thermal flux faceset bndy_faces
    fix_modify AtC control thermal correction_max_iterations 10
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/crack/in.crack
+
 Description
 """""""""""
 

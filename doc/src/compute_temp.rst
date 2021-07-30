@@ -24,6 +24,16 @@ Examples
    compute 1 all temp
    compute myTemp mobile temp
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/flow/in.flow.pois
+       examples/granregion/in.granregion.box
+       examples/rigid/in.rigid.tnr
+       examples/shear/in.shear
+       examples/srd/in.srd.mixture
+
 Description
 """""""""""
 

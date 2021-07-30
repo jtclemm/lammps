@@ -28,6 +28,16 @@ Examples
    fix 3 all nve/spin lattice moving
    fix 1 all nve/spin lattice frozen
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/SPIN/iron/in.spin.iron
+       examples/SPIN/nickel/in.spin.nickel
+       examples/SPIN/setforce_spin/in.spin.setforce
+       examples/body/in.cubes
+       examples/message/in.message.tilt
+
 Description
 """""""""""
 

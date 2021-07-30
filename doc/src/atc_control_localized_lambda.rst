@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC control localized_lambda on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.wall2d
+
 Description
 """""""""""
 

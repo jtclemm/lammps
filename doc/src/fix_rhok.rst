@@ -25,6 +25,13 @@ Examples
    # output of 4 values from fix rhok: U_bias rho_k_RE  rho_k_IM  \|rho_k\|
    thermo_style custom step temp pzz lz f_bias f_bias[1] f_bias[2] f_bias[3]
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box
+       examples/rigid/in.rigid
+
 Description
 """""""""""
 

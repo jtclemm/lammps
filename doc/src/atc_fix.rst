@@ -24,6 +24,12 @@ Examples
    fix_modify AtC fix temperature groupNAME 10.
    fix_modify AtC fix temperature groupNAME 0 0 0 10.0 0 0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+
 Description
 """""""""""
 

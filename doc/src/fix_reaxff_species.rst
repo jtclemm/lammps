@@ -41,6 +41,13 @@ Examples
    fix 1 all reaxff/species 1 2 20 species.out cutoff 1 1 0.40 cutoff 1 2 0.55
    fix 1 all reaxff/species 1 100 100 species.out element Au O H position 1000 AuOH.pos
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/rhok/in.crystal
+       examples/PACKAGES/rhok/in.pinning
+
 Description
 """""""""""
 

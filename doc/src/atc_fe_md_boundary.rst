@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC fe_md_boundary interpolate
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+
 Description
 """""""""""
 

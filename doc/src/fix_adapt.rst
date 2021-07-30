@@ -62,6 +62,15 @@ Examples
    variable ramp_up equal "ramp(0.01,0.5)"
    fix stretch all adapt 1 bond harmonic r0 1 v_ramp_up
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box
+       examples/micelle/in.micelle
+       examples/micelle/in.micelle-rigid
+       examples/snap/in.snap.scale.Ni_Zuo_JCPA2020
+
 Description
 """""""""""
 

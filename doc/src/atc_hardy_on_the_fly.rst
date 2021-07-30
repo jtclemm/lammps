@@ -24,6 +24,12 @@ Examples
    fix_modify AtC on_the_fly kernel
    fix_modify AtC on_the_fly kernel off
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.neb.sivac.fire
+
 Description
 """""""""""
 

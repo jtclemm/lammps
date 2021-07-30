@@ -59,6 +59,13 @@ Examples
    change_box all xy final -2.0 z final 0.0 5.0 boundary p p f remap units box
    change_box all x scale 1.1 y volume z volume remap
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/bar1d_frac_step.screen
+       examples/PACKAGES/atc/elastic/cnt_electrostatic2.screen
+
 Description
 """""""""""
 

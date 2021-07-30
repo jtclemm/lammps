@@ -27,6 +27,12 @@ Examples
    fix_modify AtC mesh create_faceset obndy box -4.0 4.0 -12 12 -12 12 out
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.flatwall
+
 Description
 """""""""""
 

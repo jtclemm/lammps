@@ -37,6 +37,13 @@ Examples
    fix 1 all qeq/reaxff 1 0.0 10.0 1.0e-6 reaxff
    fix 1 all qeq/reaxff 1 0.0 10.0 1.0e-6 param.qeq maxiter 500
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/qtb/alpha_quartz_qtb/in.alpha_quartz_qtb
+       examples/reaxff/in.reaxff.tatb
+
 Description
 """""""""""
 

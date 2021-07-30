@@ -31,6 +31,12 @@ Examples
    dynamical_matrix 3 regular 0.00004 file dynmat.dat
    dynamical_matrix 5 eskm 0.00000001 file dynamical.dat binary yes
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/thermal/in.bar1d_hoover
+
 Description
 """""""""""
 

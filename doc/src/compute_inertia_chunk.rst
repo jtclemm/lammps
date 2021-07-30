@@ -21,6 +21,12 @@ Examples
 
    compute 1 fluid inertia/chunk molchunk
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/addtorque/in.addtorque
+
 Description
 """""""""""
 

@@ -51,6 +51,15 @@ Examples
    pair_style rebo
    pair_coeff * * ../potentials/CH.rebo H C
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/airebo/in.airebo-m
+       examples/airebo/in.rebo2
+       examples/PACKAGES/awpmd/in.h_atom
+       examples/PACKAGES/awpmd/in.h_molecule
+
 Description
 """""""""""
 

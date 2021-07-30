@@ -40,6 +40,13 @@ Examples
    fix uniax_npt all npt/uef temp 400 400 300 iso 1 1 3000 erate 0.00001 -0.000005 ext yz
    fix biax_npt all npt/uef temp 400 400 100 erate -0.00001 0.000005 x 1 1 3000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/hugoniostat/in.hugoniostat
+       examples/multi/in.granular
+
 Description
 """""""""""
 

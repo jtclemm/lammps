@@ -22,6 +22,12 @@ Examples
    mass * 62.5
    mass 2* 62.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/uef/npt_biaxial/in.npt_biaxial
+
 Description
 """""""""""
 

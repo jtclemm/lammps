@@ -25,6 +25,12 @@ Examples
    fix 1 all ipi my.server.com 12345
    fix 1 all ipi mysocket 666 unix reset
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/gcmc/in.widom.lj
+
 Description
 """""""""""
 

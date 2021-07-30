@@ -21,6 +21,12 @@ Examples
    bond_style quartic
    bond_coeff 2 1200 -0.55 0.25 1.3 34.6878
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/molecule/in.harmonic_bonds
+
 Description
 """""""""""
 

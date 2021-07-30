@@ -28,6 +28,12 @@ Examples
    compute centrosymmetry all centro/atom
    fix_modify AtC computes add centrosymmetry number
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/fire/in.cg
+
 Description
 """""""""""
 

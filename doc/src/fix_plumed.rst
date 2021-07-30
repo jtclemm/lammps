@@ -26,6 +26,12 @@ Examples
 
    fix pl all plumed all plumed plumedfile plumed.dat outfile p.log
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/rigid/in.rigid.poems2
+
 Description
 """""""""""
 

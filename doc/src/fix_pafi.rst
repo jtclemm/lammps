@@ -35,6 +35,12 @@ Examples
    run 0 post no
    fix hp all pafi pa 500.0 0.01 434 overdamped yes
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/phonon/1-1D-mono/in.Ana
+
 Description
 """""""""""
 

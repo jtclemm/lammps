@@ -53,6 +53,19 @@ Examples
    pair_coeff 1 1 lj/cut 1.0 1.0 2.5
    pair_coeff 1 1 morse 1.0 1.0 1.0 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/atm/in.atm
+       examples/dreiding/in.dreiding
+       examples/nb3b/in.nb3b
+       examples/SPIN/test_problems/validation_nvt/in.spin.nvt_spin
+       examples/streitz/in.streitz.ewald
+       examples/tracker/in.track
+       examples/ASPHERE/line/in.line
+       examples/ASPHERE/line/in.line.srd
+
 Description
 """""""""""
 

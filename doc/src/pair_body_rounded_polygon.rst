@@ -27,6 +27,13 @@ Examples
    pair_coeff * * 100.0 1.0
    pair_coeff 1 1 100.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.cubes
+       examples/body/in.pour3d
+
 Description
 """""""""""
 

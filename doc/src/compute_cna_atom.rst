@@ -21,6 +21,13 @@ Examples
 
    compute 1 all cna/atom 3.08
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cauchy/in.cauchystat
+       examples/PACKAGES/cnp/in.cnp
+
 Description
 """""""""""
 

@@ -33,6 +33,12 @@ Examples
    fix 1 all eos/table/rx linear eos.table 10000 KEYWORD 1.5
    fix 1 all eos/table/rx linear eos.table 10000 KEYWORD 1.5 0.025 0.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/lammps_quest/in.lammps
+
 Description
 """""""""""
 

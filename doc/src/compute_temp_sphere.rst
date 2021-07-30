@@ -32,6 +32,14 @@ Examples
    compute myTemp mobile temp/sphere bias tempCOM
    compute myTemp mobile temp/sphere dof rotate
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box
+       examples/granregion/in.granregion.box
+       examples/pour/in.pour.2d.molecule
+
 Description
 """""""""""
 

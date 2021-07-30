@@ -23,6 +23,12 @@ Examples
    fix_modify AtC time_integration fractional_step
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/multi/in.colloid
+
 Description
 """""""""""
 

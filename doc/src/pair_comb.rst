@@ -35,6 +35,14 @@ Examples
    pair_style comb3 polar_off
    pair_coeff * * ../potentials/ffield.comb3 O Cu N C O
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb3
+       examples/coreshell/in.coreshell.dsf
+       examples/coreshell/in.coreshell
+
 Description
 """""""""""
 

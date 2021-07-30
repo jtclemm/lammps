@@ -24,6 +24,12 @@ Examples
 
    fix 1 all accelerate/cos 0.02e-5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/VISCOSITY/in.cos.1000SPCE
+
 Description
 """""""""""
 

@@ -22,6 +22,12 @@ Examples
    fix 1 all nvt/body temp 300.0 300.0 100.0
    fix 1 all nvt/body temp 300.0 300.0 100.0 drag 0.2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/message/in.message.tilt.client
+
 Description
 """""""""""
 

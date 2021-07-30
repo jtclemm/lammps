@@ -121,6 +121,14 @@ Examples
    pair_coeff * * 1.0 1.0
    pair_coeff 1 1 1.0 1.0 2.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/HEAT/in.spce.ehex
+       examples/PACKAGES/gle/in.h2o-quantum
+       examples/PACKAGES/gle/in.h2o-smart
+
 Description
 """""""""""
 

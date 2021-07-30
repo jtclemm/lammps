@@ -25,6 +25,16 @@ Examples
    pair_coeff * * si.sw Si
    pair_coeff * * GaN.sw Ga N Ga
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/prd/in.prd
+       examples/tad/in.tad
+       examples/threebody/in.threebody
+       examples/PACKAGES/bocs/in.methanol
+       examples/python/in.pair_python_coulomb
+
 Description
 """""""""""
 

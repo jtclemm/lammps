@@ -23,6 +23,12 @@ Examples
 
    fix 1 all dpd/energy
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpde-vv/in.dpde-vv
+
 Description
 """""""""""
 

@@ -35,6 +35,12 @@ Examples
    fix_modify AtC control momentum flux faceset bndy_faces
    fix_modify AtC control momentum glc_velocity
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb.Si.elastic
+
 Description
 """""""""""
 

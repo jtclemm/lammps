@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC unfix_flux temperature faceSet
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/multi/in.colloid
+
 Description
 """""""""""
 

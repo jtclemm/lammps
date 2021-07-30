@@ -58,6 +58,13 @@ Examples
    pair_coeff * * 18.75 4.5 0.41 1.58 1.58 1.0 1.0E-5 2.0
    pair_coeff 1 1 18.75 4.5 0.41 1.58 1.58 1.0 1.0E-5 2.0 3.0 1.0E-5 2.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mesont/in.bundle
+       examples/PACKAGES/mesont/in.film
+
 Description
 """""""""""
 

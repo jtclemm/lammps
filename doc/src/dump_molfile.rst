@@ -27,6 +27,12 @@ Examples
    dump mf2 all molfile 10 melt2-*.pdb pdb .
    dump mf3 all molfile 50 melt3.xyz xyz .:/home/akohlmey/vmd/plugins/LINUX/molfile
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/molecule/harmonic_bonds.screen
+
 Description
 """""""""""
 

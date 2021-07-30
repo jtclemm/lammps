@@ -66,6 +66,14 @@ Examples
    pair_coeff * * 100.0 3.0
    pair_coeff 1 1 100.0 3.5 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/reaction/tiny_polystyrene/in.tiny_polystyrene.stabilized
+       examples/colloid/in.colloid
+       examples/multi/in.colloid
+
 Description
 """""""""""
 

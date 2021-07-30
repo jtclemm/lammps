@@ -38,6 +38,14 @@ Examples
    compute 1 all orientorder/atom wl/hat yes
    compute 1 all orientorder/atom components 6
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/steinhardt/in.bcc
+       examples/steinhardt/in.fcc
+       examples/steinhardt/in.icos
+
 Description
 """""""""""
 

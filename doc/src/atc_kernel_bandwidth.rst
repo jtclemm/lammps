@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC kernel_bandwidth 8
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/gcmc/in.gcmc.co2
+
 Description
 """""""""""
 

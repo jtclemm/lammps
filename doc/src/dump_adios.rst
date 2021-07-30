@@ -32,6 +32,12 @@ Examples
    dump 4a     all custom/adios 100 dump_adios.bp id v_p x y z
    dump 2 subgroup custom/adios 100 dump_adios.bp mass type xs ys zs vx vy vz
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/hardy/in.eshelby_static
+
 Description
 """""""""""
 

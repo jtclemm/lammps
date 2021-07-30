@@ -48,6 +48,13 @@ Examples
    fix 1 all indent 10.0 sphere v_x v_y 0.0 v_radius side in
    fix 2 flow indent 10.0 cylinder z 0.0 0.0 10.0 units box
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/ipi/in.graphene
+       examples/deposit/in.deposit.atom
+
 Description
 """""""""""
 

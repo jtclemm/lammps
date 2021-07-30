@@ -30,6 +30,12 @@ Examples
    pair_style tersoff/zbl
    pair_coeff * * SiC.tersoff.zbl Si C Si
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/toluene/in.toluene.nh
+
 Description
 """""""""""
 

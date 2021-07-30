@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC mesh add_to_nodeset lbc -12.1 -11.9 -12 12 -12 12
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granular/in.pour.drum
+
 Description
 """""""""""
 

@@ -35,6 +35,13 @@ Examples
      "print 'Max step reached'"
    if "${eng} > ${eng_previous}" then "jump file1" else "jump file2"
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.cutout
+       examples/PACKAGES/atc/two_temperature/in.gaussianIC_ttm:
+
 Description
 """""""""""
 

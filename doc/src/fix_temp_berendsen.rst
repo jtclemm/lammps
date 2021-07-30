@@ -27,6 +27,13 @@ Examples
 
    fix 1 all temp/berendsen 300.0 300.0 100.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/entropy/in.entropy
+       examples/flow/in.flow.couette
+
 Description
 """""""""""
 

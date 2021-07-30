@@ -41,6 +41,15 @@ Examples
    fix 2 all neb 1.0 perp 1.0 end first 1.0 end last 1.0
    fix 1 all neb 1.0 parallel ideal end last/efirst 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/neb/in.neb.hop1
+       examples/neb/in.neb.hop2
+       examples/SPIN/gneb/iron/in.gneb.iron
+       examples/SPIN/gneb/skyrmion/in.gneb.skyrmion
+
 Description
 """""""""""
 

@@ -27,6 +27,13 @@ Examples
    pair_coeff * * 100.0 1.0
    pair_coeff 1 1 100.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/qtb/alpha_quartz_qtb/in.alpha_quartz_qtb
+       examples/qeq/in.qeq.buck
+
 Description
 """""""""""
 

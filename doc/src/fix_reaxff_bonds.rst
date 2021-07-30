@@ -25,6 +25,13 @@ Examples
 
    fix 1 all reaxff/bonds 100 bonds.reaxff
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/reaxff/in.reaxff.tatb
+       examples/reaxff/in.reaxff.tatb-shielded
+
 Description
 """""""""""
 

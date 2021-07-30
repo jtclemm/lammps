@@ -31,6 +31,13 @@ Examples
    atom_modify map hash sort 10000 2.0
    atom_modify first colloid
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/neb/in.neb.hop1
+       examples/neb/in.neb.hop1.end
+
 Description
 """""""""""
 

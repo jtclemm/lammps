@@ -68,6 +68,15 @@ Examples
    compute snap all snap 1.4 0.95 6 2.0 1.0
    compute snap all snap 1.0 0.99363 6 3.81 3.83 1.0 0.93 chem 2 0 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/mliap/in.mliap.quadratic.compute
+       examples/mliap/in.mliap.quadratic.compute
+       examples/mliap/in.mliap.quadratic.compute
+       examples/snap/in.snap.compute
+
 Description
 """""""""""
 

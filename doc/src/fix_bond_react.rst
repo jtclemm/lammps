@@ -86,6 +86,15 @@ For unabridged example scripts and files, see examples/PACKAGES/reaction.
      react myrxn2 all 1 0 2.75 mol3 mol4 map_file_rxn2.txt prob 0.25 12345
    fix 6 nvt_grp_REACT nvt temp 300 300 100 # set thermostat after bond/react
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/reaction/create_atoms_polystyrene/in.grow_styrene
+       examples/PACKAGES/reaction/tiny_epoxy/in.tiny_epoxy.stabilized
+       examples/PACKAGES/reaction/tiny_nylon/in.tiny_nylon.stabilized
+       examples/PACKAGES/reaction/tiny_polystyrene/in.tiny_polystyrene.stabilized
+
 Description
 """""""""""
 

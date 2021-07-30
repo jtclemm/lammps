@@ -28,6 +28,13 @@ Examples
    boundary p fs p
    boundary s f fm
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/drift_diffusion/convective_pulse.screen
+       examples/PACKAGES/atc/drift_diffusion/in.poisson2d_noatoms
+
 Description
 """""""""""
 

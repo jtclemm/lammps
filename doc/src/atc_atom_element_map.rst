@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC atom_element_map eulerian 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.clock.static
+
 Description
 """""""""""
 

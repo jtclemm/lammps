@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC control lumped_lambda_solve on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/gcmc/in.gcmc.co2
+
 Description
 """""""""""
 

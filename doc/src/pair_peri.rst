@@ -47,6 +47,16 @@ Examples
    pair_style peri/eps
    pair_coeff * * 14.9e9 14.9e9 0.0015001 0.0005 0.25 118.43
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peri/in.peri.lps
+       examples/peri/in.peri.ves
+       examples/peri/in.peri.eps
+       examples/python/in.pair_python_long
+       examples/python/in.pair_python_melt
+
 Description
 """""""""""
 

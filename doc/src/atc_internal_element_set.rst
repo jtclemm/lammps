@@ -22,6 +22,12 @@ Examples
    fix_modify AtC internal_element_set myElementSet
    fix_modify AtC internal_element_set off
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/flow/in.flow.couette
+
 Description
 """""""""""
 

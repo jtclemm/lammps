@@ -27,6 +27,13 @@ Examples
    dihedral_coeff * aat -13.5271 110.2453 105.1270
    dihedral_coeff * bb13 0.0 1.0119 1.1010
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/C7inEthanol/fep01/in.insertion
+       examples/PACKAGES/reaction/tiny_nylon/in.tiny_nylon.stabilized
+
 Description
 """""""""""
 

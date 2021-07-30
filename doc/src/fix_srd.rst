@@ -55,6 +55,14 @@ Examples
    fix 1 srd srd 10 big 1.0 0.25 482984
    fix 1 srd srd 10 big 0.5 0.25 482984 collision slip search 0.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/srd/in.srd.pure
+       examples/coreshell/in.coreshell
+       examples/reaxff/AB/in.AB
+
 Description
 """""""""""
 

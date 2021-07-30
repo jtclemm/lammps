@@ -24,6 +24,12 @@ Examples
    fix 1 all numdiff 10 1e-6
    fix 1 all numdiff 100 0.01
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/ellipsoid/in.ellipsoid
+
 Description
 """""""""""
 

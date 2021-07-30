@@ -23,6 +23,13 @@ Examples
    angle_style charmm
    angle_coeff 1 300.0 107.0 50.0 3.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/cmap/in.cmap
+       examples/peptide/in.peptide
+
 Description
 """""""""""
 

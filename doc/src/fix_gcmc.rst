@@ -62,6 +62,14 @@ Examples
    fix 3 water gcmc 10 100 100 0 3456543 3.0 -2.5 0.1 mol my_one_water maxangle 180 full_energy
    fix 4 my_gas gcmc 1 10 10 1 123456543 300.0 -12.5 1.0 region disk
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/gcmc/in.gcmc.lj
+       examples/PACKAGES/gle/in.h2o-quantum
+       examples/PACKAGES/gle/in.h2o-smart
+
 Description
 """""""""""
 

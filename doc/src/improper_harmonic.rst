@@ -23,6 +23,13 @@ Examples
    improper_style harmonic
    improper_coeff 1 100.0 0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/mofff/in.hkust1
+       examples/PACKAGES/mofff/in.hkust1_long
+
 Description
 """""""""""
 

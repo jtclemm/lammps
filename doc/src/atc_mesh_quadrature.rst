@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC mesh quadrature face
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/MC/in.mc
+
 Description
 """""""""""
 

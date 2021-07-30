@@ -31,6 +31,12 @@ Examples
    dump 1 all netcdf/mpiio 1000 traj.nc id type x y z
    dump 1 all netcdf 1000 traj.*.nc id type x y z
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/molecule/in.water
+
 Description
 """""""""""
 

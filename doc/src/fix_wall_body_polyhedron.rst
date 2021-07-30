@@ -41,6 +41,12 @@ Examples
 
    fix 1 all wall/body/polyhedron 1000.0 20.0 5.0 xplane -10.0 10.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/ees/in.fix_wall_region
+
 Description
 """""""""""
 

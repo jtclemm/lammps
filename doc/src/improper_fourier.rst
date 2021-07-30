@@ -21,6 +21,13 @@ Examples
    improper_style fourier
    improper_coeff 1 100.0 0.0 1.0 0.5 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/cmap/in.cmap
+       examples/peptide/in.peptide
+
 Description
 """""""""""
 

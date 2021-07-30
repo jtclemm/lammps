@@ -32,6 +32,13 @@ Examples
    compute 1 lower group/group upper kspace yes
    compute mine fluid group/group wall
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/tally/in.force
+       examples/PACKAGES/tally/in.pe
+
 Description
 """""""""""
 

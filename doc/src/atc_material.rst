@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC material gap_region 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granregion/in.granregion.funnel
+
 Description
 """""""""""
 

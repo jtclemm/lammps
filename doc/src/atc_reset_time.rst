@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC reset_time 0.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

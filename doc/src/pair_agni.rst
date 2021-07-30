@@ -21,6 +21,13 @@ Examples
    pair_style      agni
    pair_coeff      * * Al.agni Al
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/airebo/in.airebo
+       examples/airebo/in.airebo-0-0
+
 Description
 """""""""""
 

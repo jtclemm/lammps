@@ -25,6 +25,12 @@ Examples
    box tilt large
    box tilt small
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/bar1d_damped.screen
+
 Description
 """""""""""
 

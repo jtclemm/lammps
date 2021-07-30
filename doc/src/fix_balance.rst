@@ -58,6 +58,17 @@ Examples
    fix 2 all balance 100 1.0 shift xy 5 1.1 weight var myweight weight neigh 0.6 weight store allweight
    fix 2 all balance 1000 1.1 rcb
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance
+       examples/balance/in.balance.bond.fast
+       examples/balance/in.balance.bond.slow
+       examples/balance/in.balance.clock.dynamic
+       examples/balance/in.balance.kspace
+       examples/balance/in.balance.neigh.rcb
+
 Description
 """""""""""
 

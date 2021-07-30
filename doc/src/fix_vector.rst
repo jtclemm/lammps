@@ -33,6 +33,13 @@ Examples
    fix 1 all vector 100 c_myTemp
    fix 1 all vector 5 c_myTemp v_integral
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/box/in.box.mp
+       examples/VISCOSITY/in.mp.2d
+
 Description
 """""""""""
 

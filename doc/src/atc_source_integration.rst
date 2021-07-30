@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC source_integration atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/min/in.min
+
 Description
 """""""""""
 

@@ -17,6 +17,14 @@ Examples
 
    dihedral_style none
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/nb3b/in.nb3b
+       examples/rdf-adf/in.spce
+       examples/VISCOSITY/in.cos.1000SPCE
+
 Description
 """""""""""
 

@@ -17,6 +17,13 @@ Examples
 
    pair_style smd/tlsph
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/smtbq/in.smtbq.Al
+       examples/PACKAGES/smtbq/in.smtbq.Al2O3
+
 Description
 """""""""""
 

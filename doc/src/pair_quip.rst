@@ -19,6 +19,13 @@ Examples
    pair_coeff      * * gap_example.xml "Potential xml_label=GAP_2014_5_8_60_17_10_38_466" 14
    pair_coeff      * * sw_example.xml "IP SW" 14
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/rann/in.rann
+       examples/reaxff/in.reaxff.rdx
+
 Description
 """""""""""
 

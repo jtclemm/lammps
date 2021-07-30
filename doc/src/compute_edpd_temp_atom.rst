@@ -20,6 +20,12 @@ Examples
 
    compute 1 all edpd/temp/atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/edpd/in.edpd
+
 Description
 """""""""""
 

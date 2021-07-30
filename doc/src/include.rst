@@ -20,6 +20,12 @@ Examples
    include newfile
    include in.run2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.restart
+
 Description
 """""""""""
 

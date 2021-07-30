@@ -23,6 +23,17 @@ Examples
    bond_style harmonic
    bond_coeff 5 80.0 1.2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/cmap/in.cmap
+       examples/deposit/in.deposit.molecule
+       examples/dreiding/in.dreiding
+       examples/gcmc/in.gcmc.co2
+       examples/micelle/in.micelle
+       examples/template/in.hybrid
+
 Description
 """""""""""
 

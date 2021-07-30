@@ -23,6 +23,13 @@ Examples
    bond_style fene
    bond_coeff 1 30.0 1.5 1.0 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/multiple/in.chain
+       examples/rigid/in.rigid.tnr
+
 Description
 """""""""""
 

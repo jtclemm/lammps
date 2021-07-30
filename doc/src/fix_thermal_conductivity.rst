@@ -30,6 +30,12 @@ Examples
    fix 1 all thermal/conductivity 100 z 20
    fix 1 all thermal/conductivity 50 z 20 swap 2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/DIFFUSE/in.msd.2d
+
 Description
 """""""""""
 

@@ -17,6 +17,13 @@ Examples
 
    angle_style none
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/nb3b/in.nb3b
+       examples/PACKAGES/quip/in.molecular
+
 Description
 """""""""""
 

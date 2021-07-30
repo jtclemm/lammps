@@ -20,6 +20,13 @@ Examples
 
    fix 1 all nve/eff
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/gauss_diel/in.gauss-diel
+       examples/PACKAGES/reaction/tiny_nylon/in.tiny_nylon.unstabilized
+
 Description
 """""""""""
 

@@ -21,6 +21,12 @@ Examples
    pair_style multi/lucy linear 1000
    pair_coeff * * multibody.table ENTRY1 7.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/phonon/1-1D-mono/in.Ana
+
 Description
 """""""""""
 

@@ -66,6 +66,19 @@ Examples
    fix 1 all ave/time 100 5 1000 c_thermo_press[*]
    fix 1 all ave/time 1 100 1000 f_indent f_indent[1] file temp.indent off 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/controller/in.controller.wall
+       examples/DIFFUSE/in.vacf.2d
+       examples/gcmc/in.gcmc.lj
+       examples/HEAT/in.lj.ehex
+       examples/KAPPA/in.ehex
+       examples/mliap/in.mliap.quadratic.compute
+       examples/rdf-adf/in.spce
+       examples/rerun/in.rdf.first
+
 Description
 """""""""""
 

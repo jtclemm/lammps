@@ -21,6 +21,13 @@ Examples
    min_style spin
    min_style fire
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/shear/in.shear
+       examples/shear/in.shear
+
 Description
 """""""""""
 

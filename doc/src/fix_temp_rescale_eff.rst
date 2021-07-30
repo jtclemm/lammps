@@ -24,6 +24,13 @@ Examples
 
    fix 3 flow temp/rescale/eff 10 1.0 100.0 0.02 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/butane/in.butane.tgnh
+       examples/PACKAGES/drude/ethanol/in.ethanol.tgnh
+
 Description
 """""""""""
 

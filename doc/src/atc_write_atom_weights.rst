@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC write_atom_weights atm_wt_file.txt 10
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/multi/in.powerlaw
+
 Description
 """""""""""
 

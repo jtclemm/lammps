@@ -20,6 +20,13 @@ Examples
 
    compute out_mag all spin
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/SPIN/bfo/in.spin.bfo
+       examples/SPIN/cobalt_fcc/in.spin.cobalt_fcc
+
 Description
 """""""""""
 

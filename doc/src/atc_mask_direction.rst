@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC control mask_direction 0 on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/granregion/in.granregion.funnel
+
 Description
 """""""""""
 

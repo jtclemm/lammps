@@ -44,6 +44,13 @@ Examples
 
 Example input scripts available: examples/PACKAGES/drude
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/tri/in.tri.srd
+       examples/threebody/in.threebody
+
 Description
 """""""""""
 

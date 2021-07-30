@@ -32,6 +32,14 @@ Examples
 
    fix 1 surface qeq/comb 10 0.0001
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/comb/in.comb3
+       examples/reaxff/in.reaxff.rdx
+       examples/reaxff/in.reaxff.tatb
+
 Description
 """""""""""
 

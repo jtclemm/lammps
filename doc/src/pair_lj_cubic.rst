@@ -22,6 +22,13 @@ Examples
    pair_style lj/cubic
    pair_coeff * * 1.0 0.8908987
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/in.concentration
+       examples/gcmc/in.gcmc.co2
+
 Description
 """""""""""
 

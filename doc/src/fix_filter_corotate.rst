@@ -32,6 +32,13 @@ Examples
 
    fix cor all filter/corotate b 4 19 a 3 5 2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/flow_gauss/in.GD
+       examples/gcmc/in.gcmc.co2
+
 Description
 """""""""""
 

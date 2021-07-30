@@ -87,6 +87,19 @@ Examples
    fix 2 jello npt temp 300.0 300.0 100.0 tri 5.0 5.0 1000.0
    fix 2 ice nph x 1.0 1.0 0.5 y 2.0 2.0 0.5 z 3.0 3.0 0.5 yz 0.1 0.1 0.5 xz 0.2 0.2 0.5 xy 0.3 0.3 0.5 nreset 1000
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/gcmc/in.gcmc.h2o
+       examples/threebody/in.threebody
+       examples/colloid/in.colloid
+       examples/mliap/in.mliap.so3.nn.Si
+       examples/reaxff/FC/in.FC
+       examples/VISCOSITY/in.cos.1000SPCE
+       examples/PACKAGES/eff/CH4/in.ch4_ionized.dynamics
+       examples/PACKAGES/eff/Li-solid/in.Li.bohr
+
 Description
 """""""""""
 

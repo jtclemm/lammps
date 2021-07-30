@@ -24,6 +24,12 @@ Examples
 
    fix_modify AtC poisson_solver mesh create 10 1 1 feRegion p p p
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

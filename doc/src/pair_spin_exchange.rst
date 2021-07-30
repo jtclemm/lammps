@@ -30,6 +30,14 @@ Examples
    pair_coeff * * biquadratic 4.0 0.05 0.03 1.48 0.05 0.03 1.48 offset no
    pair_coeff 1 2 biquadratic 6.0 -0.01 0.0 1.9 0.0 0.1 19
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/SPIN/spinmin/in.spin.iron_min
+       examples/fire/in.neb.sivac.fire
+       examples/neb/in.neb.sivac
+
 Description
 """""""""""
 

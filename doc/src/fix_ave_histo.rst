@@ -74,6 +74,14 @@ Examples
    fix 1 all ave/histo 1 100 1000 -2.0 2.0 18 vx vy vz mode vector ave running beyond extra
    fix 1 all ave/histo/weight 1 1 1 10 100 2000 c_XRD[1] c_XRD[2]
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/fortran2/in.simple
+       examples/tracker/in.track
+       examples/PACKAGES/diffraction/in.BulkNi
+
 Description
 """""""""""
 

@@ -21,6 +21,12 @@ Examples
    bond_style morse
    bond_coeff 5 1.0 2.0 1.2
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/nb3b/in.nb3b
+
 Description
 """""""""""
 

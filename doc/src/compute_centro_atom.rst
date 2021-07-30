@@ -31,6 +31,13 @@ Examples
 
    compute 1 all centro/atom 8
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/basal/in.basal
+       examples/PACKAGES/cnp/in.cnp
+
 Description
 """""""""""
 

@@ -23,6 +23,12 @@ Examples
 
    fix_modify AtC internal_quadrature off
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/friction/in.friction
+
 Description
 """""""""""
 

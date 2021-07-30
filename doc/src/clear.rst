@@ -19,6 +19,12 @@ Examples
    clear
    (commands for 2nd simulation)
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/elastic/eam_energy.screen
+
 Description
 """""""""""
 

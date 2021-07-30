@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC remove_species gold
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

@@ -75,6 +75,12 @@ Examples
    pair_coeff * * 1.0 1.0
    pair_coeff 2 3 1.0 1.0 2.5 4.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-react/dpd-shardlow/in.dpd-shardlow
+
 Description
 """""""""""
 

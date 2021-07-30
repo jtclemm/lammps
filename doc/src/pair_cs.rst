@@ -110,6 +110,15 @@ Examples
    pair_coeff * * 100.0 3.0
    pair_coeff 1 1 100.0 3.5 9.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/coreshell/in.coreshell.thermostats
+       examples/coreshell/in.coreshell.wolf
+       examples/PACKAGES/dielectric/in.nopbc
+       examples/PACKAGES/dielectric/in.confined
+
 Description
 """""""""""
 

@@ -72,6 +72,16 @@ Examples
    fix 4 sputter deposit 1000 2 500 12235 region sphere vz -1.0 -1.0 target 5.0 5.0 0.0 units lattice
    fix 5 insert deposit 200 2 100 777 region disk gaussian 5.0 5.0 9.0 1.0 units box
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/deposit/in.deposit.atom
+       examples/deposit/in.deposit.molecule
+       examples/deposit/in.deposit.molecule.rigid-nve-small
+       examples/deposit/in.deposit.molecule.rigid-small
+       examples/deposit/in.deposit.molecule.shake
+
 Description
 """""""""""
 

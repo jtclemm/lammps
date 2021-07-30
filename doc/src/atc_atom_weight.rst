@@ -32,6 +32,12 @@ Examples
    fix_modify AtC atom_weight lattice
    fix_modify AtC atom_weight read-in atm_wt_file.txt
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.kspace
+
 Description
 """""""""""
 

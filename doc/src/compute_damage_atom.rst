@@ -20,6 +20,14 @@ Examples
 
    compute 1 all damage/atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/peri/in.peri-pmb
+       examples/peri/in.peri.lps
+       examples/peri/in.peri.ves
+
 Description
 """""""""""
 

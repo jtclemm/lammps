@@ -32,6 +32,13 @@ Examples
    fix mtd all colvars peptide.colvars.inp seed 2122 input peptide.colvars.state output peptide
    fix abf all colvars colvars.inp tstat 1
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/colvars/in.peptide-colvars
+       examples/PACKAGES/colvars/in.peptide-colvars2
+
 Description
 """""""""""
 

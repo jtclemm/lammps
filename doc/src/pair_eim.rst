@@ -25,6 +25,12 @@ Examples
    pair_coeff * * Na Cl ffield.eim  Na Na Na Cl
    pair_coeff * * Na Cl ../potentials/ffield.eim Cl NULL Na
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/ellipsoid/in.ellipsoid
+
 Description
 """""""""""
 

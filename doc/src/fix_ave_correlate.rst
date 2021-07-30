@@ -68,6 +68,13 @@ Examples
 
    fix 1 all ave/correlate 1 50 10000 c_thermo_press[*]
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/KAPPA/in.heatflux
+       examples/VISCOSITY/in.gk.2d
+
 Description
 """""""""""
 

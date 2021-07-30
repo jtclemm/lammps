@@ -20,6 +20,14 @@ Examples
 
    compute myTemp all temp/deform
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/ASPHERE/line/in.line.srd
+       examples/ASPHERE/tri/in.tri.srd
+       examples/VISCOSITY/in.nemd.2d
+
 Description
 """""""""""
 

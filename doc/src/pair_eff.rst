@@ -36,6 +36,12 @@ Examples
    pair_coeff 1 s 0.320852 2.283269 0.814857
    pair_coeff 3 p 22.721015 0.728733 1.103199 17.695345 6.693621
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/extep/in.extep-bn
+
 Description
 """""""""""
 

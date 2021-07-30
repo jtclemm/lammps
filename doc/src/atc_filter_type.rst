@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC filter type exponential
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/dreiding/in.dreiding
+
 Description
 """""""""""
 

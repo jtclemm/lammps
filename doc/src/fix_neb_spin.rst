@@ -25,6 +25,13 @@ Examples
 
    fix 1 active neb/spin 1.0
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/atm/in.atm
+       examples/comb/in.comb.HfO2
+
 Description
 """""""""""
 

@@ -27,6 +27,14 @@ Examples
    pair_style edip
    pair_coeff * * Si.edip Si
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/edip/in.edip-SiC
+       examples/PACKAGES/eff/Li-solid/in.Li.bohr
+       examples/eim/in.eim
+
 Description
 """""""""""
 

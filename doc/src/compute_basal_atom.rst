@@ -20,6 +20,12 @@ Examples
 
    compute 1 all basal/atom
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/basal/in.basal
+
 Description
 """""""""""
 

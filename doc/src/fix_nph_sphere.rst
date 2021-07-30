@@ -34,6 +34,12 @@ Examples
    fix 2 all nph/sphere x 5.0 5.0 1000.0 drag 0.2
    fix 2 water nph/sphere aniso 0.0 0.0 1000.0 dilate partial
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/body/in.squares
+
 Description
 """""""""""
 

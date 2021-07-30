@@ -36,6 +36,14 @@ Examples
    fix 5 all dt/reset 10 0.01 2.0 0.2 units box
    fix 5 all dt/reset 5 NULL 0.001 0.5 emax 30 units box
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/COUPLE/fortran2/in.simple
+       examples/PACKAGES/electron_stopping/in.cascade_AlCu
+       examples/PACKAGES/electron_stopping/in.elstop.only
+
 Description
 """""""""""
 

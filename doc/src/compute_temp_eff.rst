@@ -21,6 +21,14 @@ Examples
    compute 1 all temp/eff
    compute myTemp mobile temp/eff
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/eff/Auger-Adamantane/in.adamantane_ionized.nve
+       examples/PACKAGES/eff/fixed-core/CH4/in.CH4fc.spe.ang
+       examples/PACKAGES/eff/Li-solid/in.Li.bohr
+
 Description
 """""""""""
 

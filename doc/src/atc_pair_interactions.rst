@@ -26,6 +26,12 @@ Examples
    fix_modify AtC pair_interactions off
    fix_modify AtC bond_interactions on
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/melt/in.melt
+
 Description
 """""""""""
 

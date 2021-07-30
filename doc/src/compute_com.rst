@@ -20,6 +20,13 @@ Examples
 
    compute 1 all com
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/interlayer/kolmogorov_crespi_z/in.atom-diffusion
+       examples/PACKAGES/interlayer/kolmogorov_crespi_z/in.bilayer-graphene
+
 Description
 """""""""""
 

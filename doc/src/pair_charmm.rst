@@ -103,6 +103,14 @@ Examples
    pair_coeff * * 100.0 2.0
    pair_coeff 1 1 100.0 2.0 150.0 3.5
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/cmap/in.cmap
+       examples/PACKAGES/reaction/tiny_epoxy/in.tiny_epoxy.stabilized
+       examples/PACKAGES/reaction/create_atoms_polystyrene/in.grow_styrene
+
 Description
 """""""""""
 

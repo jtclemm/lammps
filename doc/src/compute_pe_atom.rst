@@ -24,6 +24,16 @@ Examples
    compute 1 all pe/atom pair
    compute 1 all pe/atom pair bond
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/KAPPA/in.heatflux
+       examples/mliap/in.mliap.nn.Cu
+       examples/prd/in.prd
+       examples/steinhardt/in.icos
+       examples/tad/in.tad
+
 Description
 """""""""""
 

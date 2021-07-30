@@ -32,6 +32,12 @@ Examples
    fix 3 qin heat 10 v_flux
    fix 4 qout heat 1 -1.0 region top
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/hyper/in.hyper.local
+
 Description
 """""""""""
 

@@ -26,6 +26,12 @@ Examples
    fix_modify AtC output contour_integral stress faceset loop1
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/meam/in.meam.shear
+
 Description
 """""""""""
 

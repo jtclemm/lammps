@@ -21,6 +21,12 @@ Examples
 
    fix_modify AtC include atomic_charge
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/balance/in.balance.bond.fast
+
 Description
 """""""""""
 

@@ -36,6 +36,14 @@ Examples
    bond_style oxrna2/fene
    bond_coeff * 2.0 0.25 0.76107
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/cgdna/examples/oxDNA/duplex1/in.duplex1
+       examples/PACKAGES/cgdna/examples/oxDNA2/dsring/in.dsring
+       examples/PACKAGES/cgdna/examples/oxRNA2/duplex2/in.duplex2
+
 Description
 """""""""""
 

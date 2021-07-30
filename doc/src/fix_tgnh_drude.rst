@@ -64,6 +64,13 @@ Examples
 
 Example input scripts available: examples/PACKAGES/drude
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/KAPPA/in.mp
+       examples/PACKAGES/ti/in.ti_spring
+
 Description
 """""""""""
 

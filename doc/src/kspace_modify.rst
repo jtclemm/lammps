@@ -64,6 +64,12 @@ Examples
    kspace_modify slab 3.0
    kspace_modify scafacos tolerance energy
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.restart
+
 Description
 """""""""""
 

@@ -38,6 +38,13 @@ Examples
    fix 2 gas widom 1 50000 1 19494 2.0
    fix 3 water widom 1000 100 0 29494 300.0 mol h2omol full_energy
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/fep/C7inEthanol/fep01/in.insertion
+       examples/PACKAGES/reaction/create_atoms_polystyrene/in.grow_styrene
+
 Description
 """""""""""
 

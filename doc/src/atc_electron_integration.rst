@@ -24,6 +24,12 @@ Examples
    fix_modify AtC extrinsic electron_integration implicit
    fix_modify AtC extrinsic electron_integration explicit 100
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/crack/in.crack
+
 Description
 """""""""""
 

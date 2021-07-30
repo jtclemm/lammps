@@ -47,6 +47,14 @@ Examples
    molecule 1 mymol.txt offset 6 9 18 23 14
    molecule objects file.1 scale 1.5 file.1 scale 2.0 file.2 scale 1.3
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/srd/in.srd.mixture
+       examples/template/in.molecular-mix
+       examples/tracker/in.track
+
 Description
 """""""""""
 

@@ -22,6 +22,12 @@ Examples
 
    fix_modify AtC decomposition distributed_memory
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/crack/in.crack
+
 Description
 """""""""""
 

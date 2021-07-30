@@ -35,6 +35,12 @@ Examples
    fix 1 all mscg 1 range name A B
    fix 1 all mscg 1 max 4 8 20
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/dpd-meso/mdpd/in.mdpd
+
 Description
 """""""""""
 

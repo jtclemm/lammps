@@ -23,6 +23,12 @@ Examples
    fix_modify AtC mesh output meshData
 
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/MC/in.mc
+
 Description
 """""""""""
 

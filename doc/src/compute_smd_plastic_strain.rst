@@ -20,6 +20,14 @@ Examples
 
    compute 1 all smd/plastic/strain
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/machdyn/aluminum_strip_pull/in.aluminum_strip_pull
+       examples/PACKAGES/machdyn/fluid_structure_interaction/in.fluid_structure_interaction
+       examples/PACKAGES/machdyn/rubber_rings_3d/in.rubber_rings_3d
+
 Description
 """""""""""
 

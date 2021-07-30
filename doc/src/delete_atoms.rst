@@ -45,6 +45,14 @@ Examples
    delete_atoms overlap 0.5 solvent colloid
    delete_atoms porosity cube 0.1 482793 bond yes
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/fluids/conducting_interface.screen
+       examples/PACKAGES/atc/fluids/double_layer.screen
+       examples/PACKAGES/atc/fluids/in.bar1d_fluids
+
 Description
 """""""""""
 

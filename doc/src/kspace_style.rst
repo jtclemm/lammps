@@ -127,6 +127,13 @@ Used in input scripts:
 
       examples/peptide/in.peptide
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/atc/two_temperature/in.uniform_exchange
+       examples/PACKAGES/atc/two_temperature/in.uniform_exchange
+
 Description
 """""""""""
 

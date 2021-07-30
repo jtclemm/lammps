@@ -27,6 +27,15 @@ Examples
 
 Example input scripts available: examples/PACKAGES/drude
 
+Used in input scripts:
+
+  .. parsed-literal::
+
+       examples/PACKAGES/drude/butane/in.butane.nh
+       examples/PACKAGES/drude/toluene/in.toluene.nh
+       examples/PACKAGES/drude/butane/in.butane.nh
+       examples/PACKAGES/drude/toluene/in.toluene.nh
+
 Description
 """""""""""
 
