@@ -14,10 +14,10 @@
    Contributing author: David Nicholson (MIT)
 ------------------------------------------------------------------------- */
 
-#include "compute_temp_deform_uef.h"
+#include "compute_temp_def_uef.h"
 #include <cstring>
-#include "fix_deform_berendsen_uef.h"
-#include "fix_deform_uef.h"
+#include "fix_def_berendsen_uef.h"
+#include "fix_def_uef.h"
 #include "modify.h"
 #include "fix.h"
 #include "error.h"
@@ -30,7 +30,7 @@ enum{DEFORM,DEFORM_BERENDSEN};
 /* ----------------------------------------------------------------------
  * Base constructor initialized to use rotation matrix
  * ----------------------------------------------------------------------*/
-ComputeTempDeformUef::ComputeTempDeformUef(LAMMPS *lmp, int narg, char **arg) :
+ComputeTempDefUef::ComputeTempDefUef(LAMMPS *lmp, int narg, char **arg) :
   ComputeTemp(lmp, narg, arg)
 {
   rot_flag=true;
@@ -39,18 +39,18 @@ ComputeTempDeformUef::ComputeTempDeformUef(LAMMPS *lmp, int narg, char **arg) :
 /* ----------------------------------------------------------------------
  *  Check for the uef fix
  * ----------------------------------------------------------------------*/
-void ComputeTempDeformUef::init()
+void ComputeTempDefUef::init()
 {
   ComputeTemp::init();
   // check to make sure the other uef fix is on
   // borrowed from Pieter's nvt/sllod code
   int i=0;
   for (i=0; i<modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"deform/uef")==0) {
+    if (strcmp(modify->fix[i]->style,"def/uef")==0) {
         ifix_uef=i;
         fix_class = DEFORM;
         break;
-    } else if (strcmp(modify->fix[i]->style,"deform/berendsen/uef")==0) {
+    } else if (strcmp(modify->fix[i]->style,"def/berendsen/uef")==0) {
         ifix_uef=i;
         fix_class = DEFORM_BERENDSEN;
         break;
@@ -64,14 +64,14 @@ void ComputeTempDeformUef::init()
 /* ----------------------------------------------------------------------
    Compute the ke tensor in the proper coordinate system
 ------------------------------------------------------------------------- */
-void ComputeTempDeformUef::compute_vector()
+void ComputeTempDefUef::compute_vector()
 {
   ComputeTemp::compute_vector();
   if (rot_flag) {
     double rot[3][3];
 
-    if(fix_class == DEFORM) ((FixDeformUEF*) modify->fix[ifix_uef])->get_rot(rot);
-    if(fix_class == DEFORM_BERENDSEN) ((FixDeformBerendsenUEF*) modify->fix[ifix_uef])->get_rot(rot);
+    if(fix_class == DEFORM) ((FixDefUEF*) modify->fix[ifix_uef])->get_rot(rot);
+    if(fix_class == DEFORM_BERENDSEN) ((FixDefBerendsenUEF*) modify->fix[ifix_uef])->get_rot(rot);
 
     virial_rot(vector,rot);
   }
@@ -82,11 +82,11 @@ void ComputeTempDeformUef::compute_vector()
  * turn the rotation matrix on or off to properly account for the
  * coordinate system of the velocities
 ------------------------------------------------------------------------- */
-void ComputeTempDeformUef::yes_rot()
+void ComputeTempDefUef::yes_rot()
 {
   rot_flag =true;
 }
-void ComputeTempDeformUef::no_rot()
+void ComputeTempDefUef::no_rot()
 {
   rot_flag =false;
 }
@@ -95,7 +95,7 @@ void ComputeTempDeformUef::no_rot()
    Transform the pressure tensor to the rotated coordinate system
    [P]rot = Q.[P].Q^t
 ------------------------------------------------------------------------- */
-void ComputeTempDeformUef::virial_rot(double *x, const double r[3][3])
+void ComputeTempDefUef::virial_rot(double *x, const double r[3][3])
 {
 
   double t[3][3];

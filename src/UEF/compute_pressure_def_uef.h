@@ -15,21 +15,21 @@
 
 #ifdef COMPUTE_CLASS
 // clang-format off
-ComputeStyle(pressure/deform/uef,ComputePressureDeformUef);
+ComputeStyle(pressure/def/uef,ComputePressureDefUef);
 // clang-format on
 #else
 
-#ifndef LMP_COMPUTE_PRESSURE_DEFORM_UEF_H
-#define LMP_COMPUTE_PRESSURE_DEFORM_UEF_H
+#ifndef LMP_COMPUTE_PRESSURE_DEF_UEF_H
+#define LMP_COMPUTE_PRESSURE_DEF_UEF_H
 
 #include "compute_pressure.h"
 
 namespace LAMMPS_NS {
 
-class ComputePressureDeformUef : public ComputePressure {
+class ComputePressureDefUef : public ComputePressure {
  public:
-  ComputePressureDeformUef(class LAMMPS *, int, char **);
-  virtual ~ComputePressureDeformUef() {}
+  ComputePressureDefUef(class LAMMPS *, int, char **);
+  virtual ~ComputePressureDefUef() {}
   virtual void init();
   virtual void compute_vector();
   virtual double compute_scalar();

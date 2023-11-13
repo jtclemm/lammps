@@ -18,7 +18,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "fix_deform_uef.h"
+#include "fix_def_uef.h"
 #include "atom.h"
 #include "update.h"
 #include "comm.h"
@@ -41,7 +41,7 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
 
-FixDeformUEF::FixDeformUEF(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
+FixDefUEF::FixDefUEF(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
 irregular(NULL), uefbox(NULL)
 {
   if (narg != 5 && narg != 7) error->all(FLERR,"Illegal fix uef deform command");
@@ -91,7 +91,7 @@ irregular(NULL), uefbox(NULL)
 
 /* ---------------------------------------------------------------------- */
 
-FixDeformUEF::~FixDeformUEF()
+FixDefUEF::~FixDefUEF()
 {
   delete irregular;
   delete uefbox;
@@ -99,7 +99,7 @@ FixDeformUEF::~FixDeformUEF()
 
 /* ---------------------------------------------------------------------- */
 
-int FixDeformUEF::setmask()
+int FixDefUEF::setmask()
 {
   int mask = 0;
   mask |= PRE_EXCHANGE;
@@ -109,7 +109,7 @@ int FixDeformUEF::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixDeformUEF::init()
+void FixDefUEF::init()
 {
   int count = 0;
   for (int i = 0; i < modify->nfix; i++)
@@ -122,7 +122,7 @@ void FixDeformUEF::init()
  * for the first step
  * ---------------------------------------------------------------------- */
 
-void FixDeformUEF::setup(int j)
+void FixDefUEF::setup(int j)
 {
   double box[3][3];
   double vol = domain->xprd * domain->yprd * domain->zprd;
@@ -147,7 +147,7 @@ void FixDeformUEF::setup(int j)
   perform irregular on atoms in lamda coords to migrate atoms to new procs
 ------------------------------------------------------------------------- */
 
-void FixDeformUEF::pre_exchange()
+void FixDefUEF::pre_exchange()
 {
   if (flip != 0)
   {
@@ -199,7 +199,7 @@ void FixDeformUEF::pre_exchange()
  * Note: the rotate_x() functions also apply a shift to/from the fixedpoint
  * to make the integration a little simpler.
  * ---------------------------------------------------------------------- */
-void FixDeformUEF::rotate_x(double r[3][3])
+void FixDefUEF::rotate_x(double r[3][3])
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -221,7 +221,7 @@ void FixDeformUEF::rotate_x(double r[3][3])
   }
 }
 
-void FixDeformUEF::inv_rotate_x(double r[3][3])
+void FixDefUEF::inv_rotate_x(double r[3][3])
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -246,7 +246,7 @@ void FixDeformUEF::inv_rotate_x(double r[3][3])
   }
 }
 
-void FixDeformUEF::rotate_v(double r[3][3])
+void FixDefUEF::rotate_v(double r[3][3])
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -266,7 +266,7 @@ void FixDeformUEF::rotate_v(double r[3][3])
   }
 }
 
-void FixDeformUEF::inv_rotate_v(double r[3][3])
+void FixDefUEF::inv_rotate_v(double r[3][3])
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -286,7 +286,7 @@ void FixDeformUEF::inv_rotate_v(double r[3][3])
   }
 }
 
-void FixDeformUEF::rotate_f(double r[3][3])
+void FixDefUEF::rotate_f(double r[3][3])
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -306,7 +306,7 @@ void FixDeformUEF::rotate_f(double r[3][3])
   }
 }
 
-void FixDeformUEF::inv_rotate_f(double r[3][3])
+void FixDefUEF::inv_rotate_f(double r[3][3])
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -327,7 +327,7 @@ void FixDeformUEF::inv_rotate_f(double r[3][3])
 
 /* ---------------------------------------------------------------------- */
 
-void FixDeformUEF::end_of_step()
+void FixDefUEF::end_of_step()
 {
   double iv = domain->xprd*domain->yprd*domain->zprd;
   double dtv = update->dt;
@@ -374,7 +374,7 @@ void FixDeformUEF::end_of_step()
    write Set data to restart file
 ------------------------------------------------------------------------- */
 
-void FixDeformUEF::write_restart(FILE *fp)
+void FixDefUEF::write_restart(FILE *fp)
 {
   if (comm->me == 0) {
     int size = 3*sizeof(double);
@@ -387,7 +387,7 @@ void FixDeformUEF::write_restart(FILE *fp)
    use selected state info from restart file to restart the Fix
 ------------------------------------------------------------------------- */
 
-void FixDeformUEF::restart(char *buf)
+void FixDefUEF::restart(char *buf)
 {
 
   double *strain_restart = (double *) buf;
@@ -400,7 +400,7 @@ void FixDeformUEF::restart(char *buf)
  * public read for rotation matrix
  * ---------------------------------------------------------------------- */
 
-void FixDeformUEF::get_rot(double r[3][3])
+void FixDefUEF::get_rot(double r[3][3])
 {
   r[0][0] = rot[0][0];
   r[0][1] = rot[0][1];
@@ -416,7 +416,7 @@ void FixDeformUEF::get_rot(double r[3][3])
 /* ----------------------------------------------------------------------
  * public read for simulation box
  * ---------------------------------------------------------------------- */
-void FixDeformUEF::get_box(double b[3][3])
+void FixDefUEF::get_box(double b[3][3])
 {
   double box[3][3];
   double vol = domain->xprd * domain->yprd * domain->zprd;
@@ -436,7 +436,7 @@ void FixDeformUEF::get_box(double b[3][3])
  * comparing floats
  * it's imperfect, but should work provided no infinities
  * ---------------------------------------------------------------------- */
-bool FixDeformUEF::nearly_equal(double a, double b, double epsilon)
+bool FixDefUEF::nearly_equal(double a, double b, double epsilon)
 {
   double absa = fabs(a);
   double absb = fabs(b);
@@ -448,14 +448,14 @@ bool FixDeformUEF::nearly_equal(double a, double b, double epsilon)
     return diff/(absa+absb) < epsilon;
 }
 
-double FixDeformUEF::compute_scalar()
+double FixDefUEF::compute_scalar()
 {
   return strain[0];
 }
 
 
 
-double FixDeformUEF::compute_vector(int n)
+double FixDefUEF::compute_vector(int n)
 {
   uefbox->get_rot(rot);
 

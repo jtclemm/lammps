@@ -13,12 +13,12 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(deform/berendsen/uef,FixDeformBerendsenUEF)
+FixStyle(def/uef,FixDefUEF)
 
 #else
 
-#ifndef LMP_FIX_DEFORM_BERENDSEN_UEF_H
-#define LMP_FIX_DEFORM_BERENDSEN_UEF_H
+#ifndef LMP_FIX_DEF_UEF_H
+#define LMP_FIX_DEF_UEF_H
 
 #include "fix.h"
 
@@ -28,14 +28,14 @@ namespace LAMMPS_NS {
     class UEFBox;
   };
 
-class FixDeformBerendsenUEF : public Fix {
+class FixDefUEF : public Fix {
  public:
   int remapflag;                   // whether x,v are remapped across PBC
   int dimflag[6];                  // which dims are deformed
   int flip;
 
-  FixDeformBerendsenUEF(class LAMMPS *, int, char **);
-  virtual ~FixDeformBerendsenUEF();
+  FixDefUEF(class LAMMPS *, int, char **);
+  virtual ~FixDefUEF();
   int setmask();
   void init();
   virtual void setup(int);
@@ -47,15 +47,9 @@ class FixDeformBerendsenUEF : public Fix {
   void get_box(double[3][3]);
   double compute_scalar();
   double compute_vector(int);
-  int modify_param(int, char **);
 
  protected:
   double rate[2],strain[3];
-  double p_start, p_stop, p_period, p_target, p_current, dilation;
-
-  char *id_temp, *id_press;
-  class Compute *temperature, *pressure;
-  int tflag, pflag;
 
   void rotate_x(double [3][3]);
   void inv_rotate_x(double[3][3]);
@@ -67,7 +61,6 @@ class FixDeformBerendsenUEF : public Fix {
   class Irregular *irregular;
   UEF_utils::UEFBox *uefbox;
   double rot[3][3];
-
   bool nearly_equal(double,double,double);
 };
 

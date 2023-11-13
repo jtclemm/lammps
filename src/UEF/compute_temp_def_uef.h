@@ -15,21 +15,21 @@
 
 #ifdef COMPUTE_CLASS
 // clang-format off
-ComputeStyle(temp/deform/uef,ComputeTempDeformUef);
+ComputeStyle(temp/def/uef,ComputeTempDefUef);
 // clang-format on
 #else
 
-#ifndef LMP_COMPUTE_TEMP_DEFORM_UEF_H
-#define LMP_COMPUTE_TEMP_DEFORM_UEF_H
+#ifndef LMP_COMPUTE_TEMP_DEF_UEF_H
+#define LMP_COMPUTE_TEMP_DEF_UEF_H
 
 #include "compute_temp.h"
 
 namespace LAMMPS_NS {
 
-class ComputeTempDeformUef : public ComputeTemp {
+class ComputeTempDefUef : public ComputeTemp {
  public:
-  ComputeTempDeformUef(class LAMMPS *, int, char **);
-  virtual ~ComputeTempDeformUef() {}
+  ComputeTempDefUef(class LAMMPS *, int, char **);
+  virtual ~ComputeTempDefUef() {}
   virtual void init();
   virtual void compute_vector();
   void yes_rot();

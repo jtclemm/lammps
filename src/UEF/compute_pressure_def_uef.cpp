@@ -14,10 +14,10 @@
    Contributing author: David Nicholson (MIT)
 ------------------------------------------------------------------------- */
 
-#include "compute_pressure_deform_uef.h"
+#include "compute_pressure_def_uef.h"
 #include <cstring>
-#include "fix_deform_uef.h"
-#include "fix_deform_berendsen_uef.h"
+#include "fix_def_uef.h"
+#include "fix_def_berendsen_uef.h"
 #include "update.h"
 #include "domain.h"
 #include "modify.h"
@@ -34,7 +34,7 @@ enum{DEFORM,DEFORM_BERENDSEN};
 /* ----------------------------------------------------------------------
  * Default values for the ext flags
  * ----------------------------------------------------------------------*/
-ComputePressureDeformUef::ComputePressureDeformUef(LAMMPS *lmp, int narg, char **arg) :
+ComputePressureDefUef::ComputePressureDefUef(LAMMPS *lmp, int narg, char **arg) :
   ComputePressure(lmp, narg, arg)
 {
   ext_flags[0] = true;
@@ -46,18 +46,18 @@ ComputePressureDeformUef::ComputePressureDeformUef(LAMMPS *lmp, int narg, char *
 /* ----------------------------------------------------------------------
  *  Check for the uef fix
  * ----------------------------------------------------------------------*/
-void ComputePressureDeformUef::init()
+void ComputePressureDefUef::init()
 {
   ComputePressure::init();
   // check to make sure the other uef fix is on
   // borrowed from Pieter's nvt/sllod code
   int i=0;
   for (i=0; i<modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"deform/uef")==0) {
+    if (strcmp(modify->fix[i]->style,"def/uef")==0) {
         ifix_uef=i;
         fix_class = DEFORM;
         break;
-    } else if (strcmp(modify->fix[i]->style,"deform/berendsen/uef")==0) {
+    } else if (strcmp(modify->fix[i]->style,"def/berendsen/uef")==0) {
         ifix_uef=i;
         fix_class = DEFORM_BERENDSEN;
         break;
@@ -70,7 +70,7 @@ void ComputePressureDeformUef::init()
 /* ----------------------------------------------------------------------
  *  Compute pressure in the directions i corresponding to ext_flag[i]=true
  * ----------------------------------------------------------------------*/
-double ComputePressureDeformUef::compute_scalar()
+double ComputePressureDefUef::compute_scalar()
 {
 
   temperature->compute_scalar();
@@ -104,7 +104,7 @@ double ComputePressureDeformUef::compute_scalar()
 /* ----------------------------------------------------------------------
    Compute the pressure tensor in the rotated coordinate system
 ------------------------------------------------------------------------- */
-void ComputePressureDeformUef::compute_vector()
+void ComputePressureDefUef::compute_vector()
 {
   invoked_vector = update->ntimestep;
   if (update->vflag_global != invoked_vector)
@@ -131,8 +131,8 @@ void ComputePressureDeformUef::compute_vector()
     else
     {
       double r[3][3];
-      if(fix_class == DEFORM) ((FixDeformUEF*) modify->fix[ifix_uef])->get_rot(r);
-      if(fix_class == DEFORM_BERENDSEN) ((FixDeformBerendsenUEF*) modify->fix[ifix_uef]) ->get_rot(r);
+      if(fix_class == DEFORM) ((FixDefUEF*) modify->fix[ifix_uef])->get_rot(r);
+      if(fix_class == DEFORM_BERENDSEN) ((FixDefBerendsenUEF*) modify->fix[ifix_uef]) ->get_rot(r);
 
       virial_rot(virial,r);
     }
@@ -162,10 +162,10 @@ void ComputePressureDeformUef::compute_vector()
 /* ----------------------------------------------------------------------
  * get the current rotation matrix and store it
 ------------------------------------------------------------------------- */
-void ComputePressureDeformUef::update_rot()
+void ComputePressureDefUef::update_rot()
 {
-   if (fix_class == DEFORM) ((FixDeformUEF*) modify->fix[ifix_uef])->get_rot(rot);
-   if (fix_class == DEFORM_BERENDSEN) ((FixDeformBerendsenUEF*) modify->fix[ifix_uef])->get_rot(rot);
+   if (fix_class == DEFORM) ((FixDefUEF*) modify->fix[ifix_uef])->get_rot(rot);
+   if (fix_class == DEFORM_BERENDSEN) ((FixDefBerendsenUEF*) modify->fix[ifix_uef])->get_rot(rot);
 
 }
 
@@ -173,7 +173,7 @@ void ComputePressureDeformUef::update_rot()
    Transform the pressure tensor to the rotated coordinate system
    [P]rot = Q.[P].Q^t
 ------------------------------------------------------------------------- */
-void ComputePressureDeformUef::virial_rot(double *x, const double r[3][3])
+void ComputePressureDefUef::virial_rot(double *x, const double r[3][3])
 {
 
   double t[3][3];

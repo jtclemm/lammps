@@ -18,9 +18,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "fix_deform_berendsen_uef.h"
-#include "compute_pressure_deform_uef.h"
-#include "compute_temp_deform_uef.h"
+#include "fix_def_berendsen_uef.h"
+#include "compute_pressure_def_uef.h"
+#include "compute_temp_def_uef.h"
 #include "atom.h"
 #include "update.h"
 #include "comm.h"
@@ -46,7 +46,7 @@ using namespace MathConst;
 
 
 
-FixDeformBerendsenUEF::FixDeformBerendsenUEF(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
+FixDefBerendsenUEF::FixDefBerendsenUEF(LAMMPS *lmp, int narg, char **arg) : Fix(lmp, narg, arg),
 irregular(NULL), uefbox(NULL)
 {
   if (narg != 8 && narg != 10) error->all(FLERR,"Illegal fix uef deform command");
@@ -100,20 +100,20 @@ irregular(NULL), uefbox(NULL)
   // create a new compute temp style
 
   id_temp = utils::strdup(std::string(id) + "_temp");
-  modify->add_compute(fmt::format("{} all temp/deform/uef",id_temp));
+  modify->add_compute(fmt::format("{} all temp/def/uef",id_temp));
   tflag = 1;
 
   // create a new compute pressure style
 
   id_press = utils::strdup(std::string(id) + "_press");
-  modify->add_compute(fmt::format("{} all pressure/deform/uef {}",id_press, id_temp));
+  modify->add_compute(fmt::format("{} all pressure/def/uef {}",id_press, id_temp));
   pflag = 1;
 
 }
 
 /* ---------------------------------------------------------------------- */
 
-FixDeformBerendsenUEF::~FixDeformBerendsenUEF()
+FixDefBerendsenUEF::~FixDefBerendsenUEF()
 {
   delete irregular;
   delete uefbox;
@@ -125,7 +125,7 @@ FixDeformBerendsenUEF::~FixDeformBerendsenUEF()
 
 /* ---------------------------------------------------------------------- */
 
-int FixDeformBerendsenUEF::setmask()
+int FixDefBerendsenUEF::setmask()
 {
   int mask = 0;
   mask |= PRE_EXCHANGE;
@@ -135,7 +135,7 @@ int FixDeformBerendsenUEF::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::init()
+void FixDefBerendsenUEF::init()
 {
   int count = 0;
   for (int i = 0; i < modify->nfix; i++)
@@ -158,7 +158,7 @@ void FixDeformBerendsenUEF::init()
  * for the first step
  * ---------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::setup(int j)
+void FixDefBerendsenUEF::setup(int j)
 {
   double box[3][3];
   double vol = domain->xprd * domain->yprd * domain->zprd;
@@ -180,9 +180,9 @@ void FixDeformBerendsenUEF::setup(int j)
 
   // trigger virial computation on next timestep
 
-  ((ComputeTempDeformUef*) temperature)->yes_rot();
-  ((ComputePressureDeformUef*) pressure)->in_fix = true;
-  ((ComputePressureDeformUef*) pressure)->update_rot();
+  ((ComputeTempDefUef*) temperature)->yes_rot();
+  ((ComputePressureDefUef*) pressure)->in_fix = true;
+  ((ComputePressureDefUef*) pressure)->update_rot();
 
   pressure->addstep(update->ntimestep+1);
 }
@@ -192,7 +192,7 @@ void FixDeformBerendsenUEF::setup(int j)
   perform irregular on atoms in lamda coords to migrate atoms to new procs
 ------------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::pre_exchange()
+void FixDefBerendsenUEF::pre_exchange()
 {
   if (flip != 0) {
 
@@ -246,7 +246,7 @@ void FixDeformBerendsenUEF::pre_exchange()
  * to make the integration a little simpler.
  * ---------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::rotate_x(double r[3][3])
+void FixDefBerendsenUEF::rotate_x(double r[3][3])
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -268,7 +268,7 @@ void FixDeformBerendsenUEF::rotate_x(double r[3][3])
   }
 }
 
-void FixDeformBerendsenUEF::inv_rotate_x(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_x(double r[3][3])
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -293,7 +293,7 @@ void FixDeformBerendsenUEF::inv_rotate_x(double r[3][3])
   }
 }
 
-void FixDeformBerendsenUEF::rotate_v(double r[3][3])
+void FixDefBerendsenUEF::rotate_v(double r[3][3])
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -313,7 +313,7 @@ void FixDeformBerendsenUEF::rotate_v(double r[3][3])
   }
 }
 
-void FixDeformBerendsenUEF::inv_rotate_v(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_v(double r[3][3])
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -333,7 +333,7 @@ void FixDeformBerendsenUEF::inv_rotate_v(double r[3][3])
   }
 }
 
-void FixDeformBerendsenUEF::rotate_f(double r[3][3])
+void FixDefBerendsenUEF::rotate_f(double r[3][3])
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -353,7 +353,7 @@ void FixDeformBerendsenUEF::rotate_f(double r[3][3])
   }
 }
 
-void FixDeformBerendsenUEF::inv_rotate_f(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_f(double r[3][3])
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -374,7 +374,7 @@ void FixDeformBerendsenUEF::inv_rotate_f(double r[3][3])
 
 /* ---------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::end_of_step()
+void FixDefBerendsenUEF::end_of_step()
 {
   double iv = domain->xprd*domain->yprd*domain->zprd;
   double dtv = update->dt;
@@ -407,7 +407,7 @@ void FixDeformBerendsenUEF::end_of_step()
 
 
  // compute new T,P
-  ((ComputePressureDeformUef*) pressure)->update_rot();
+  ((ComputePressureDefUef*) pressure)->update_rot();
   temperature->compute_vector();
   pressure->compute_vector();
   double *tensor = pressure->vector;
@@ -448,7 +448,7 @@ void FixDeformBerendsenUEF::end_of_step()
    write Set data to restart file
 ------------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::write_restart(FILE *fp)
+void FixDefBerendsenUEF::write_restart(FILE *fp)
 {
   if (comm->me == 0) {
     int size = 3*sizeof(double);
@@ -461,7 +461,7 @@ void FixDeformBerendsenUEF::write_restart(FILE *fp)
    use selected state info from restart file to restart the Fix
 ------------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::restart(char *buf)
+void FixDefBerendsenUEF::restart(char *buf)
 {
 
   double *strain_restart = (double *) buf;
@@ -474,7 +474,7 @@ void FixDeformBerendsenUEF::restart(char *buf)
  * public read for rotation matrix
  * ---------------------------------------------------------------------- */
 
-void FixDeformBerendsenUEF::get_rot(double r[3][3])
+void FixDefBerendsenUEF::get_rot(double r[3][3])
 {
   r[0][0] = rot[0][0];
   r[0][1] = rot[0][1];
@@ -490,7 +490,7 @@ void FixDeformBerendsenUEF::get_rot(double r[3][3])
 /* ----------------------------------------------------------------------
  * public read for simulation box
  * ---------------------------------------------------------------------- */
-void FixDeformBerendsenUEF::get_box(double b[3][3])
+void FixDefBerendsenUEF::get_box(double b[3][3])
 {
   double box[3][3];
   double vol = domain->xprd * domain->yprd * domain->zprd;
@@ -510,7 +510,7 @@ void FixDeformBerendsenUEF::get_box(double b[3][3])
  * comparing floats
  * it's imperfect, but should work provided no infinities
  * ---------------------------------------------------------------------- */
-bool FixDeformBerendsenUEF::nearly_equal(double a, double b, double epsilon)
+bool FixDefBerendsenUEF::nearly_equal(double a, double b, double epsilon)
 {
   double absa = fabs(a);
   double absb = fabs(b);
@@ -522,12 +522,12 @@ bool FixDeformBerendsenUEF::nearly_equal(double a, double b, double epsilon)
     return diff/(absa+absb) < epsilon;
 }
 
-double FixDeformBerendsenUEF::compute_scalar()
+double FixDefBerendsenUEF::compute_scalar()
 {
   return strain[0];
 }
 
-double FixDeformBerendsenUEF::compute_vector(int n)
+double FixDefBerendsenUEF::compute_vector(int n)
 {
   uefbox->get_rot(rot);
 
@@ -552,7 +552,7 @@ double FixDeformBerendsenUEF::compute_vector(int n)
 
 /* ---------------------------------------------------------------------- */
 
-int FixDeformBerendsenUEF::modify_param(int narg, char **arg)
+int FixDefBerendsenUEF::modify_param(int narg, char **arg)
 {
   if (strcmp(arg[0],"temp") == 0) {
     if (narg < 2) error->all(FLERR,"Illegal fix_modify command");
