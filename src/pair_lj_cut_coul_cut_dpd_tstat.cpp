@@ -15,7 +15,7 @@
    Contributing author: Paul Crozier (SNL)
 ------------------------------------------------------------------------- */
 
-#include "pair_lj_cut_dpd_tstat.h"
+#include "pair_lj_cut_coul_cut_dpd_tstat.h"
 
 #include "atom.h"
 #include "comm.h"
@@ -37,8 +37,9 @@ using namespace MathConst;
 
 /* ---------------------------------------------------------------------- */
 
-PairLJCutDPDTstat::PairLJCutDPDTstat(LAMMPS *lmp) : Pair(lmp)
+PairLJCutCoulCutDPDTstat::PairLJCutCoulCutDPDTstat(LAMMPS *lmp) : Pair(lmp)
 {
+  born_matrix_enable = 1;
   single_enable = 0;
   writedata = 1;
   random = nullptr;
@@ -46,7 +47,7 @@ PairLJCutDPDTstat::PairLJCutDPDTstat(LAMMPS *lmp) : Pair(lmp)
 
 /* ---------------------------------------------------------------------- */
 
-PairLJCutDPDTstat::~PairLJCutDPDTstat()
+PairLJCutCoulCutDPDTstat::~PairLJCutCoulCutDPDTstat()
 {
   if (copymode) return;
 
@@ -54,10 +55,13 @@ PairLJCutDPDTstat::~PairLJCutDPDTstat()
     memory->destroy(setflag);
     memory->destroy(cutsq);
 
-    memory->destroy(cut);
-    memory->destroy(cut2);
-    memory->destroy(cut2sq);
-    memory->destroy(cut2inv);
+    memory->destroy(cut_lj);
+    memory->destroy(cut_ljsq);
+    memory->destroy(cut_coul);
+    memory->destroy(cut_coulsq);
+    memory->destroy(cut_dpd);
+    memory->destroy(cut_dpdsq);
+    memory->destroy(cut_dpdinv);
     memory->destroy(epsilon);
     memory->destroy(sigma);
     memory->destroy(sigma2);
@@ -74,12 +78,12 @@ PairLJCutDPDTstat::~PairLJCutDPDTstat()
 
 /* ---------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::compute(int eflag, int vflag)
+void PairLJCutCoulCutDPDTstat::compute(int eflag, int vflag)
 {
   int i, j, ii, jj, inum, jnum, itype, jtype;
-  double xtmp, ytmp, ztmp, delx, dely, delz, evdwl, fpair;
+  double qtmp, xtmp, ytmp, ztmp, delx, dely, delz, evdwl, ecoul,fpair;
   double vxtmp, vytmp, vztmp, delvx, delvy, delvz;
-  double rsq, r2inv, r6inv, forcelj, factor_lj;
+  double rsq, r2inv, r6inv, forcecoul, forcelj, force_dpd, factor_coul, factor_lj;
   double r, rinv, dot, wd, randnum, factor_dpd;
   int *ilist, *jlist, *numneigh, **firstneigh;
 
@@ -101,11 +105,14 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
   double **x = atom->x;
   double **v = atom->v;
   double **f = atom->f;
+  double *q = atom->q;
   int *type = atom->type;
   int nlocal = atom->nlocal;
+  double *special_coul = force->special_coul;
   double *special_lj = force->special_lj;
   int newton_pair = force->newton_pair;
   double dtinvsqrt = 1.0 / sqrt(update->dt);
+  double qqrd2e = force->qqrd2e;
 
   inum = list->inum;
   ilist = list->ilist;
@@ -116,6 +123,7 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
 
   for (ii = 0; ii < inum; ii++) {
     i = ilist[ii];
+    qtmp = q[i];
     xtmp = x[i][0];
     ytmp = x[i][1];
     ztmp = x[i][2];
@@ -129,6 +137,7 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
     for (jj = 0; jj < jnum; jj++) {
       j = jlist[jj];
       factor_lj = special_lj[sbmask(j)];
+      factor_coul = special_coul[sbmask(j)];
       j &= NEIGHMASK;
 
       delx = xtmp - x[j][0];
@@ -137,27 +146,38 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
       rsq = delx * delx + dely * dely + delz * delz;
       jtype = type[j];
 
-      if (rsq < cut2sq[itype][jtype]) {
+      if (rsq < cutsq[itype][jtype]) {
         r = sqrt(rsq);
         rinv = 1.0 / r;
         r2inv = rinv * rinv;
-        r6inv = r2inv * r2inv * r2inv;
-        forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]);
-        fpair = forcelj * r2inv;
 
-        delvx = vxtmp - v[j][0];
-        delvy = vytmp - v[j][1];
-        delvz = vztmp - v[j][2];
-        dot = delx * delvx + dely * delvy + delz * delvz;
-        wd = 1.0 - r * cut2inv[itype][jtype];
-        randnum = random->gaussian();
+        if (rsq < cut_coulsq[itype][jtype])
+          forcecoul = qqrd2e * qtmp * q[j] * rinv * r2inv;
+        else
+          forcecoul = 0.0;
 
-        // drag force = -gamma * wd^2 * (delx dot delv) / r
-        // random force = sigma * wd * rnd * dtinvsqrt;
+        if (rsq < cut_ljsq[itype][jtype]) {
+          r6inv = r2inv * r2inv * r2inv;
+          forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]) * r2inv;
+        } else
+          forcelj = 0.0;
 
-        fpair -= gamma[itype][jtype] * wd * wd * dot * r2inv;
-        fpair += sigma2[itype][jtype] * wd * randnum * dtinvsqrt * rinv;
-        fpair *= factor_lj;
+        if (rsq < cut_dpdsq[itype][jtype]) {
+          delvx = vxtmp - v[j][0];
+          delvy = vytmp - v[j][1];
+          delvz = vztmp - v[j][2];
+          dot = delx * delvx + dely * delvy + delz * delvz;
+          wd = 1.0 - r * cut_dpdinv[itype][jtype];
+          randnum = random->gaussian();
+
+          // drag force = -gamma * wd^2 * (delx dot delv) / r
+          // random force = sigma * wd * rnd * dtinvsqrt;
+
+          force_dpd = -gamma[itype][jtype] * wd * wd * dot * r2inv;
+          force_dpd += sigma2[itype][jtype] * wd * randnum * dtinvsqrt * rinv;
+        }
+
+        fpair = (factor_coul * forcecoul + factor_lj * (forcelj + force_dpd));
 
         f[i][0] += delx * fpair;
         f[i][1] += dely * fpair;
@@ -169,32 +189,18 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
         }
 
         if (eflag) {
-          evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
-          evdwl *= factor_lj;
+          if (rsq < cut_coulsq[itype][jtype])
+            ecoul = factor_coul * qqrd2e * qtmp * q[j] * sqrt(r2inv);
+          else
+            ecoul = 0.0;
+          if (rsq < cut_ljsq[itype][jtype]) {
+            evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
+            evdwl *= factor_lj;
+          } else
+            evdwl = 0.0;
         }
 
-        if (evflag) ev_tally(i, j, nlocal, newton_pair, evdwl, 0.0, fpair, delx, dely, delz);
-      } else if (rsq < cutsq[itype][jtype]) {
-        r2inv = 1.0 / rsq;
-        r6inv = r2inv * r2inv * r2inv;
-        forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]);
-        fpair = forcelj * r2inv * factor_lj;
-
-        f[i][0] += delx * fpair;
-        f[i][1] += dely * fpair;
-        f[i][2] += delz * fpair;
-        if (newton_pair || j < nlocal) {
-          f[j][0] -= delx * fpair;
-          f[j][1] -= dely * fpair;
-          f[j][2] -= delz * fpair;
-        }
-
-        if (eflag) {
-          evdwl = r6inv * (lj3[itype][jtype] * r6inv - lj4[itype][jtype]) - offset[itype][jtype];
-          evdwl *= factor_lj;
-        }
-
-        if (evflag) ev_tally(i, j, nlocal, newton_pair, evdwl, 0.0, fpair, delx, dely, delz);
+        if (evflag) ev_tally(i, j, nlocal, newton_pair, evdwl, ecoul, fpair, delx, dely, delz);
       }
     }
   }
@@ -206,7 +212,7 @@ void PairLJCutDPDTstat::compute(int eflag, int vflag)
    allocate all arrays
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::allocate()
+void PairLJCutCoulCutDPDTstat::allocate()
 {
   allocated = 1;
   int n = atom->ntypes + 1;
@@ -217,10 +223,13 @@ void PairLJCutDPDTstat::allocate()
 
   memory->create(cutsq, n, n, "pair:cutsq");
 
-  memory->create(cut, n, n, "pair:cut");
-  memory->create(cut2, n, n, "pair:cut2");
-  memory->create(cut2sq, n, n, "pair:cut2sq");
-  memory->create(cut2inv, n, n, "pair:cut2inv");
+  memory->create(cut_lj, n, n, "pair:cut_lj");
+  memory->create(cut_ljsq, n, n, "pair:cut_ljsq");
+  memory->create(cut_coul, n, n, "pair:cut_coul");
+  memory->create(cut_coulsq, n, n, "pair:cut_coulsq");
+  memory->create(cut_dpd, n, n, "pair:cut_dpd");
+  memory->create(cut_dpdsq, n, n, "pair:cut_dpdsq");
+  memory->create(cut_dpdinv, n, n, "pair:cut_dpdinv");
   memory->create(epsilon, n, n, "pair:epsilon");
   memory->create(sigma, n, n, "pair:sigma");
   memory->create(sigma2, n, n, "pair:sigma2");
@@ -236,7 +245,7 @@ void PairLJCutDPDTstat::allocate()
    global settings
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::settings(int narg, char **arg)
+void PairLJCutCoulCutDPDTstat::settings(int narg, char **arg)
 {
   if (narg != 3) error->all(FLERR, "Illegal pair_style command");
 
@@ -257,9 +266,9 @@ void PairLJCutDPDTstat::settings(int narg, char **arg)
    set coeffs for one or more type pairs
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::coeff(int narg, char **arg)
+void PairLJCutCoulCutDPDTstat::coeff(int narg, char **arg)
 {
-  if (narg != 7) error->all(FLERR, "Incorrect args for pair coefficients");
+  if (narg != 8) error->all(FLERR, "Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
   int ilo, ihi, jlo, jhi;
@@ -270,11 +279,9 @@ void PairLJCutDPDTstat::coeff(int narg, char **arg)
   double sigma_one = utils::numeric(FLERR, arg[3], false, lmp);
   double gamma_one = utils::numeric(FLERR,arg[4],false,lmp);
 
-  double cut_one = utils::numeric(FLERR, arg[5], false, lmp);
-  double cut2_one = utils::numeric(FLERR, arg[6], false, lmp);
-
-  if (cut_one < cut2_one)
-    error->all(FLERR, "Pair style lj/cut/dpd/tstat cannot have a smaller LJ cutoff than the DPD cutoff");
+  double cut_lj_one = utils::numeric(FLERR, arg[5], false, lmp);
+  double cut_coul_one = utils::numeric(FLERR, arg[6], false, lmp);
+  double cut_dpd_one = utils::numeric(FLERR, arg[7], false, lmp);
 
   int count = 0;
   for (int i = ilo; i <= ihi; i++) {
@@ -282,8 +289,9 @@ void PairLJCutDPDTstat::coeff(int narg, char **arg)
       epsilon[i][j] = epsilon_one;
       sigma[i][j] = sigma_one;
       gamma[i][j] = gamma_one;
-      cut[i][j] = cut_one;
-      cut2[i][j] = cut2_one;
+      cut_lj[i][j] = cut_lj_one;
+      cut_coul[i][j] = cut_coul_one;
+      cut_dpd[i][j] = cut_dpd_one;
       setflag[i][j] = 1;
       count++;
     }
@@ -296,57 +304,65 @@ void PairLJCutDPDTstat::coeff(int narg, char **arg)
    init specific to this pair style
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::init_style()
+void PairLJCutCoulCutDPDTstat::init_style()
 {
   if (comm->ghost_velocity == 0)
-    error->all(FLERR,"Pair lj/cut/dpd/tstat requires ghost atoms store velocity");
+    error->all(FLERR,"Pair lj/cut/coul/cut/dpd/tstat requires ghost atoms store velocity");
+
+  if (!atom->q_flag) error->all(FLERR, "Pair style lj/cut/coul/cut/dpd/tstat requires atom attribute q");
 
   // if newton off, forces between atoms ij will be double computed
   // using different random numbers
 
   if (force->newton_pair == 0 && comm->me == 0) error->warning(FLERR,
-      "Pair lj/cut/dpd/tstat needs newton pair on for momentum conservation");
+      "Pair lj/cut/coul/cut/dpd/tstat needs newton pair on for momentum conservation");
 
-  neighbor->request(this,instance_me);
+  neighbor->request(this, instance_me);
 }
 
 /* ----------------------------------------------------------------------
    init for one type pair i,j and corresponding j,i
 ------------------------------------------------------------------------- */
 
-double PairLJCutDPDTstat::init_one(int i, int j)
+double PairLJCutCoulCutDPDTstat::init_one(int i, int j)
 {
   if (setflag[i][j] == 0) {
     epsilon[i][j] = mix_energy(epsilon[i][i], epsilon[j][j], sigma[i][i], sigma[j][j]);
     sigma[i][j] = mix_distance(sigma[i][i], sigma[j][j]);
-    cut[i][j] = mix_distance(cut[i][i], cut[j][j]);
-    cut2[i][j] = mix_distance(cut2[i][i], cut2[j][j]);
+    cut_lj[i][j] = mix_distance(cut_lj[i][i], cut_lj[j][j]);
+    cut_coul[i][j] = mix_distance(cut_coul[i][i], cut_coul[j][j]);
+    cut_dpd[i][j] = mix_distance(cut_dpd[i][i], cut_dpd[j][j]);
   }
+
+  double cut = MAX(MAX(cut_lj[i][j], cut_coul[i][j]), cut_dpd[i][j]);
+  cut_ljsq[i][j] = cut_lj[i][j] * cut_lj[i][j];
+  cut_coulsq[i][j] = cut_coul[i][j] * cut_coul[i][j];
+  cut_dpdsq[i][j] = cut_dpd[i][j] * cut_dpd[i][j];
+  cut_dpdinv[i][j] = 1.0 / cut_dpd[i][j];
 
   lj1[i][j] = 48.0 * epsilon[i][j] * pow(sigma[i][j], 12.0);
   lj2[i][j] = 24.0 * epsilon[i][j] * pow(sigma[i][j], 6.0);
   lj3[i][j] = 4.0 * epsilon[i][j] * pow(sigma[i][j], 12.0);
   lj4[i][j] = 4.0 * epsilon[i][j] * pow(sigma[i][j], 6.0);
 
-  if (offset_flag && (cut[i][j] > 0.0)) {
-    double ratio = sigma[i][j] / cut[i][j];
+  if (offset_flag && (cut_lj[i][j] > 0.0)) {
+    double ratio = sigma[i][j] / cut_lj[i][j];
     offset[i][j] = 4.0 * epsilon[i][j] * (pow(ratio, 12.0) - pow(ratio, 6.0));
   } else
     offset[i][j] = 0.0;
 
-  cut2inv[i][j] = 1.0 / cut2[i][j];
-  cut2sq[i][j] = cut2[i][j] * cut2[i][j];
-  sigma2[i][j] = sqrt(2.0 * force->boltz * temperature * gamma[i][j]);
+  sigma2[i][j] = sqrt(2.0*force->boltz*temperature*gamma[i][j]);
+
+  cut_ljsq[j][i] = cut_ljsq[i][j];
+  cut_coulsq[j][i] = cut_coulsq[i][j];
+  cut_dpdsq[j][i] = cut_dpdsq[i][j];
+  cut_dpdinv[j][i] = cut_dpdinv[i][j];
 
   lj1[j][i] = lj1[i][j];
   lj2[j][i] = lj2[i][j];
   lj3[j][i] = lj3[i][j];
   lj4[j][i] = lj4[i][j];
   offset[j][i] = offset[i][j];
-  cut[j][i] = cut[i][j];
-  cut2[j][i] = cut2[i][j];
-  cut2sq[j][i] = cut2sq[i][j];
-  cut2inv[j][i] = cut2inv[i][j];
   sigma2[j][i] = sigma2[i][j];
   gamma[j][i] = gamma[i][j];
 
@@ -367,7 +383,7 @@ double PairLJCutDPDTstat::init_one(int i, int j)
 
     double sig2 = sigma[i][j] * sigma[i][j];
     double sig6 = sig2 * sig2 * sig2;
-    double rc3 = cut[i][j] * cut[i][j] * cut[i][j];
+    double rc3 = cut_lj[i][j] * cut_lj[i][j] * cut_lj[i][j];
     double rc6 = rc3 * rc3;
     double rc9 = rc3 * rc6;
     double prefactor = 8.0 * MY_PI * all[0] * all[1] * epsilon[i][j] * sig6 / (9.0 * rc9);
@@ -375,14 +391,14 @@ double PairLJCutDPDTstat::init_one(int i, int j)
     ptail_ij = 2.0 * prefactor * (2.0 * sig6 - 3.0 * rc6);
   }
 
-  return cut[i][j];
+  return cut;
 }
 
 /* ----------------------------------------------------------------------
    proc 0 writes to restart file
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::write_restart(FILE *fp)
+void PairLJCutCoulCutDPDTstat::write_restart(FILE *fp)
 {
   write_restart_settings(fp);
 
@@ -395,8 +411,9 @@ void PairLJCutDPDTstat::write_restart(FILE *fp)
         fwrite(&sigma[i][j], sizeof(double), 1, fp);
         fwrite(&sigma2[i][j], sizeof(double), 1, fp);
         fwrite(&gamma[i][j], sizeof(double), 1, fp);
-        fwrite(&cut[i][j], sizeof(double), 1, fp);
-        fwrite(&cut2[i][j], sizeof(double), 1, fp);
+        fwrite(&cut_lj[i][j], sizeof(double), 1, fp);
+        fwrite(&cut_coul[i][j], sizeof(double), 1, fp);
+        fwrite(&cut_dpd[i][j], sizeof(double), 1, fp);
       }
     }
 }
@@ -405,7 +422,7 @@ void PairLJCutDPDTstat::write_restart(FILE *fp)
    proc 0 reads from restart file, bcasts
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::read_restart(FILE *fp)
+void PairLJCutCoulCutDPDTstat::read_restart(FILE *fp)
 {
   read_restart_settings(fp);
   allocate();
@@ -421,16 +438,18 @@ void PairLJCutDPDTstat::read_restart(FILE *fp)
           utils::sfread(FLERR, &epsilon[i][j], sizeof(double), 1, fp, nullptr, error);
           utils::sfread(FLERR, &sigma[i][j], sizeof(double), 1, fp, nullptr, error);
           utils::sfread(FLERR, &sigma2[i][j], sizeof(double), 1, fp, nullptr, error);
-          utils::sfread(FLERR, &gamma[i][j], sizeof(double), 1, fp, nullptr, error);
-          utils::sfread(FLERR, &cut[i][j], sizeof(double), 1, fp, nullptr, error);
-          utils::sfread(FLERR, &cut2[i][j], sizeof(double), 1, fp, nullptr, error);
+          utils::sfread(FLERR, &gamma[i][j], sizeof(double), 1, fp,nullptr, error);
+          utils::sfread(FLERR, &cut_lj[i][j], sizeof(double), 1, fp, nullptr, error);
+          utils::sfread(FLERR, &cut_coul[i][j], sizeof(double), 1, fp, nullptr, error);
+          utils::sfread(FLERR, &cut_dpd[i][j], sizeof(double), 1, fp, nullptr, error);
         }
         MPI_Bcast(&epsilon[i][j], 1, MPI_DOUBLE, 0, world);
         MPI_Bcast(&sigma[i][j], 1, MPI_DOUBLE, 0, world);
         MPI_Bcast(&sigma2[i][j], 1, MPI_DOUBLE, 0, world);
         MPI_Bcast(&gamma[i][j], 1, MPI_DOUBLE, 0, world);
-        MPI_Bcast(&cut[i][j], 1, MPI_DOUBLE, 0, world);
-        MPI_Bcast(&cut2[i][j], 1, MPI_DOUBLE, 0, world);
+        MPI_Bcast(&cut_lj[i][j], 1, MPI_DOUBLE, 0, world);
+        MPI_Bcast(&cut_coul[i][j], 1, MPI_DOUBLE, 0, world);
+        MPI_Bcast(&cut_dpd[i][j], 1, MPI_DOUBLE, 0, world);
       }
     }
 }
@@ -439,7 +458,7 @@ void PairLJCutDPDTstat::read_restart(FILE *fp)
    proc 0 writes to restart file
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::write_restart_settings(FILE *fp)
+void PairLJCutCoulCutDPDTstat::write_restart_settings(FILE *fp)
 {
   fwrite(&t_start, sizeof(double), 1, fp);
   fwrite(&t_stop, sizeof(double), 1, fp);
@@ -453,12 +472,12 @@ void PairLJCutDPDTstat::write_restart_settings(FILE *fp)
    proc 0 reads from restart file, bcasts
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::read_restart_settings(FILE *fp)
+void PairLJCutCoulCutDPDTstat::read_restart_settings(FILE *fp)
 {
   int me = comm->me;
   if (me == 0) {
-    utils::sfread(FLERR, &t_start, sizeof(double), 1, fp, nullptr, error);
-    utils::sfread(FLERR, &t_stop, sizeof(double), 1, fp, nullptr,error);
+    utils::sfread(FLERR, &t_start,sizeof(double),1,fp,nullptr,error);
+    utils::sfread(FLERR, &t_stop,sizeof(double),1,fp,nullptr,error);
     utils::sfread(FLERR, &seed, sizeof(int), 1, fp, nullptr, error);
     utils::sfread(FLERR, &offset_flag, sizeof(int), 1, fp, nullptr, error);
     utils::sfread(FLERR, &mix_flag, sizeof(int), 1, fp, nullptr, error);
@@ -484,27 +503,57 @@ void PairLJCutDPDTstat::read_restart_settings(FILE *fp)
    proc 0 writes to data file
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::write_data(FILE *fp)
+void PairLJCutCoulCutDPDTstat::write_data(FILE *fp)
 {
-  for (int i = 1; i <= atom->ntypes; i++) fprintf(fp, "%d %g %g %g %d %d \n", i, epsilon[i][i], sigma[i][i], gamma[i][i], cut[i][i], cut2[i][i]);
+  for (int i = 1; i <= atom->ntypes; i++) fprintf(fp, "%d %g %g %g %g %g %g\n", i, epsilon[i][i], sigma[i][i], gamma[i][i], cut_lj[i][i], cut_coul[i][i], cut_dpd[i][i]);
 }
 
 /* ----------------------------------------------------------------------
    proc 0 writes all pairs to data file
 ------------------------------------------------------------------------- */
 
-void PairLJCutDPDTstat::write_data_all(FILE *fp)
+void PairLJCutCoulCutDPDTstat::write_data_all(FILE *fp)
 {
   for (int i = 1; i <= atom->ntypes; i++)
     for (int j = i; j <= atom->ntypes; j++)
-      fprintf(fp, "%d %d %g %g %g %g %g\n", i, j, epsilon[i][j], sigma[i][j], gamma[i][j], cut[i][j], cut2[i][j]);
+      fprintf(fp, "%d %d %g %g %g %g %g\n", i, j, epsilon[i][j], sigma[i][j], gamma[i][j], cut_lj[i][j], cut_coul[i][j], cut_dpd[i][j]);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void *PairLJCutDPDTstat::extract(const char *str, int &dim)
+void PairLJCutCoulCutDPDTstat::born_matrix(int i, int j, int itype, int jtype, double rsq,
+                                   double factor_coul, double factor_lj, double &dupair,
+                                   double &du2pair)
+{
+  double rinv, r2inv, r3inv, r6inv;
+  double du_lj, du2_lj, du_coul, du2_coul;
+
+  double *q = atom->q;
+  double qqrd2e = force->qqrd2e;
+
+  r2inv = 1.0 / rsq;
+  rinv = sqrt(r2inv);
+  r3inv = r2inv * rinv;
+  r6inv = r2inv * r2inv * r2inv;
+
+  // Reminder: lj1 = 48*e*s^12, lj2 = 24*e*s^6
+
+  du_lj = r6inv * rinv * (lj2[itype][jtype] - lj1[itype][jtype] * r6inv);
+  du2_lj = r6inv * r2inv * (13 * lj1[itype][jtype] * r6inv - 7 * lj2[itype][jtype]);
+
+  du_coul = -qqrd2e * q[i] * q[j] * r2inv;
+  du2_coul = 2.0 * qqrd2e * q[i] * q[j] * r3inv;
+
+  dupair = factor_lj * du_lj + factor_coul * du_coul;
+  du2pair = factor_lj * du2_lj + factor_coul * du2_coul;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void *PairLJCutCoulCutDPDTstat::extract(const char *str, int &dim)
 {
   dim = 2;
+  if (strcmp(str, "cut_coul") == 0) return (void *) cut_coul;
   if (strcmp(str, "epsilon") == 0) return (void *) epsilon;
   if (strcmp(str, "sigma") == 0) return (void *) sigma;
   return nullptr;
