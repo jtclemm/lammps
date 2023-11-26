@@ -268,7 +268,7 @@ void PairLJCutDPDTstat::coeff(int narg, char **arg)
 
   double epsilon_one = utils::numeric(FLERR, arg[2], false, lmp);
   double sigma_one = utils::numeric(FLERR, arg[3], false, lmp);
-  double gamma_one = utils::numeric(FLERR,arg[4],false,lmp);
+  double gamma_one = utils::numeric(FLERR, arg[4], false, lmp);
 
   double cut_one = utils::numeric(FLERR, arg[5], false, lmp);
   double cut2_one = utils::numeric(FLERR, arg[6], false, lmp);
@@ -477,7 +477,7 @@ void PairLJCutDPDTstat::read_restart_settings(FILE *fp)
   // same seed that pair_style command initially specified
 
   if (random) delete random;
-  random = new RanMars(lmp,seed + comm->me);
+  random = new RanMars(lmp, seed + comm->me);
 }
 
 /* ----------------------------------------------------------------------

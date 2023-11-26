@@ -193,9 +193,9 @@ void FixDefBerendsenUEF::pre_exchange()
   if (flip != 0) {
 
     // go to lab frame
-    inv_rotate_x(rot);
-    inv_rotate_v(rot);
-    inv_rotate_f(rot);
+    inv_rotate_x();
+    inv_rotate_v();
+    inv_rotate_f();
 
 
     // get & set the new box and rotation matrix
@@ -213,9 +213,9 @@ void FixDefBerendsenUEF::pre_exchange()
     uefbox->get_rot(rot);
 
     // rotate to the new upper triangular frame
-    rotate_v(rot);
-    rotate_x(rot);
-    rotate_f(rot);
+    rotate_v();
+    rotate_x();
+    rotate_f();
 
     // put all atoms in the new box
     double **x = atom->x;
@@ -242,7 +242,7 @@ void FixDefBerendsenUEF::pre_exchange()
  * to make the integration a little simpler.
  * ---------------------------------------------------------------------- */
 
-void FixDefBerendsenUEF::rotate_x(double r[3][3])
+void FixDefBerendsenUEF::rotate_x()
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -254,9 +254,9 @@ void FixDefBerendsenUEF::rotate_x(double r[3][3])
   {
     if (mask[i] & groupbit)
     {
-      xn[0]=r[0][0]*x[i][0]+r[0][1]*x[i][1]+r[0][2]*x[i][2];
-      xn[1]=r[1][0]*x[i][0]+r[1][1]*x[i][1]+r[1][2]*x[i][2];
-      xn[2]=r[2][0]*x[i][0]+r[2][1]*x[i][1]+r[2][2]*x[i][2];
+      xn[0]=rot[0][0]*x[i][0]+rot[0][1]*x[i][1]+rot[0][2]*x[i][2];
+      xn[1]=rot[1][0]*x[i][0]+rot[1][1]*x[i][1]+rot[1][2]*x[i][2];
+      xn[2]=rot[2][0]*x[i][0]+rot[2][1]*x[i][1]+rot[2][2]*x[i][2];
       x[i][0]=xn[0]+domain->boxlo[0];
       x[i][1]=xn[1]+domain->boxlo[1];
       x[i][2]=xn[2]+domain->boxlo[2];
@@ -264,7 +264,7 @@ void FixDefBerendsenUEF::rotate_x(double r[3][3])
   }
 }
 
-void FixDefBerendsenUEF::inv_rotate_x(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_x()
 {
   double **x = atom->x;
   int *mask = atom->mask;
@@ -279,9 +279,9 @@ void FixDefBerendsenUEF::inv_rotate_x(double r[3][3])
       x[i][0] -= domain->boxlo[0];
       x[i][1] -= domain->boxlo[1];
       x[i][2] -= domain->boxlo[2];
-      xn[0]=r[0][0]*x[i][0]+r[1][0]*x[i][1]+r[2][0]*x[i][2];
-      xn[1]=r[0][1]*x[i][0]+r[1][1]*x[i][1]+r[2][1]*x[i][2];
-      xn[2]=r[0][2]*x[i][0]+r[1][2]*x[i][1]+r[2][2]*x[i][2];
+      xn[0]=rot[0][0]*x[i][0]+rot[1][0]*x[i][1]+rot[2][0]*x[i][2];
+      xn[1]=rot[0][1]*x[i][0]+rot[1][1]*x[i][1]+rot[2][1]*x[i][2];
+      xn[2]=rot[0][2]*x[i][0]+rot[1][2]*x[i][1]+rot[2][2]*x[i][2];
       x[i][0]=xn[0];
       x[i][1]=xn[1];
       x[i][2]=xn[2];
@@ -289,7 +289,7 @@ void FixDefBerendsenUEF::inv_rotate_x(double r[3][3])
   }
 }
 
-void FixDefBerendsenUEF::rotate_v(double r[3][3])
+void FixDefBerendsenUEF::rotate_v()
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -301,15 +301,15 @@ void FixDefBerendsenUEF::rotate_v(double r[3][3])
   {
     if (mask[i] & groupbit)
     {
-      vn[0]=r[0][0]*v[i][0]+r[0][1]*v[i][1]+r[0][2]*v[i][2];
-      vn[1]=r[1][0]*v[i][0]+r[1][1]*v[i][1]+r[1][2]*v[i][2];
-      vn[2]=r[2][0]*v[i][0]+r[2][1]*v[i][1]+r[2][2]*v[i][2];
+      vn[0]=rot[0][0]*v[i][0]+rot[0][1]*v[i][1]+rot[0][2]*v[i][2];
+      vn[1]=rot[1][0]*v[i][0]+rot[1][1]*v[i][1]+rot[1][2]*v[i][2];
+      vn[2]=rot[2][0]*v[i][0]+rot[2][1]*v[i][1]+rot[2][2]*v[i][2];
       v[i][0]=vn[0]; v[i][1]=vn[1]; v[i][2]=vn[2];
     }
   }
 }
 
-void FixDefBerendsenUEF::inv_rotate_v(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_v()
 {
   double **v = atom->v;
   int *mask = atom->mask;
@@ -321,15 +321,15 @@ void FixDefBerendsenUEF::inv_rotate_v(double r[3][3])
   {
     if (mask[i] & groupbit)
     {
-      vn[0]=r[0][0]*v[i][0]+r[1][0]*v[i][1]+r[2][0]*v[i][2];
-      vn[1]=r[0][1]*v[i][0]+r[1][1]*v[i][1]+r[2][1]*v[i][2];
-      vn[2]=r[0][2]*v[i][0]+r[1][2]*v[i][1]+r[2][2]*v[i][2];
+      vn[0]=rot[0][0]*v[i][0]+rot[1][0]*v[i][1]+rot[2][0]*v[i][2];
+      vn[1]=rot[0][1]*v[i][0]+rot[1][1]*v[i][1]+rot[2][1]*v[i][2];
+      vn[2]=rot[0][2]*v[i][0]+rot[1][2]*v[i][1]+rot[2][2]*v[i][2];
       v[i][0]=vn[0]; v[i][1]=vn[1]; v[i][2]=vn[2];
     }
   }
 }
 
-void FixDefBerendsenUEF::rotate_f(double r[3][3])
+void FixDefBerendsenUEF::rotate_f()
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -341,15 +341,15 @@ void FixDefBerendsenUEF::rotate_f(double r[3][3])
   {
     if (mask[i] & groupbit)
     {
-      fn[0]=r[0][0]*f[i][0]+r[0][1]*f[i][1]+r[0][2]*f[i][2];
-      fn[1]=r[1][0]*f[i][0]+r[1][1]*f[i][1]+r[1][2]*f[i][2];
-      fn[2]=r[2][0]*f[i][0]+r[2][1]*f[i][1]+r[2][2]*f[i][2];
+      fn[0]=rot[0][0]*f[i][0]+rot[0][1]*f[i][1]+rot[0][2]*f[i][2];
+      fn[1]=rot[1][0]*f[i][0]+rot[1][1]*f[i][1]+rot[1][2]*f[i][2];
+      fn[2]=rot[2][0]*f[i][0]+rot[2][1]*f[i][1]+rot[2][2]*f[i][2];
       f[i][0]=fn[0]; f[i][1]=fn[1]; f[i][2]=fn[2];
     }
   }
 }
 
-void FixDefBerendsenUEF::inv_rotate_f(double r[3][3])
+void FixDefBerendsenUEF::inv_rotate_f()
 {
   double **f = atom->f;
   int *mask = atom->mask;
@@ -360,9 +360,9 @@ void FixDefBerendsenUEF::inv_rotate_f(double r[3][3])
   {
     if (mask[i] & groupbit)
     {
-      fn[0]=r[0][0]*f[i][0]+r[1][0]*f[i][1]+r[2][0]*f[i][2];
-      fn[1]=r[0][1]*f[i][0]+r[1][1]*f[i][1]+r[2][1]*f[i][2];
-      fn[2]=r[0][2]*f[i][0]+r[1][2]*f[i][1]+r[2][2]*f[i][2];
+      fn[0]=rot[0][0]*f[i][0]+rot[1][0]*f[i][1]+rot[2][0]*f[i][2];
+      fn[1]=rot[0][1]*f[i][0]+rot[1][1]*f[i][1]+rot[2][1]*f[i][2];
+      fn[2]=rot[0][2]*f[i][0]+rot[1][2]*f[i][1]+rot[2][2]*f[i][2];
       f[i][0]=fn[0]; f[i][1]=fn[1]; f[i][2]=fn[2];
     }
   }

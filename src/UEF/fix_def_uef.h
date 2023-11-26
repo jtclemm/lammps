@@ -51,12 +51,12 @@ class FixDefUEF : public Fix {
  protected:
   double rate[2],strain[3];
 
-  void rotate_x(double [3][3]);
-  void inv_rotate_x(double[3][3]);
-  void rotate_v(double[3][3]);
-  void inv_rotate_v(double[3][3]);
-  void rotate_f(double[3][3]);
-  void inv_rotate_f(double[3][3]);
+  void rotate_x();
+  void inv_rotate_x();
+  void rotate_v();
+  void inv_rotate_v();
+  void rotate_f();
+  void inv_rotate_f();
 
   class Irregular *irregular;
   UEF_utils::UEFBox *uefbox;

@@ -1217,6 +1217,8 @@
 /pair_lj_charmm_coul_long_soft.h
 /pair_lj_charmm_coul_msm.cpp
 /pair_lj_charmm_coul_msm.h
+pair_lj_cut_coul_long_dpd_tstat.cpp
+pair_lj_cut_coul_long_dpd_tstat.h
 /pair_lj_class2.cpp
 /pair_lj_class2.h
 /pair_lj_class2_coul_cut.cpp

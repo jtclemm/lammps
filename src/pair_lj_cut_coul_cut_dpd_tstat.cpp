@@ -84,7 +84,7 @@ void PairLJCutCoulCutDPDTstat::compute(int eflag, int vflag)
   double qtmp, xtmp, ytmp, ztmp, delx, dely, delz, evdwl, ecoul,fpair;
   double vxtmp, vytmp, vztmp, delvx, delvy, delvz;
   double rsq, r2inv, r6inv, forcecoul, forcelj, force_dpd, factor_coul, factor_lj;
-  double r, rinv, dot, wd, randnum, factor_dpd;
+  double r, rinv, dot, wd, randnum;
   int *ilist, *jlist, *numneigh, **firstneigh;
 
   evdwl = 0.0;
@@ -152,13 +152,13 @@ void PairLJCutCoulCutDPDTstat::compute(int eflag, int vflag)
         r2inv = rinv * rinv;
 
         if (rsq < cut_coulsq[itype][jtype])
-          forcecoul = qqrd2e * qtmp * q[j] * rinv * r2inv;
+          forcecoul = qqrd2e * qtmp * q[j] * rinv;
         else
           forcecoul = 0.0;
 
         if (rsq < cut_ljsq[itype][jtype]) {
           r6inv = r2inv * r2inv * r2inv;
-          forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]) * r2inv;
+          forcelj = r6inv * (lj1[itype][jtype] * r6inv - lj2[itype][jtype]);
         } else
           forcelj = 0.0;
 
@@ -175,9 +175,9 @@ void PairLJCutCoulCutDPDTstat::compute(int eflag, int vflag)
 
           force_dpd = -gamma[itype][jtype] * wd * wd * dot * r2inv;
           force_dpd += sigma2[itype][jtype] * wd * randnum * dtinvsqrt * rinv;
-        }
+        } else force_dpd = 0.0;
 
-        fpair = (factor_coul * forcecoul + factor_lj * (forcelj + force_dpd));
+        fpair = (factor_coul * forcecoul * r2inv + factor_lj * (forcelj * r2inv + force_dpd));
 
         f[i][0] += delx * fpair;
         f[i][1] += dely * fpair;
@@ -277,7 +277,7 @@ void PairLJCutCoulCutDPDTstat::coeff(int narg, char **arg)
 
   double epsilon_one = utils::numeric(FLERR, arg[2], false, lmp);
   double sigma_one = utils::numeric(FLERR, arg[3], false, lmp);
-  double gamma_one = utils::numeric(FLERR,arg[4],false,lmp);
+  double gamma_one = utils::numeric(FLERR, arg[4], false, lmp);
 
   double cut_lj_one = utils::numeric(FLERR, arg[5], false, lmp);
   double cut_coul_one = utils::numeric(FLERR, arg[6], false, lmp);
@@ -290,7 +290,6 @@ void PairLJCutCoulCutDPDTstat::coeff(int narg, char **arg)
       sigma[i][j] = sigma_one;
       gamma[i][j] = gamma_one;
       cut_lj[i][j] = cut_lj_one;
-      cut_coul[i][j] = cut_coul_one;
       cut_dpd[i][j] = cut_dpd_one;
       setflag[i][j] = 1;
       count++;
@@ -496,7 +495,7 @@ void PairLJCutCoulCutDPDTstat::read_restart_settings(FILE *fp)
   // same seed that pair_style command initially specified
 
   if (random) delete random;
-  random = new RanMars(lmp,seed + comm->me);
+  random = new RanMars(lmp, seed + comm->me);
 }
 
 /* ----------------------------------------------------------------------

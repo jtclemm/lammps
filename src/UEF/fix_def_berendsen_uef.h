@@ -57,12 +57,12 @@ class FixDefBerendsenUEF : public Fix {
   class Compute *temperature, *pressure;
   int tflag, pflag;
 
-  void rotate_x(double [3][3]);
-  void inv_rotate_x(double[3][3]);
-  void rotate_v(double[3][3]);
-  void inv_rotate_v(double[3][3]);
-  void rotate_f(double[3][3]);
-  void inv_rotate_f(double[3][3]);
+  void rotate_x();
+  void inv_rotate_x();
+  void rotate_v();
+  void inv_rotate_v();
+  void rotate_f();
+  void inv_rotate_f();
 
   class Irregular *irregular;
   UEF_utils::UEFBox *uefbox;
