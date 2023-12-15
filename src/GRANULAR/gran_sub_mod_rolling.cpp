@@ -68,23 +68,31 @@ void GranSubModRollingSDS::calculate_forces()
   double Frcrit, rolldotn, rollmag, prjmag, magfr, hist_temp[3], scalefac, temp_array[3];
   double k_inv, magfr_inv;
 
+  double *nx = gm->nx;
+  double *vrl = gm->vrl;
+  double *fr = gm->fr;
+  double dt = gm->dt;
+  double Fncrit = gm->normal_model->Fncrit;
+  double *history = gm->history;
+  int history_update = gm->history_update;
+
   rhist0 = history_index;
   rhist1 = rhist0 + 1;
   rhist2 = rhist1 + 1;
 
-  Frcrit = mu * gm->normal_model->Fncrit;
+  Frcrit = mu * Fncrit;
 
-  if (gm->history_update) {
-    hist_temp[0] = gm->history[rhist0];
-    hist_temp[1] = gm->history[rhist1];
-    hist_temp[2] = gm->history[rhist2];
-    rolldotn = dot3(hist_temp, gm->nx);
+  if (history_update) {
+    hist_temp[0] = history[rhist0];
+    hist_temp[1] = history[rhist1];
+    hist_temp[2] = history[rhist2];
+    rolldotn = dot3(hist_temp, nx);
 
     frameupdate = (fabs(rolldotn) * k)  > (EPSILON * Frcrit);
     if (frameupdate) { // rotate into tangential plane
       rollmag = len3(hist_temp);
       // projection
-      scale3(rolldotn, gm->nx, temp_array);
+      scale3(rolldotn, nx, temp_array);
       sub3(hist_temp, temp_array, hist_temp);
 
       // also rescale to preserve magnitude
@@ -93,32 +101,32 @@ void GranSubModRollingSDS::calculate_forces()
       else scalefac = 0;
       scale3(scalefac, hist_temp);
     }
-    scale3(gm->dt, gm->vrl, temp_array);
+    scale3(dt, vrl, temp_array);
     add3(hist_temp, temp_array, hist_temp);
   }
 
-  scaleadd3(-k, hist_temp, -gamma, gm->vrl, gm->fr);
+  scaleadd3(-k, hist_temp, -gamma, vrl, fr);
 
   // rescale frictional displacements and forces if needed
-  magfr = len3(gm->fr);
+  magfr = len3(fr);
   if (magfr > Frcrit) {
     rollmag = len3(hist_temp);
     if (rollmag != 0.0) {
       k_inv = 1.0 / k;
       magfr_inv = 1.0 / magfr;
-      scale3(-Frcrit * k_inv * magfr_inv, gm->fr, hist_temp);
-      scale3(-gamma * k_inv, gm->vrl, temp_array);
+      scale3(-Frcrit * k_inv * magfr_inv, fr, hist_temp);
+      scale3(-gamma * k_inv, vrl, temp_array);
       add3(hist_temp, temp_array, hist_temp);
 
-      scale3(Frcrit * magfr_inv, gm->fr);
+      scale3(Frcrit * magfr_inv, fr);
     } else {
-      zero3(gm->fr);
+      zero3(fr);
     }
   }
 
-  if (gm->history_update) {
-    gm->history[rhist0] = hist_temp[0];
-    gm->history[rhist1] = hist_temp[1];
-    gm->history[rhist2] = hist_temp[2];
+  if (history_update) {
+    history[rhist0] = hist_temp[0];
+    history[rhist1] = hist_temp[1];
+    history[rhist2] = hist_temp[2];
   }
 }

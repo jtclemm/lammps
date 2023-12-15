@@ -39,7 +39,7 @@ class GranSubModTwisting : public GranSubMod {
  public:
   GranSubModTwisting(class GranularModel *, class LAMMPS *);
   virtual ~GranSubModTwisting() {};
-  virtual void calculate_forces() = 0;
+  virtual double calculate_forces() = 0;
 };
 
 /* ---------------------------------------------------------------------- */
@@ -47,7 +47,7 @@ class GranSubModTwisting : public GranSubMod {
 class GranSubModTwistingNone : public GranSubModTwisting {
  public:
   GranSubModTwistingNone(class GranularModel *, class LAMMPS *);
-  void calculate_forces() {};
+  double calculate_forces() {};
 };
 
 /* ---------------------------------------------------------------------- */
@@ -56,7 +56,7 @@ class GranSubModTwistingMarshall : public GranSubModTwisting {
  public:
   GranSubModTwistingMarshall(class GranularModel *, class LAMMPS *);
   void init() override;
-  void calculate_forces();
+  double calculate_forces();
  protected:
   double k_tang, mu_tang;
 };
@@ -67,7 +67,7 @@ class GranSubModTwistingSDS : public GranSubModTwisting {
  public:
   GranSubModTwistingSDS(class GranularModel *, class LAMMPS *);
   void coeffs_to_local() override;
-  void calculate_forces();
+  double calculate_forces();
  protected:
   double k, mu, damp;
 };
