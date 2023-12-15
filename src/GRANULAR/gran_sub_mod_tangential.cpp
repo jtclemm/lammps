@@ -1,4 +1,3 @@
-// clang-format off
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -12,20 +11,19 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+#include "gran_sub_mod_tangential.h"
+
+#include "error.h"
 #include "gran_sub_mod_damping.h"
 #include "gran_sub_mod_normal.h"
-#include "gran_sub_mod_tangential.h"
 #include "granular_model.h"
-#include "error.h"
-#include "math_const.h"
 #include "math_extra.h"
 
 using namespace LAMMPS_NS;
 using namespace Granular_NS;
-using namespace MathConst;
 using namespace MathExtra;
 
-#define EPSILON 1e-10
+static constexpr double EPSILON = 1e-10;
 
 /* ----------------------------------------------------------------------
    Default model
@@ -37,13 +35,18 @@ GranSubModTangential::GranSubModTangential(GranularModel *gm, LAMMPS *lmp) : Gra
    No model
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialNone::GranSubModTangentialNone(GranularModel *gm, LAMMPS *lmp) : GranSubModTangential(gm, lmp) {}
+GranSubModTangentialNone::GranSubModTangentialNone(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTangential(gm, lmp)
+{
+}
 
 /* ----------------------------------------------------------------------
    Linear model with no history
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialLinearNoHistory::GranSubModTangentialLinearNoHistory(GranularModel *gm, LAMMPS *lmp) : GranSubModTangential(gm, lmp)
+GranSubModTangentialLinearNoHistory::GranSubModTangentialLinearNoHistory(GranularModel *gm,
+                                                                         LAMMPS *lmp) :
+    GranSubModTangential(gm, lmp)
 {
   num_coeffs = 2;
   size_history = 0;
@@ -53,7 +56,7 @@ GranSubModTangentialLinearNoHistory::GranSubModTangentialLinearNoHistory(Granula
 
 void GranSubModTangentialLinearNoHistory::coeffs_to_local()
 {
-  k = 0.0; // No tangential stiffness with no history
+  k = 0.0;    // No tangential stiffness with no history
   xt = coeffs[0];
   mu = coeffs[1];
 
@@ -66,17 +69,19 @@ void GranSubModTangentialLinearNoHistory::coeffs_to_local()
 void GranSubModTangentialLinearNoHistory::calculate_forces()
 {
   // classic pair gran/hooke (no history)
-  damp = xt * gm->damping_model->damp_prefactor;
+  damp = xt * gm->damping_model->get_damp_prefactor();
 
-  double *vrel = gm->vrel;
+  double vrel = gm->vrel;
   double *vtr = gm->vtr;
   double *fs = gm->fs;
-  double Fscrit = mu * gm->normal_model->Fncrit;
+  double Fscrit = mu * gm->normal_model->get_fncrit();
   double fsmag = damp * vrel;
 
   double Ft;
-  if (vrel != 0.0) Ft = MIN(Fscrit, fsmag) / vrel;
-  else Ft = 0.0;
+  if (vrel != 0.0)
+    Ft = MIN(Fscrit, fsmag) / vrel;
+  else
+    Ft = 0.0;
 
   scale3(-Ft, vtr, fs);
 }
@@ -85,7 +90,9 @@ void GranSubModTangentialLinearNoHistory::calculate_forces()
    Linear model with history
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialLinearHistory::GranSubModTangentialLinearHistory(GranularModel *gm, LAMMPS *lmp) : GranSubModTangential(gm, lmp)
+GranSubModTangentialLinearHistory::GranSubModTangentialLinearHistory(GranularModel *gm,
+                                                                     LAMMPS *lmp) :
+    GranSubModTangential(gm, lmp)
 {
   num_coeffs = 3;
   size_history = 3;
@@ -99,8 +106,7 @@ void GranSubModTangentialLinearHistory::coeffs_to_local()
   xt = coeffs[1];
   mu = coeffs[2];
 
-  if (k < 0.0 || xt < 0.0 || mu < 0.0)
-    error->all(FLERR, "Illegal linear tangential model");
+  if (k < 0.0 || xt < 0.0 || mu < 0.0) error->all(FLERR, "Illegal linear tangential model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -111,15 +117,15 @@ void GranSubModTangentialLinearHistory::calculate_forces()
   double magfs, magfs_inv, rsht, shrmag, prjmag, temp_dbl, temp_array[3];
   int frame_update = 0;
 
-  damp = xt * gm->damping_model->damp_prefactor;
-
-  double Fscrit = gm->normal_model->Fncrit * mu;
-  double *history = & gm->history[history_index];
   double *nx = gm->nx;
   double *vtr = gm->vtr;
   double *fs = gm->fs;
   double dt = gm->dt;
+  double *history = &gm->history[history_index];
   int history_update = gm->history_update;
+
+  damp = xt * gm->damping_model->get_damp_prefactor();
+  double Fscrit = gm->normal_model->get_fncrit() * mu;
 
   // rotate and update displacements / force.
   // see e.g. eq. 17 of Luding, Gran. Matter 2008, v10,p235
@@ -136,8 +142,10 @@ void GranSubModTangentialLinearHistory::calculate_forces()
 
       // also rescale to preserve magnitude
       prjmag = len3(history);
-      if (prjmag > 0) temp_dbl = shrmag / prjmag;
-      else temp_dbl = 0;
+      if (prjmag > 0)
+        temp_dbl = shrmag / prjmag;
+      else
+        temp_dbl = 0;
       scale3(temp_dbl, history);
     }
 
@@ -173,9 +181,11 @@ void GranSubModTangentialLinearHistory::calculate_forces()
    Linear model with history from pair gran/hooke/history
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialLinearHistoryClassic::GranSubModTangentialLinearHistoryClassic(GranularModel *gm, LAMMPS *lmp) : GranSubModTangentialLinearHistory(gm, lmp)
+GranSubModTangentialLinearHistoryClassic::GranSubModTangentialLinearHistoryClassic(
+    GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTangentialLinearHistory(gm, lmp)
 {
-  contact_radius_flag = 1; // Sets gran/hooke/history behavior
+  contact_radius_flag = 1;    // Sets gran/hooke/history behavior
 }
 
 /* ---------------------------------------------------------------------- */
@@ -185,16 +195,16 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
   double magfs, magfs_inv, rsht, shrmag;
   double temp_array[3];
 
-  damp = xt * gm->damping_model->damp_prefactor;
-
-  double Fscrit = gm->normal_model->Fncrit * mu;
-  double *history = & gm->history[history_index];
   double *nx = gm->nx;
   double *vtr = gm->vtr;
   double *fs = gm->fs;
   double dt = gm->dt;
   double contact_radius = gm->contact_radius;
+  double *history = &gm->history[history_index];
   int history_update = gm->history_update;
+
+  damp = xt * gm->damping_model->get_damp_prefactor();
+  double Fscrit = gm->normal_model->get_fncrit() * mu;
 
   // update history
   if (history_update) {
@@ -212,8 +222,10 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
   }
 
   // tangential forces = history + tangential velocity damping
-  if (contact_radius_flag) scale3(-k * contact_radius, history, fs);
-  else scale3(-k, history, fs);
+  if (contact_radius_flag)
+    scale3(-k * contact_radius, history, fs);
+  else
+    scale3(-k, history, fs);
   scale3(damp, vtr, temp_array);
   sub3(fs, temp_array, fs);
 
@@ -237,16 +249,19 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
    Mindlin from pair gran/hertz/history
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialMindlinClassic::GranSubModTangentialMindlinClassic(GranularModel *gm, LAMMPS *lmp) : GranSubModTangentialLinearHistoryClassic(gm, lmp)
+GranSubModTangentialMindlinClassic::GranSubModTangentialMindlinClassic(GranularModel *gm,
+                                                                       LAMMPS *lmp) :
+    GranSubModTangentialLinearHistoryClassic(gm, lmp)
 {
-  contact_radius_flag = 1; // Sets gran/hertz/history behavior
+  contact_radius_flag = 1;    // Sets gran/hertz/history behavior
 }
 
 /* ----------------------------------------------------------------------
    Mindlin model
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialMindlin::GranSubModTangentialMindlin(GranularModel *gm, LAMMPS *lmp) : GranSubModTangential(gm, lmp)
+GranSubModTangentialMindlin::GranSubModTangentialMindlin(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTangential(gm, lmp)
 {
   num_coeffs = 3;
   size_history = 3;
@@ -264,11 +279,13 @@ void GranSubModTangentialMindlin::coeffs_to_local()
   mu = coeffs[2];
 
   if (k == -1) {
-    if (!gm->normal_model->material_properties)
-      error->all(FLERR, "Must either specify tangential stiffness or material properties for normal model for the Mindlin tangential style");
+    if (!gm->normal_model->get_material_properties())
+      error->all(FLERR,
+                 "Must either specify tangential stiffness or material properties for normal model "
+                 "for the Mindlin tangential style");
 
-    double Emod = gm->normal_model->Emod;
-    double poiss = gm->normal_model->poiss;
+    double Emod = gm->normal_model->get_emod();
+    double poiss = gm->normal_model->get_poiss();
 
     if (gm->contact_type == PAIR) {
       k = 8.0 * mix_stiffnessG(Emod, Emod, poiss, poiss);
@@ -277,16 +294,17 @@ void GranSubModTangentialMindlin::coeffs_to_local()
     }
   }
 
-  if (k < 0.0 || xt < 0.0 || mu < 0.0)
-    error->all(FLERR, "Illegal Mindlin tangential model");
+  if (k < 0.0 || xt < 0.0 || mu < 0.0) error->all(FLERR, "Illegal Mindlin tangential model");
 }
 
 /* ---------------------------------------------------------------------- */
 
-void GranSubModTangentialMindlin::mix_coeffs(double* icoeffs, double* jcoeffs)
+void GranSubModTangentialMindlin::mix_coeffs(double *icoeffs, double *jcoeffs)
 {
-  if (icoeffs[0] == -1 || jcoeffs[0] == -1) coeffs[0] = -1;
-  else coeffs[0] = mix_geom(icoeffs[0], jcoeffs[0]);
+  if (icoeffs[0] == -1 || jcoeffs[0] == -1)
+    coeffs[0] = -1;
+  else
+    coeffs[0] = mix_geom(icoeffs[0], jcoeffs[0]);
   coeffs[1] = mix_geom(icoeffs[1], jcoeffs[1]);
   coeffs[2] = mix_geom(icoeffs[2], jcoeffs[2]);
   coeffs_to_local();
@@ -300,23 +318,22 @@ void GranSubModTangentialMindlin::calculate_forces()
   double temp_array[3];
   int frame_update = 0;
 
-  damp = xt * gm->damping_model->damp_prefactor;
-
-  double *history = & gm->history[history_index];
-  double Fscrit = gm->normal_model->Fncrit * mu;
   double *nx = gm->nx;
   double *vtr = gm->vtr;
   double *fs = gm->fs;
   double dt = gm->dt;
   double contact_radius = gm->contact_radius;
+  double *history = &gm->history[history_index];
   int history_update = gm->history_update;
+
+  damp = xt * gm->damping_model->get_damp_prefactor();
+  double Fscrit = gm->normal_model->get_fncrit() * mu;
 
   k_scaled = k * gm->contact_radius;
 
   // on unloading, rescale the shear displacements/force
   if (mindlin_rescale)
-    if (contact_radius < history[3])
-      scale3(contact_radius / history[3], history);
+    if (contact_radius < history[3]) scale3(contact_radius / history[3], history);
 
   // rotate and update displacements / force.
   // see e.g. eq. 17 of Luding, Gran. Matter 2008, v10,p235
@@ -335,8 +352,10 @@ void GranSubModTangentialMindlin::calculate_forces()
       sub3(history, temp_array, history);
       // also rescale to preserve magnitude
       prjmag = len3(history);
-      if (prjmag > 0) temp_dbl = shrmag / prjmag;
-      else temp_dbl = 0;
+      if (prjmag > 0)
+        temp_dbl = shrmag / prjmag;
+      else
+        temp_dbl = 0;
       scale3(temp_dbl, history);
     }
 
@@ -373,8 +392,7 @@ void GranSubModTangentialMindlin::calculate_forces()
       scale3(damp, vtr, temp_array);
       add3(history, temp_array, history);
 
-      if (!mindlin_force)
-        scale3(-1.0 / k_scaled, history);
+      if (!mindlin_force) scale3(-1.0 / k_scaled, history);
 
       scale3(Fscrit * magfs_inv, fs);
     } else {
@@ -387,7 +405,8 @@ void GranSubModTangentialMindlin::calculate_forces()
    Mindlin force model
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialMindlinForce::GranSubModTangentialMindlinForce(GranularModel *gm, LAMMPS *lmp) : GranSubModTangentialMindlin(gm, lmp)
+GranSubModTangentialMindlinForce::GranSubModTangentialMindlinForce(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTangentialMindlin(gm, lmp)
 {
   mindlin_force = 1;
 }
@@ -396,7 +415,9 @@ GranSubModTangentialMindlinForce::GranSubModTangentialMindlinForce(GranularModel
    Mindlin rescale model
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialMindlinRescale::GranSubModTangentialMindlinRescale(GranularModel *gm, LAMMPS *lmp) : GranSubModTangentialMindlin(gm, lmp)
+GranSubModTangentialMindlinRescale::GranSubModTangentialMindlinRescale(GranularModel *gm,
+                                                                       LAMMPS *lmp) :
+    GranSubModTangentialMindlin(gm, lmp)
 {
   size_history = 4;
   mindlin_rescale = 1;
@@ -411,7 +432,9 @@ GranSubModTangentialMindlinRescale::GranSubModTangentialMindlinRescale(GranularM
    Mindlin rescale force model
 ------------------------------------------------------------------------- */
 
-GranSubModTangentialMindlinRescaleForce::GranSubModTangentialMindlinRescaleForce(GranularModel *gm, LAMMPS *lmp) : GranSubModTangentialMindlin(gm, lmp)
+GranSubModTangentialMindlinRescaleForce::GranSubModTangentialMindlinRescaleForce(GranularModel *gm,
+                                                                                 LAMMPS *lmp) :
+    GranSubModTangentialMindlin(gm, lmp)
 {
   size_history = 4;
   mindlin_force = 1;

@@ -1,4 +1,3 @@
-// clang-format off
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -12,16 +11,18 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+#include "gran_sub_mod_twisting.h"
+
+#include "error.h"
 #include "gran_sub_mod_normal.h"
 #include "gran_sub_mod_tangential.h"
-#include "gran_sub_mod_twisting.h"
 #include "granular_model.h"
-#include "error.h"
 #include "math_const.h"
 
 using namespace LAMMPS_NS;
 using namespace Granular_NS;
-using namespace MathConst;
+
+using MathConst::TWOTHIRDS;
 
 /* ----------------------------------------------------------------------
    Default twisting model
@@ -33,13 +34,17 @@ GranSubModTwisting::GranSubModTwisting(GranularModel *gm, LAMMPS *lmp) : GranSub
    No model
 ------------------------------------------------------------------------- */
 
-GranSubModTwistingNone::GranSubModTwistingNone(GranularModel *gm, LAMMPS *lmp) : GranSubModTwisting(gm, lmp) {}
+GranSubModTwistingNone::GranSubModTwistingNone(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTwisting(gm, lmp)
+{
+}
 
 /* ----------------------------------------------------------------------
    Marshall twisting model
 ------------------------------------------------------------------------- */
 
-GranSubModTwistingMarshall::GranSubModTwistingMarshall(GranularModel *gm, LAMMPS *lmp) : GranSubModTwisting(gm, lmp)
+GranSubModTwistingMarshall::GranSubModTwistingMarshall(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTwisting(gm, lmp)
 {
   num_coeffs = 0;
   size_history = 3;
@@ -48,11 +53,10 @@ GranSubModTwistingMarshall::GranSubModTwistingMarshall(GranularModel *gm, LAMMPS
 
 /* ---------------------------------------------------------------------- */
 
-
 void GranSubModTwistingMarshall::init()
 {
-  k_tang = gm->tangential_model->k;
-  mu_tang = gm->tangential_model->mu;
+  k_tang = gm->tangential_model->get_k();
+  mu_tang = gm->tangential_model->get_mu();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -61,23 +65,23 @@ double GranSubModTwistingMarshall::calculate_forces()
 {
   double signtwist, Mtcrit, magtortwist;
 
-  double magtwist = gm->magtwist;
-  double Fncrit = gm->normal_model->Fncrit;
-  double tdamp = gm->tangential_model->damp;
   double dt = gm->dt;
-  double *history = gm->history;
+  double magtwist = gm->magtwist;
   double contact_radius = gm->contact_radius;
+  double *history = gm->history;
   int history_update = gm->history_update;
+
+  double Fncrit = gm->normal_model->get_fncrit();
+  double tdamp = gm->tangential_model->get_damp();
 
   // Calculate twist coefficients from tangential model & contact geometry
   // eq 32 of Marshall paper
+
   double k = 0.5 * k_tang * contact_radius * contact_radius;
   double damp = 0.5 * tdamp * contact_radius * contact_radius;
   double mu = TWOTHIRDS * mu_tang * contact_radius;
 
-  if (history_update) {
-    history[history_index] += magtwist * dt;
-  }
+  if (history_update) history[history_index] += magtwist * dt;
 
   // M_t torque (eq 30)
   magtortwist = -k * history[history_index] - damp * magtwist;
@@ -86,7 +90,7 @@ double GranSubModTwistingMarshall::calculate_forces()
 
   if (fabs(magtortwist) > Mtcrit) {
     history[history_index] = (Mtcrit * signtwist - damp * magtwist) / k;
-    magtortwist = -Mtcrit * signtwist; // eq 34
+    magtortwist = -Mtcrit * signtwist;    // eq 34
   }
 
   return magtortwist;
@@ -96,7 +100,8 @@ double GranSubModTwistingMarshall::calculate_forces()
    SDS twisting model
 ------------------------------------------------------------------------- */
 
-GranSubModTwistingSDS::GranSubModTwistingSDS(GranularModel *gm, LAMMPS *lmp) : GranSubModTwisting(gm, lmp)
+GranSubModTwistingSDS::GranSubModTwistingSDS(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModTwisting(gm, lmp)
 {
   num_coeffs = 3;
   size_history = 3;
@@ -110,8 +115,7 @@ void GranSubModTwistingSDS::coeffs_to_local()
   damp = coeffs[1];
   mu = coeffs[2];
 
-  if (k < 0.0 || mu < 0.0 || damp < 0.0)
-    error->all(FLERR, "Illegal SDS twisting model");
+  if (k < 0.0 || mu < 0.0 || damp < 0.0) error->all(FLERR, "Illegal SDS twisting model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -121,23 +125,22 @@ double GranSubModTwistingSDS::calculate_forces()
   double signtwist, Mtcrit, magtortwist;
 
   double magtwist = gm->magtwist;
-  double Fncrit = gm->normal_model->Fncrit;
   double dt = gm->dt;
   double *history = gm->history;
   int history_update = gm->history_update;
 
-  if (history_update) {
-    history[history_index] += magtwist * dt;
-  }
+  double Fncrit = gm->normal_model->get_fncrit();
+
+  if (history_update) history[history_index] += magtwist * dt;
 
   // M_t torque (eq 30)
   magtortwist = -k * history[history_index] - damp * magtwist;
   signtwist = (magtwist > 0) - (magtwist < 0);
-  Mtcrit = mu * Fncrit; // critical torque (eq 44)
+  Mtcrit = mu * Fncrit;    // critical torque (eq 44)
 
   if (fabs(magtortwist) > Mtcrit) {
     history[history_index] = (Mtcrit * signtwist - damp * magtwist) / k;
-    magtortwist = -Mtcrit * signtwist; // eq 34
+    magtortwist = -Mtcrit * signtwist;    // eq 34
   }
 
   return magtortwist;

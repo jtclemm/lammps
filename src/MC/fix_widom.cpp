@@ -255,12 +255,22 @@ FixWidom::~FixWidom()
 
   if (exclusion_group_bit && group) {
     auto group_id = std::string("FixWidom:widom_exclusion_group:") + id;
-    group->assign(group_id + " delete");
+    try {
+      group->assign(group_id + " delete");
+    } catch (std::exception &e) {
+      if (comm->me == 0)
+        fprintf(stderr, "Error deleting group %s: %s\n", group_id.c_str(), e.what());
+    }
   }
 
   if (molecule_group_bit && group) {
     auto group_id = std::string("FixWidom:rotation_gas_atoms:") + id;
-    group->assign(group_id + " delete");
+    try {
+      group->assign(group_id + " delete");
+    } catch (std::exception &e) {
+      if (comm->me == 0)
+        fprintf(stderr, "Error deleting group %s: %s\n", group_id.c_str(), e.what());
+    }
   }
 
   if (full_flag && group && neighbor) {
@@ -1040,13 +1050,7 @@ double FixWidom::energy_full()
 
   if (force->kspace) force->kspace->compute(eflag,vflag);
 
-  // unlike Verlet, not performing a reverse_comm() or forces here
-  // b/c Widom does not care about forces
-  // don't think it will mess up energy due to any post_force() fixes
-  // but Modify::pre_reverse() is needed for INTEL
-
-  if (modify->n_pre_reverse) modify->pre_reverse(eflag,vflag);
-  if (modify->n_pre_force) modify->pre_force(vflag);
+  if (modify->n_post_force_any) modify->post_force(vflag);
 
   // NOTE: all fixes with energy_global_flag set and which
   //   operate at pre_force() or post_force()

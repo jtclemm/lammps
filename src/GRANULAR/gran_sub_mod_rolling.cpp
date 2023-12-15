@@ -1,4 +1,3 @@
-// clang-format off
 /* -*- c++ -*- ----------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -12,19 +11,18 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include "gran_sub_mod_normal.h"
 #include "gran_sub_mod_rolling.h"
-#include "granular_model.h"
+
 #include "error.h"
-#include "math_const.h"
+#include "gran_sub_mod_normal.h"
+#include "granular_model.h"
 #include "math_extra.h"
 
 using namespace LAMMPS_NS;
 using namespace Granular_NS;
-using namespace MathConst;
 using namespace MathExtra;
 
-#define EPSILON 1e-10
+static constexpr double EPSILON = 1e-10;
 
 /* ----------------------------------------------------------------------
    Default rolling friction model
@@ -36,13 +34,17 @@ GranSubModRolling::GranSubModRolling(GranularModel *gm, LAMMPS *lmp) : GranSubMo
    No model
 ------------------------------------------------------------------------- */
 
-GranSubModRollingNone::GranSubModRollingNone(GranularModel *gm, LAMMPS *lmp) : GranSubModRolling(gm, lmp) {}
+GranSubModRollingNone::GranSubModRollingNone(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModRolling(gm, lmp)
+{
+}
 
 /* ----------------------------------------------------------------------
    SDS rolling friction model
 ------------------------------------------------------------------------- */
 
-GranSubModRollingSDS::GranSubModRollingSDS(GranularModel *gm, LAMMPS *lmp) : GranSubModRolling(gm, lmp)
+GranSubModRollingSDS::GranSubModRollingSDS(GranularModel *gm, LAMMPS *lmp) :
+    GranSubModRolling(gm, lmp)
 {
   num_coeffs = 3;
   size_history = 3;
@@ -56,8 +58,7 @@ void GranSubModRollingSDS::coeffs_to_local()
   gamma = coeffs[1];
   mu = coeffs[2];
 
-  if (k < 0.0 || mu < 0.0 || gamma < 0.0)
-    error->all(FLERR, "Illegal SDS rolling model");
+  if (k < 0.0 || mu < 0.0 || gamma < 0.0) error->all(FLERR, "Illegal SDS rolling model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -72,15 +73,15 @@ void GranSubModRollingSDS::calculate_forces()
   double *vrl = gm->vrl;
   double *fr = gm->fr;
   double dt = gm->dt;
-  double Fncrit = gm->normal_model->Fncrit;
   double *history = gm->history;
   int history_update = gm->history_update;
+
+  double Fncrit = gm->normal_model->get_fncrit();
+  Frcrit = mu * Fncrit;
 
   rhist0 = history_index;
   rhist1 = rhist0 + 1;
   rhist2 = rhist1 + 1;
-
-  Frcrit = mu * Fncrit;
 
   if (history_update) {
     hist_temp[0] = history[rhist0];
@@ -88,8 +89,8 @@ void GranSubModRollingSDS::calculate_forces()
     hist_temp[2] = history[rhist2];
     rolldotn = dot3(hist_temp, nx);
 
-    frameupdate = (fabs(rolldotn) * k)  > (EPSILON * Frcrit);
-    if (frameupdate) { // rotate into tangential plane
+    frameupdate = (fabs(rolldotn) * k) > (EPSILON * Frcrit);
+    if (frameupdate) {    // rotate into tangential plane
       rollmag = len3(hist_temp);
       // projection
       scale3(rolldotn, nx, temp_array);
@@ -97,8 +98,10 @@ void GranSubModRollingSDS::calculate_forces()
 
       // also rescale to preserve magnitude
       prjmag = len3(hist_temp);
-      if (prjmag > 0) scalefac = rollmag / prjmag;
-      else scalefac = 0;
+      if (prjmag > 0)
+        scalefac = rollmag / prjmag;
+      else
+        scalefac = 0;
       scale3(scalefac, hist_temp);
     }
     scale3(dt, vrl, temp_array);
