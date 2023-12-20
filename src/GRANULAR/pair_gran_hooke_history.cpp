@@ -19,6 +19,7 @@
 
 #include "atom.h"
 #include "comm.h"
+#include "domain.h"
 #include "error.h"
 #include "fix.h"
 #include "fix_dummy.h"
@@ -159,15 +160,16 @@ void PairGranHookeHistory::compute(int eflag, int vflag)
   firsttouch = fix_history->firstflag;
   firstshear = fix_history->firstvalue;
 
-
-  double *h_rate = domain->h_rate;
-  double ierate[6];
-
+  double erate_box[6];
   if (correct_velocities_flag) {
-    for (i = 0; i < 6; i++) ierate[i] = h_rate[i];
-    ierate[0] *= 1.0/domain->xprd;
-    ierate[1] *= 1.0/domain->yprd;
-    ierate[2] *= 1.0/domain->zprd;
+    double *h_rate = domain->h_rate;
+    for (i = 0; i < 6; i++) erate_box[i] = h_rate[i];
+    erate_box[0] /= domain->xprd;
+    erate_box[1] /= domain->yprd;
+    erate_box[2] /= domain->zprd;
+    erate_box[3] /= domain->zprd;
+    erate_box[4] /= domain->zprd;
+    erate_box[5] /= domain->yprd;
   }
 
   // loop over neighbors of my atoms
@@ -217,6 +219,12 @@ void PairGranHookeHistory::compute(int eflag, int vflag)
         vr1 = v[i][0] - v[j][0];
         vr2 = v[i][1] - v[j][1];
         vr3 = v[i][2] - v[j][2];
+
+        if (correct_velocities_flag) {
+	        vr1 += (erate_box[0] * delx + erate_box[3] * dely + erate_box[4] * delz);
+	        vr2 += (erate_box[3] * delx + erate_box[1] * dely + erate_box[5] * delz);
+	        vr3 += (erate_box[4] * delx + erate_box[5] * dely + erate_box[2] * delz);
+        }
 
         // normal component
 
