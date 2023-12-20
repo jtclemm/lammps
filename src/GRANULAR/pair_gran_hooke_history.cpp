@@ -159,6 +159,17 @@ void PairGranHookeHistory::compute(int eflag, int vflag)
   firsttouch = fix_history->firstflag;
   firstshear = fix_history->firstvalue;
 
+
+  double *h_rate = domain->h_rate;
+  double ierate[6];
+
+  if (correct_velocities_flag) {
+    for (i = 0; i < 6; i++) ierate[i] = h_rate[i];
+    ierate[0] *= 1.0/domain->xprd;
+    ierate[1] *= 1.0/domain->yprd;
+    ierate[2] *= 1.0/domain->zprd;
+  }
+
   // loop over neighbors of my atoms
 
   for (ii = 0; ii < inum; ii++) {
@@ -370,7 +381,7 @@ void PairGranHookeHistory::allocate()
 
 void PairGranHookeHistory::settings(int narg, char **arg)
 {
-  if (narg != 6 && narg != 7) error->all(FLERR, "Illegal pair_style command");
+  if (narg < 6) error->all(FLERR, "Illegal pair_style command");
 
   kn = utils::numeric(FLERR, arg[0], false, lmp);
   if (strcmp(arg[1], "NULL") == 0)
@@ -388,13 +399,25 @@ void PairGranHookeHistory::settings(int narg, char **arg)
   dampflag = utils::inumeric(FLERR, arg[5], false, lmp);
   if (dampflag == 0) gammat = 0.0;
 
-  limit_damping = 0;
-  if (narg == 7) {
-    if (strcmp(arg[6], "limit_damping") == 0)
-      limit_damping = 1;
-    else
-      error->all(FLERR, "Illegal pair_style command");
+  int iarg = 6;
+  while (iarg < narg) {
+    limit_damping = 0;
+    if (narg == 7) {
+      if (strcmp(arg[6], "limit_damping") == 0)
+        limit_damping = 1;
+      else
+        error->all(FLERR, "Illegal pair_style command");
+    }
+
+    correct_velocities_flag = 0;
+    if (narg == 7) {
+      if (strcmp(arg[6], "correct_velocities") == 0)
+        correct_velocities_flag = 1;
+      else
+        error->all(FLERR, "Illegal pair_style command");
+    }
   }
+
 
   if (kn < 0.0 || kt < 0.0 || gamman < 0.0 || gammat < 0.0 || xmu < 0.0 || xmu > 10000.0 ||
       dampflag < 0 || dampflag > 1)

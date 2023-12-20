@@ -52,6 +52,7 @@ class PairGranHookeHistory : public Pair {
   int freeze_group_bit;
   int history;
   int limit_damping;
+  int correct_velocities_flag;
 
   int neighprev;
   double *onerad_dynamic, *onerad_frozen;
