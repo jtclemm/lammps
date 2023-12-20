@@ -55,6 +55,9 @@ PairGranHookeHistory::PairGranHookeHistory(LAMMPS *lmp) : Pair(lmp)
   nmax = 0;
   mass_rigid = nullptr;
 
+  limit_damping = 0;
+  correct_velocities_flag = 0;
+
   // set comm size needed by this Pair if used with fix rigid
 
   comm_forward = 1;
@@ -409,21 +412,13 @@ void PairGranHookeHistory::settings(int narg, char **arg)
 
   int iarg = 6;
   while (iarg < narg) {
-    limit_damping = 0;
-    if (narg == 7) {
-      if (strcmp(arg[6], "limit_damping") == 0)
-        limit_damping = 1;
-      else
-        error->all(FLERR, "Illegal pair_style command");
-    }
-
-    correct_velocities_flag = 0;
-    if (narg == 7) {
-      if (strcmp(arg[6], "correct_velocities") == 0)
-        correct_velocities_flag = 1;
-      else
-        error->all(FLERR, "Illegal pair_style command");
-    }
+    if (strcmp(arg[iarg], "limit_damping") == 0) {
+      limit_damping = 1;
+    } else if (strcmp(arg[iarg], "correct_velocities") == 0) {
+      correct_velocities_flag = 1;
+    } else
+      error->all(FLERR, "Illegal pair_style command");
+    iarg += 1;
   }
 
 
