@@ -97,6 +97,7 @@ class NeighList : protected Pointers {
   ExecutionSpace execution_space;
 
   // DPD-REACT package and Shardlow Splitting Algorithm (SSA) support
+  // compute volume/fraction support
 
   class NPair *np;    // ptr to NPair instance I depend on
 
