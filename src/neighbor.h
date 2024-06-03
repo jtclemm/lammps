@@ -175,6 +175,7 @@ class Neighbor : protected Pointers {
   double memory_usage();
 
   bigint last_setup_bins;    // step of last neighbor::setup_bins() call
+  double **get_xhold();      // access the latest-computed neighbor list positions
 
  protected:
   int me, nprocs;
@@ -301,8 +302,9 @@ namespace NeighConst {
     NS_ORTHO = 1 << 6,
     NS_TRI = 1 << 7,
     NS_GHOST = 1 << 8,
-    NS_SSA = 1 << 9,
-    NS_MULTI_OLD = 1 << 10
+    NS_INTEL = 1 << 9,
+    NS_SSA = 1 << 10,
+    NS_MULTI_OLD = 1 << 11
   };
 
   enum {
