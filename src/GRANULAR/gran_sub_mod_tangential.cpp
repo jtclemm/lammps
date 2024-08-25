@@ -58,11 +58,11 @@ GranSubModTangentialLinearNoHistory::GranSubModTangentialLinearNoHistory(Granula
 
 void GranSubModTangentialLinearNoHistory::coeffs_to_local()
 {
-  k = 0.0;    // No tangential stiffness with no history
+  k_tang = 0.0;    // No tangential stiffness with no history
   xt = coeffs[0];
-  mu = coeffs[1];
+  mu_tang = coeffs[1];
 
-  if (k < 0.0 || xt < 0.0 || mu < 0.0)
+  if (k_tang < 0.0 || xt < 0.0 || mu_tang < 0.0)
     error->all(FLERR, "Illegal linear no history tangential model");
 }
 
@@ -71,10 +71,10 @@ void GranSubModTangentialLinearNoHistory::coeffs_to_local()
 void GranSubModTangentialLinearNoHistory::calculate_forces()
 {
   // classic pair gran/hooke (no history)
-  damp = xt * gm->damping_model->get_damp_prefactor();
+  damp_tang = xt * gm->damping_model->get_damp_prefactor();
 
-  double Fscrit = mu * gm->normal_model->get_fncrit();
-  double fsmag = damp * gm->vrel;
+  double Fscrit = mu_tang * gm->normal_model->get_fncrit();
+  double fsmag = damp_tang * gm->vrel;
 
   double Ft;
   if (gm->vrel != 0.0)
@@ -101,11 +101,11 @@ GranSubModTangentialLinearHistory::GranSubModTangentialLinearHistory(GranularMod
 
 void GranSubModTangentialLinearHistory::coeffs_to_local()
 {
-  k = coeffs[0];
+  k_tang = coeffs[0];
   xt = coeffs[1];
-  mu = coeffs[2];
+  mu_tang = coeffs[2];
 
-  if (k < 0.0 || xt < 0.0 || mu < 0.0) error->all(FLERR, "Illegal linear tangential model");
+  if (k_tang < 0.0 || xt < 0.0 || mu_tang < 0.0) error->all(FLERR, "Illegal linear tangential model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -116,16 +116,16 @@ void GranSubModTangentialLinearHistory::calculate_forces()
   double magfs, magfs_inv, rsht, shrmag, prjmag, temp_dbl, temp_array[3];
   int frame_update = 0;
 
-  damp = xt * gm->damping_model->get_damp_prefactor();
+  damp_tang = xt * gm->damping_model->get_damp_prefactor();
 
-  double Fscrit = gm->normal_model->get_fncrit() * mu;
+  double Fscrit = gm->normal_model->get_fncrit() * mu_tang;
   double *history = &gm->history[history_index];
 
   // rotate and update displacements / force.
   // see e.g. eq. 17 of Luding, Gran. Matter 2008, v10,p235
   if (gm->history_update) {
     rsht = dot3(history, gm->nx);
-    frame_update = (fabs(rsht) * k) > (EPSILON * Fscrit);
+    frame_update = (fabs(rsht) * k_tang) > (EPSILON * Fscrit);
 
     if (frame_update) {
       shrmag = len3(history);
@@ -150,8 +150,8 @@ void GranSubModTangentialLinearHistory::calculate_forces()
   }
 
   // tangential forces = history + tangential velocity damping
-  scale3(-k, history, gm->fs);
-  scale3(damp, gm->vtr, temp_array);
+  scale3(-k_tang, history, gm->fs);
+  scale3(damp_tang, gm->vtr, temp_array);
   sub3(gm->fs, temp_array, gm->fs);
 
   // rescale frictional displacements and forces if needed
@@ -161,7 +161,7 @@ void GranSubModTangentialLinearHistory::calculate_forces()
     if (shrmag != 0.0) {
       magfs_inv = 1.0 / magfs;
       scale3(Fscrit * magfs_inv, gm->fs, history);
-      scale3(damp, gm->vtr, temp_array);
+      scale3(damp_tang, gm->vtr, temp_array);
       add3(history, temp_array, history);
       scale3(-1.0 / k, history);
       scale3(Fscrit * magfs_inv, gm->fs);
@@ -189,9 +189,9 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
   double magfs, magfs_inv, rsht, shrmag;
   double temp_array[3];
 
-  damp = xt * gm->damping_model->get_damp_prefactor();
+  damp_tang = xt * gm->damping_model->get_damp_prefactor();
 
-  double Fscrit = gm->normal_model->get_fncrit() * mu;
+  double Fscrit = gm->normal_model->get_fncrit() * mu_tang;
   double *history = &gm->history[history_index];
 
   // update history
@@ -211,10 +211,10 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
 
   // tangential forces = history + tangential velocity damping
   if (contact_radius_flag)
-    scale3(-k * gm->contact_radius, history, gm->fs);
+    scale3(-k_tang * gm->contact_radius, history, gm->fs);
   else
-    scale3(-k, history, gm->fs);
-  scale3(damp, gm->vtr, temp_array);
+    scale3(-k_tang, history, gm->fs);
+  scale3(damp_tang, gm->vtr, temp_array);
   sub3(gm->fs, temp_array, gm->fs);
 
   // rescale frictional displacements and forces if needed
@@ -223,9 +223,9 @@ void GranSubModTangentialLinearHistoryClassic::calculate_forces()
     if (shrmag != 0.0) {
       magfs_inv = 1.0 / magfs;
       scale3(Fscrit * magfs_inv, gm->fs, history);
-      scale3(damp, gm->vtr, temp_array);
+      scale3(damp_tang, gm->vtr, temp_array);
       add3(history, temp_array, history);
-      scale3(-1.0 / k, history);
+      scale3(-1.0 / k_tang, history);
       scale3(Fscrit * magfs_inv, gm->fs);
     } else {
       zero3(gm->fs);
@@ -262,11 +262,11 @@ GranSubModTangentialMindlin::GranSubModTangentialMindlin(GranularModel *gm, LAMM
 
 void GranSubModTangentialMindlin::coeffs_to_local()
 {
-  k = coeffs[0];
+  k_tang = coeffs[0];
   xt = coeffs[1];
-  mu = coeffs[2];
+  mu_tang = coeffs[2];
 
-  if (k == -1) {
+  if (k_tang == -1) {
     if (!gm->normal_model->get_material_properties())
       error->all(FLERR,
                  "Must either specify tangential stiffness or material properties for normal model "
@@ -276,13 +276,13 @@ void GranSubModTangentialMindlin::coeffs_to_local()
     double poiss = gm->normal_model->get_poiss();
 
     if (gm->contact_type == PAIR) {
-      k = 8.0 * mix_stiffnessG(Emod, Emod, poiss, poiss);
+      k_tang = 8.0 * mix_stiffnessG(Emod, Emod, poiss, poiss);
     } else {
-      k = 8.0 * mix_stiffnessG_wall(Emod, poiss);
+      k_tang = 8.0 * mix_stiffnessG_wall(Emod, poiss);
     }
   }
 
-  if (k < 0.0 || xt < 0.0 || mu < 0.0) error->all(FLERR, "Illegal Mindlin tangential model");
+  if (k_tang < 0.0 || xt < 0.0 || mu_tang < 0.0) error->all(FLERR, "Illegal Mindlin tangential model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -306,12 +306,12 @@ void GranSubModTangentialMindlin::calculate_forces()
   double temp_array[3];
   int frame_update = 0;
 
-  damp = xt * gm->damping_model->get_damp_prefactor();
+  damp_tang = xt * gm->damping_model->get_damp_prefactor();
 
   double *history = &gm->history[history_index];
-  double Fscrit = gm->normal_model->get_fncrit() * mu;
+  double Fscrit = gm->normal_model->get_fncrit() * mu_tang;
 
-  k_scaled = k * gm->contact_radius;
+  k_scaled = k_tang * gm->contact_radius;
 
   // on unloading, rescale the shear displacements/force
   if (mindlin_rescale)
@@ -355,7 +355,7 @@ void GranSubModTangentialMindlin::calculate_forces()
   }
 
   // tangential forces = history + tangential velocity damping
-  scale3(-damp, gm->vtr, gm->fs);
+  scale3(-damp_tang, gm->vtr, gm->fs);
 
   if (!mindlin_force) {
     scale3(k_scaled, history, temp_array);
@@ -371,7 +371,7 @@ void GranSubModTangentialMindlin::calculate_forces()
     if (shrmag != 0.0) {
       magfs_inv = 1.0 / magfs;
       scale3(Fscrit * magfs_inv, gm->fs, history);
-      scale3(damp, gm->vtr, temp_array);
+      scale3(damp_tang, gm->vtr, temp_array);
       add3(history, temp_array, history);
 
       if (!mindlin_force) scale3(-1.0 / k_scaled, history);

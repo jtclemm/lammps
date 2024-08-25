@@ -49,7 +49,7 @@ namespace Granular_NS {
     void calculate_forces() override;
 
    protected:
-    double k, mu, gamma;
+    double k_roll, mu_roll, gamma;
   };
 
 }    // namespace Granular_NS

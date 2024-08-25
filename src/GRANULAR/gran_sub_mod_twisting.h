@@ -62,7 +62,7 @@ namespace Granular_NS {
     void calculate_forces() override;
 
    protected:
-    double k, mu, damp;
+    double k_twist, mu_twist, damp_twist;
   };
 
 }    // namespace Granular_NS

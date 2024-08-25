@@ -101,17 +101,17 @@ GranSubModNormalHooke::GranSubModNormalHooke(GranularModel *gm, LAMMPS *lmp) :
 
 void GranSubModNormalHooke::coeffs_to_local()
 {
-  k = coeffs[0];
-  damp = coeffs[1];
+  k_norm = coeffs[0];
+  damp_norm = coeffs[1];
 
-  if (k < 0.0 || damp < 0.0) error->all(FLERR, "Illegal Hooke normal model");
+  if (k_norm < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal Hooke normal model");
 }
 
 /* ---------------------------------------------------------------------- */
 
 double GranSubModNormalHooke::calculate_forces()
 {
-  return k * gm->delta;
+  return k_norm * gm->delta;
 }
 
 /* ----------------------------------------------------------------------
@@ -129,17 +129,17 @@ GranSubModNormalHertz::GranSubModNormalHertz(GranularModel *gm, LAMMPS *lmp) :
 
 void GranSubModNormalHertz::coeffs_to_local()
 {
-  k = coeffs[0];
-  damp = coeffs[1];
+  k_norm = coeffs[0];
+  damp_norm = coeffs[1];
 
-  if (k < 0.0 || damp < 0.0) error->all(FLERR, "Illegal Hertz normal model");
+  if (k_norm < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal Hertz normal model");
 }
 
 /* ---------------------------------------------------------------------- */
 
 double GranSubModNormalHertz::calculate_forces()
 {
-  return k * gm->contact_radius * gm->delta;
+  return k_norm * gm->contact_radius * gm->delta;
 }
 
 /* ----------------------------------------------------------------------
@@ -160,17 +160,17 @@ GranSubModNormalHertzMaterial::GranSubModNormalHertzMaterial(GranularModel *gm, 
 void GranSubModNormalHertzMaterial::coeffs_to_local()
 {
   Emod = coeffs[0];
-  damp = coeffs[1];
+  damp_norm = coeffs[1];
   poiss = coeffs[2];
   if (!mixed_coefficients) {
     if (gm->contact_type == PAIR) {
-      k = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
+      k_norm = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
     } else {
-      k = FOURTHIRDS * mix_stiffnessE_wall(Emod, poiss);
+      k_norm = FOURTHIRDS * mix_stiffnessE_wall(Emod, poiss);
     }
   }
 
-  if (Emod < 0.0 || damp < 0.0) error->all(FLERR, "Illegal Hertz material normal model");
+  if (Emod < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal Hertz material normal model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -181,7 +181,7 @@ void GranSubModNormalHertzMaterial::mix_coeffs(double *icoeffs, double *jcoeffs)
   coeffs[1] = mix_geom(icoeffs[1], jcoeffs[1]);
   coeffs[2] = mix_geom(icoeffs[2], jcoeffs[2]);
 
-  k = FOURTHIRDS * coeffs[0];
+  k_norm = FOURTHIRDS * coeffs[0];
   mixed_coefficients = 1;
 
   coeffs_to_local();
@@ -205,19 +205,19 @@ GranSubModNormalDMT::GranSubModNormalDMT(GranularModel *gm, LAMMPS *lmp) : GranS
 void GranSubModNormalDMT::coeffs_to_local()
 {
   Emod = coeffs[0];
-  damp = coeffs[1];
+  damp_norm = coeffs[1];
   poiss = coeffs[2];
   cohesion = coeffs[3];
 
   if (!mixed_coefficients) {
     if (gm->contact_type == PAIR) {
-      k = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
+      k_norm = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
     } else {
-      k = FOURTHIRDS * mix_stiffnessE_wall(Emod, poiss);
+      k_norm = FOURTHIRDS * mix_stiffnessE_wall(Emod, poiss);
     }
   }
 
-  if (Emod < 0.0 || damp < 0.0) error->all(FLERR, "Illegal DMT normal model");
+  if (Emod < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal DMT normal model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -229,7 +229,7 @@ void GranSubModNormalDMT::mix_coeffs(double *icoeffs, double *jcoeffs)
   coeffs[2] = mix_geom(icoeffs[2], jcoeffs[2]);
   coeffs[3] = mix_geom(icoeffs[3], jcoeffs[3]);
 
-  k = FOURTHIRDS * coeffs[0];
+  k_norm = FOURTHIRDS * coeffs[0];
   mixed_coefficients = 1;
 
   coeffs_to_local();
@@ -239,7 +239,7 @@ void GranSubModNormalDMT::mix_coeffs(double *icoeffs, double *jcoeffs)
 
 double GranSubModNormalDMT::calculate_forces()
 {
-  Fne = k * gm->contact_radius * gm->delta;
+  Fne = k_norm * gm->contact_radius * gm->delta;
   F_pulloff = 4.0 * MY_PI * cohesion * gm->Reff;
   Fne -= F_pulloff;
   return Fne;
@@ -271,7 +271,7 @@ GranSubModNormalJKR::GranSubModNormalJKR(GranularModel *gm, LAMMPS *lmp) : GranS
 void GranSubModNormalJKR::coeffs_to_local()
 {
   Emod = coeffs[0];
-  damp = coeffs[1];
+  damp_norm = coeffs[1];
   poiss = coeffs[2];
   cohesion = coeffs[3];
 
@@ -283,9 +283,9 @@ void GranSubModNormalJKR::coeffs_to_local()
     }
   }
 
-  k = FOURTHIRDS * Emix;
+  k_norm = FOURTHIRDS * Emix;
 
-  if (Emod < 0.0 || damp < 0.0) error->all(FLERR, "Illegal JKR normal model");
+  if (Emod < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal JKR normal model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -367,7 +367,7 @@ double GranSubModNormalJKR::calculate_forces()
 {
   double a2;
   a2 = gm->contact_radius * gm->contact_radius;
-  Fne = k * gm->contact_radius * a2 / gm->Reff -
+  Fne = k_norm * gm->contact_radius * a2 / gm->Reff -
       MY_2PI * a2 * sqrt(4.0 * cohesion * Emix / (MY_PI * gm->contact_radius));
   F_pulloff = 3.0 * MY_PI * cohesion * gm->Reff;
 

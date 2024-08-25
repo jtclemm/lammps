@@ -43,7 +43,7 @@ GranSubModDamping::GranSubModDamping(GranularModel *gm, LAMMPS *lmp) : GranSubMo
 
 void GranSubModDamping::init()
 {
-  damp = gm->normal_model->get_damp();
+  damp_damp = gm->normal_model->get_damp();
 }
 
 /* ----------------------------------------------------------------------
@@ -76,7 +76,7 @@ GranSubModDampingVelocity::GranSubModDampingVelocity(GranularModel *gm, LAMMPS *
 
 double GranSubModDampingVelocity::calculate_forces()
 {
-  damp_prefactor = damp;
+  damp_prefactor = damp_damp;
   return -damp_prefactor * gm->vnnr;
 }
 
@@ -93,7 +93,7 @@ GranSubModDampingMassVelocity::GranSubModDampingMassVelocity(GranularModel *gm, 
 
 double GranSubModDampingMassVelocity::calculate_forces()
 {
-  damp_prefactor = damp * gm->meff;
+  damp_prefactor = damp_damp * gm->meff;
   return -damp_prefactor * gm->vnnr;
 }
 
@@ -111,7 +111,7 @@ GranSubModDampingViscoelastic::GranSubModDampingViscoelastic(GranularModel *gm, 
 
 double GranSubModDampingViscoelastic::calculate_forces()
 {
-  damp_prefactor = damp * gm->meff * gm->contact_radius;
+  damp_prefactor = damp_damp * gm->meff * gm->contact_radius;
   return -damp_prefactor * gm->vnnr;
 }
 
@@ -130,9 +130,9 @@ GranSubModDampingTsuji::GranSubModDampingTsuji(GranularModel *gm, LAMMPS *lmp) :
 void GranSubModDampingTsuji::init()
 {
   double tmp = gm->normal_model->get_damp();
-  damp = 1.2728 - 4.2783 * tmp + 11.087 * square(tmp);
-  damp += -22.348 * cube(tmp) + 27.467 * powint(tmp, 4);
-  damp += -18.022 * powint(tmp, 5) + 4.8218 * powint(tmp, 6);
+  damp_damp = 1.2728 - 4.2783 * tmp + 11.087 * square(tmp);
+  damp_damp += -22.348 * cube(tmp) + 27.467 * powint(tmp, 4);
+  damp_damp += -18.022 * powint(tmp, 5) + 4.8218 * powint(tmp, 6);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -145,7 +145,7 @@ double GranSubModDampingTsuji::calculate_forces()
     sqrt1 = MAX(0.0, gm->meff * gm->Fnormal / gm->delta);
   else
     sqrt1 = 0.0;
-  damp_prefactor = damp * sqrt(sqrt1);
+  damp_prefactor = damp_damp * sqrt(sqrt1);
   return -damp_prefactor * gm->vnnr;
 }
 
@@ -165,10 +165,10 @@ void GranSubModDampingCoeffRestitution::init()
   double cor = gm->normal_model->get_damp();
   double logcor = log(cor);
   if (gm->normal_model->name == "hooke") {
-    damp = -2 * logcor / sqrt(MY_PI * MY_PI + logcor * logcor);
+    damp_damp = -2 * logcor / sqrt(MY_PI * MY_PI + logcor * logcor);
   } else {
-    damp = -ROOTTHREEBYTWO * TWOROOTFIVEBYSIX * logcor;
-    damp /= sqrt(MY_PI * MY_PI + logcor * logcor);
+    damp_damp = -ROOTTHREEBYTWO * TWOROOTFIVEBYSIX * logcor;
+    damp_damp /= sqrt(MY_PI * MY_PI + logcor * logcor);
   }
 }
 

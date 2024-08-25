@@ -56,11 +56,11 @@ GranSubModRollingSDS::GranSubModRollingSDS(GranularModel *gm, LAMMPS *lmp) :
 
 void GranSubModRollingSDS::coeffs_to_local()
 {
-  k = coeffs[0];
+  k_roll= coeffs[0];
   gamma = coeffs[1];
-  mu = coeffs[2];
+  mu_roll = coeffs[2];
 
-  if (k < 0.0 || mu < 0.0 || gamma < 0.0) error->all(FLERR, "Illegal SDS rolling model");
+  if (k_roll< 0.0 || mu_roll < 0.0 || gamma < 0.0) error->all(FLERR, "Illegal SDS rolling model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -75,7 +75,7 @@ void GranSubModRollingSDS::calculate_forces()
   rhist1 = rhist0 + 1;
   rhist2 = rhist1 + 1;
 
-  Frcrit = mu * gm->normal_model->get_fncrit();
+  Frcrit = mu_roll * gm->normal_model->get_fncrit();
 
   if (gm->history_update) {
     hist_temp[0] = gm->history[rhist0];
@@ -83,7 +83,7 @@ void GranSubModRollingSDS::calculate_forces()
     hist_temp[2] = gm->history[rhist2];
     rolldotn = dot3(hist_temp, gm->nx);
 
-    frameupdate = (fabs(rolldotn) * k) > (EPSILON * Frcrit);
+    frameupdate = (fabs(rolldotn) * k_roll) > (EPSILON * Frcrit);
     if (frameupdate) {    // rotate into tangential plane
       rollmag = len3(hist_temp);
       // projection
@@ -102,14 +102,14 @@ void GranSubModRollingSDS::calculate_forces()
     add3(hist_temp, temp_array, hist_temp);
   }
 
-  scaleadd3(-k, hist_temp, -gamma, gm->vrl, gm->fr);
+  scaleadd3(-k_roll, hist_temp, -gamma, gm->vrl, gm->fr);
 
   // rescale frictional displacements and forces if needed
   magfr = len3(gm->fr);
   if (magfr > Frcrit) {
     rollmag = len3(hist_temp);
     if (rollmag != 0.0) {
-      k_inv = 1.0 / k;
+      k_inv = 1.0 / k_roll;
       magfr_inv = 1.0 / magfr;
       scale3(-Frcrit * k_inv * magfr_inv, gm->fr, hist_temp);
       scale3(-gamma * k_inv, gm->vrl, temp_array);

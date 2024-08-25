@@ -40,7 +40,7 @@ namespace Granular_NS {
 
    protected:
     double damp_prefactor;
-    double damp;
+    double damp_damp;
   };
 
   /* ---------------------------------------------------------------------- */

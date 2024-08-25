@@ -69,19 +69,19 @@ void GranSubModTwistingMarshall::calculate_forces()
 
   // Calculate twist coefficients from tangential model & contact geometry
   // eq 32 of Marshall paper
-  double k = 0.5 * k_tang * gm->contact_radius * gm->contact_radius;
-  double damp = 0.5 * gm->tangential_model->get_damp() * gm->contact_radius * gm->contact_radius;
-  double mu = TWOTHIRDS * mu_tang * gm->contact_radius;
+  double k_twist = 0.5 * k_tang * gm->contact_radius * gm->contact_radius;
+  double damp_twist = 0.5 * gm->tangential_model->get_damp() * gm->contact_radius * gm->contact_radius;
+  double mu_twist = TWOTHIRDS * mu_tang * gm->contact_radius;
 
   if (gm->history_update) { gm->history[history_index] += gm->magtwist * gm->dt; }
 
   // M_t torque (eq 30)
-  gm->magtortwist = -k * gm->history[history_index] - damp * gm->magtwist;
+  gm->magtortwist = -k_twist * gm->history[history_index] - damp_twist * gm->magtwist;
   signtwist = (gm->magtwist > 0) - (gm->magtwist < 0);
-  Mtcrit = mu * gm->normal_model->get_fncrit();    // critical torque (eq 44)
+  Mtcrit = mu_twist * gm->normal_model->get_fncrit();    // critical torque (eq 44)
 
   if (fabs(gm->magtortwist) > Mtcrit) {
-    gm->history[history_index] = (Mtcrit * signtwist - damp * gm->magtwist) / k;
+    gm->history[history_index] = (Mtcrit * signtwist - damp_twist * gm->magtwist) / k_twist;
     gm->magtortwist = -Mtcrit * signtwist;    // eq 34
   }
 }
@@ -101,11 +101,11 @@ GranSubModTwistingSDS::GranSubModTwistingSDS(GranularModel *gm, LAMMPS *lmp) :
 
 void GranSubModTwistingSDS::coeffs_to_local()
 {
-  k = coeffs[0];
-  damp = coeffs[1];
-  mu = coeffs[2];
+  k_twist = coeffs[0];
+  damp_twist = coeffs[1];
+  mu_twist = coeffs[2];
 
-  if (k < 0.0 || mu < 0.0 || damp < 0.0) error->all(FLERR, "Illegal SDS twisting model");
+  if (k_twist < 0.0 || mu_twist < 0.0 || damp_twist < 0.0) error->all(FLERR, "Illegal SDS twisting model");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -117,12 +117,12 @@ void GranSubModTwistingSDS::calculate_forces()
   if (gm->history_update) { gm->history[history_index] += gm->magtwist * gm->dt; }
 
   // M_t torque (eq 30)
-  gm->magtortwist = -k * gm->history[history_index] - damp * gm->magtwist;
+  gm->magtortwist = -k_twist * gm->history[history_index] - damp_twist * gm->magtwist;
   signtwist = (gm->magtwist > 0) - (gm->magtwist < 0);
-  Mtcrit = mu * gm->normal_model->get_fncrit();    // critical torque (eq 44)
+  Mtcrit = mu_twist * gm->normal_model->get_fncrit();    // critical torque (eq 44)
 
   if (fabs(gm->magtortwist) > Mtcrit) {
-    gm->history[history_index] = (Mtcrit * signtwist - damp * gm->magtwist) / k;
+    gm->history[history_index] = (Mtcrit * signtwist - damp_twist * gm->magtwist) / k_twist;
     gm->magtortwist = -Mtcrit * signtwist;    // eq 34
   }
 }

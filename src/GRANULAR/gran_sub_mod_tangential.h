@@ -38,12 +38,12 @@ namespace Granular_NS {
     GranSubModTangential(class GranularModel *, class LAMMPS *);
     virtual void calculate_forces() = 0;
 
-    double get_k() const { return k; }
-    double get_damp() const { return damp; }
+    double get_k() const { return k_tang; }
+    double get_damp() const { return damp_tang; }
     double get_mu() const { return mu; }
 
    protected:
-    double k, damp, mu;    // Used by Marshall twisting model
+    double k_tang, damp_tang, mu;    // Used by Marshall twisting model
   };
 
   /* ---------------------------------------------------------------------- */
