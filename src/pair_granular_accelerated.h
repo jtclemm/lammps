@@ -24,10 +24,6 @@ PairStyle(granular/accelerated,PairGranularAccelerated);
 
 namespace LAMMPS_NS {
 
-namespace Granular_NS {
-  int NSUBMODELS;
-}
-
 class PairGranularAccelerated : public Pair {
  public:
   PairGranularAccelerated(class LAMMPS *);
@@ -81,19 +77,19 @@ class PairGranularAccelerated : public Pair {
 
   // GranSubMod variables
 
-  std::string model_name[Granular_NS::NSUBMODELS];
-  double model_size_history[Granular_NS::NSUBMODELS];
-  int model_history_index[Granular_NS::NSUBMODELS];
-  int model_num_coeffs[Granular_NS::NSUBMODELS];
+  std::string *model_name;
+  int *model_size_history;
+  int *model_history_index;
+  int *model_num_coeffs;
   double **model_transfer_history_factor;
   double *coeffs, ****model_coeffs;
   int max_num_coeffs;
 
   // GranularModel variables
 
-  int history_update, contact_radius_flag;
-  int beyond_contact, limit_damping, history_update;
+  int contact_radius_flag, beyond_contact, limit_damping, history_update;
   int size_history, history_index, nondefault_history_transfer;
+  double *history;
   double *transfer_history_factor;
 
   double Fnormal, forces[3], torquesi[3], torquesj[3], dq;
@@ -107,7 +103,6 @@ class PairGranularAccelerated : public Pair {
   double dx[3], nx[3], r, rsq, rinv, Reff, radsum, delta, dR;
   double vr[3], vn[3], vnnr, vt[3], wr[3], vtr[3], vrl[3], relrot[3], vrel;
   double magtwist;
-  bool touch;
 
   int rolling_defined, twisting_defined, heat_defined; // Flag optional sub models
 
@@ -165,10 +160,10 @@ class PairGranularAccelerated : public Pair {
   void init_twisting();
   void init_heat();
 
-  bool touch();
-  double pulloff_distance(double, double);
-  double calculate_contact_radius();
-  void set_fncrit();
+  bool touch_normal();
+  double pulloff_distance_normal(double, double);
+  double calculate_contact_radius_normal();
+  void set_fncrit_normal();
 
   double mix_stiffnessE(double, double, double, double);
   double mix_stiffnessG(double, double, double, double);

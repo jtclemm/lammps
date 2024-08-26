@@ -18,12 +18,6 @@
    Jeremy Lechman(SNL), Leo Silbert (SNL), Gary Grest (SNL)
 ----------------------------------------------------------------------- */
 
-// TODO:
-//       move init and coeff to local to function
-//       single()
-//       doc files
-//       test
-
 #include "pair_granular_accelerated.h"
 
 #include "atom.h"
@@ -36,6 +30,7 @@
 #include "granular_model.h"
 #include "math_const.h"
 #include "math_extra.h"
+#include "math_special.h"
 #include "memory.h"
 #include "modify.h"
 #include "neigh_list.h"
@@ -50,6 +45,9 @@ using namespace MathExtra;
 
 using MathConst::MY_2PI;
 using MathConst::MY_PI;
+using MathSpecial::cube;
+using MathSpecial::powint;
+using MathSpecial::square;
 
 static constexpr double PI27SQ = 266.47931882941264802866;      // 27*PI**2
 static constexpr double THREEROOT3 = 5.19615242270663202362;    // 3*sqrt(3)
@@ -79,6 +77,11 @@ PairGranularAccelerated::PairGranularAccelerated(LAMMPS *lmp) : Pair(lmp)
   onerad_frozen = nullptr;
   maxrad_dynamic = nullptr;
   maxrad_frozen = nullptr;
+
+  model_name = new std::string[NSUBMODELS];
+  model_size_history = new int[NSUBMODELS];
+  model_history_index = new int[NSUBMODELS];
+  model_num_coeffs = new int[NSUBMODELS];
 
   // --------------------------------------------------------------- //
   //  CUSTOMIZE: variables from constructors of GranSubMod classes
@@ -203,6 +206,11 @@ PairGranularAccelerated::~PairGranularAccelerated()
 
   memory->destroy(mass_rigid);
   delete [] transfer_history_factor;
+
+  delete [] model_name;
+  delete [] model_size_history;
+  delete [] model_history_index;
+  delete [] model_num_coeffs;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -214,7 +222,7 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
 
   int *ilist, *jlist, *numneigh, **firstneigh;
   int *touch, **firsttouch;
-  double *history, *allhistory, **firsthistory;
+  double *allhistory, **firsthistory;
   int prior_itype = -1;
   int prior_jtype = -1;
 
@@ -307,15 +315,19 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
       // Reset model and copy initial geometric data
       xj = x[j];
       radj = radius[j];
-      if (use_history) touch = touch[jj];
 
+      // ---------------------------------//
       // GranularModel->check_contact()
+      // ---------------------------------//
+
       sub3(xi, xj, dx);
       rsq = lensq3(dx);
       radsum = radi + radj;
       Reff = radi * radj / radsum;
 
-      touchflag = touch();
+      touchflag = touch_normal();
+
+      // ---------------------------------//
 
       if (!touchflag) {
         // unset non-touching neighbors
@@ -350,7 +362,9 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
       if (heat_defined)
         Tj = temperature[j];
 
+      // ---------------------------------//
       // GranularModel->calculate_forces();
+      // ---------------------------------//
 
       rinv = 1.0 / r;
       delta = radsum - r;
@@ -380,7 +394,7 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
       double Fdamp, dist_to_contact;
       history_index = model_history_index[NORMAL];
       if (contact_radius_flag)
-        contact_radius = calculate_contact_radius();
+        contact_radius = calculate_contact_radius_normal();
       Fnormal = calculate_forces_normal();
 
       history_index = model_history_index[DAMPING];
@@ -388,7 +402,7 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
       Fntot = Fnormal + Fdamp;
       if (limit_damping && Fntot < 0.0) Fntot = 0.0;
 
-      set_fncrit(); // Needed for tangential, rolling, twisting
+      set_fncrit_normal(); // Needed for tangential, rolling, twisting
       history_index = model_history_index[TANGENTIAL];
       calculate_forces_tangential();
 
@@ -429,7 +443,7 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
         cross3(nx, fr, torroll);
         scale3(Reff, torroll);
         add3(torquesi, torroll, torquesi);
-        if (contact_type == PAIR) sub3(torquesj, torroll, torquesj);
+        sub3(torquesj, torroll, torquesj);
       }
 
       if (twisting_defined) {
@@ -442,13 +456,15 @@ void PairGranularAccelerated::compute(int eflag, int vflag)
         double tortwist[3];
         scale3(magtortwist, nx, tortwist);
         add3(torquesi, tortwist, torquesi);
-        if (contact_type == PAIR) sub3(torquesj, tortwist, torquesj);
+        sub3(torquesj, tortwist, torquesj);
       }
 
       if (heat_defined) {
         history_index = model_history_index[HEAT];
         dq = calculate_heat();
       }
+
+      // ---------------------------------//
 
       // apply forces & torques
       scale3(factor_lj, forces);
@@ -492,7 +508,6 @@ void PairGranularAccelerated::allocate()
 
   memory->create(cutsq,n+1,n+1,"pair:cutsq");
   memory->create(cutoff_type,n+1,n+1,"pair:cutoff_type");
-  memory->create(types_indices,n+1,n+1,"pair:types_indices");
 
   onerad_dynamic = new double[n+1];
   onerad_frozen = new double[n+1];
@@ -502,7 +517,7 @@ void PairGranularAccelerated::allocate()
   max_num_coeffs = 0;
   for (int i = 0; i < NSUBMODELS; i++)
     max_num_coeffs = MAX(max_num_coeffs, model_num_coeffs[i]);
-  memory->create(model_coeffs, n+1, n+1, NSUBMODELS, max_num_coeffs);
+  memory->create(model_coeffs, n+1, n+1, NSUBMODELS, max_num_coeffs,"pair:model_coeffs");
 }
 
 /* ----------------------------------------------------------------------
@@ -535,17 +550,17 @@ void PairGranularAccelerated::coeff(int narg, char **arg)
   utils::bounds(FLERR,arg[0],1,atom->ntypes,ilo,ihi,error);
   utils::bounds(FLERR,arg[1],1,atom->ntypes,jlo,jhi,error);
 
-  model_defined[NSUBMODELS];
+  int model_defined[NSUBMODELS];
   for (int i = 0; i < NSUBMODELS; i++) model_defined[i] = 0;
 
   //Parse mandatory specification
 
   int iarg = 2;
-  if (arg[iarg++] != model_names[NORMAL])
+  if (arg[iarg++] != model_name[NORMAL])
     error->all(FLERR, "Normal model does not match");
 
   if (iarg + model_num_coeffs[NORMAL] > narg)
-    error->all(FLERR, "Insufficient arguments provided for {} model", model_names[NORMAL]);
+    error->all(FLERR, "Insufficient arguments provided for {} model", model_name[NORMAL]);
   for (int i = 0; i < model_num_coeffs[NORMAL]; i++) {
     // A few parameters (e.g. kt for tangential mindlin) allow null
     if (strcmp(arg[iarg + i], "NULL") == 0)
@@ -584,12 +599,12 @@ void PairGranularAccelerated::coeff(int narg, char **arg)
     } else error->all(FLERR, "Illegal pair_coeff command {}", arg[iarg]);
 
     if (model_index != -1) {
-      if (arg[iarg++] != model_names[model_index])
+      if (arg[iarg++] != model_name[model_index])
       error->all(FLERR, "Submodel model does not match");
 
       if (iarg + model_num_coeffs[model_index] > narg)
-        error->all(FLERR, "Insufficient arguments provided for {} model", model_names[model_index]);
-      for (int n = 0; n < model_num_coeffs[model_index]; i++) {
+        error->all(FLERR, "Insufficient arguments provided for {} model", model_name[model_index]);
+      for (int n = 0; n < model_num_coeffs[model_index]; n++) {
         // A few parameters (e.g. kt for tangential mindlin) allow null
         for (int i = ilo; i <= ihi; i++) {
           for (int j = MAX(jlo,i); j <= jhi; j++) {
@@ -652,7 +667,7 @@ void PairGranularAccelerated::init_style()
 
   model_history_index[0] = 0;
   for (int i = 1; i < NSUBMODELS; i++)
-    model_history_index[i] = mdoel_history_index[i - 1] + model_size_history[i - 1];
+    model_history_index[i] = model_history_index[i - 1] + model_size_history[i - 1];
 
   if (use_history) neighbor->add_request(this, NeighConst::REQ_SIZE | NeighConst::REQ_HISTORY);
   else neighbor->add_request(this, NeighConst::REQ_SIZE);
@@ -760,13 +775,13 @@ double PairGranularAccelerated::init_one(int i, int j)
       cutoff = maxrad_dynamic[i] + maxrad_dynamic[j];
       pulloff = 0.0;
       if (beyond_contact) {
-        pulloff = pulloff_distance(maxrad_dynamic[i], maxrad_dynamic[j]);
+        pulloff = pulloff_distance_normal(maxrad_dynamic[i], maxrad_dynamic[j]);
         cutoff += pulloff;
 
-        pulloff = pulloff_distance(maxrad_frozen[i], maxrad_dynamic[j]);
+        pulloff = pulloff_distance_normal(maxrad_frozen[i], maxrad_dynamic[j]);
         cutoff = MAX(cutoff, maxrad_frozen[i] + maxrad_dynamic[j] + pulloff);
 
-        pulloff = pulloff_distance(maxrad_dynamic[i], maxrad_frozen[j]);
+        pulloff = pulloff_distance_normal(maxrad_dynamic[i], maxrad_frozen[j]);
         cutoff = MAX(cutoff,maxrad_dynamic[i] + maxrad_frozen[j] + pulloff);
       }
     } else {
@@ -875,8 +890,6 @@ double PairGranularAccelerated::single(int i, int j, int itype, int jtype,
   if ((i >= nall) || (j >= nall))
     error->all(FLERR,"Not enough atoms for pair granular single function");
 
-  class GranularModel* model = models_list[types_indices[itype][jtype]];
-
   // Reset model and copy initial geometric data
   double **x = atom->x;
   double *radius = atom->radius;
@@ -888,7 +901,8 @@ double PairGranularAccelerated::single(int i, int j, int itype, int jtype,
   history_update = 0; // Don't update history
 
   // If history is needed
-  double *history,*allhistory;
+  bool touchflag;
+  double *allhistory;
   int jnum = list->numneigh[i];
   int *jlist = list->firstneigh[i];
   if (use_history) {
@@ -901,10 +915,21 @@ double PairGranularAccelerated::single(int i, int j, int itype, int jtype,
       if (jlist[neighprev] == j) break;
     }
     history = &allhistory[size_history * neighprev];
-    touch = fix_history->firstflag[i][neighprev];
+    touchflag = fix_history->firstflag[i][neighprev];
   }
 
-  int touchflag = check_contact();
+  // ---------------------------------//
+  // GranularModel->check_contact()
+  // ---------------------------------//
+
+  sub3(xi, xj, dx);
+  rsq = lensq3(dx);
+  radsum = radi + radj;
+  Reff = radi * radj / radsum;
+
+  touchflag = touch_normal();
+
+  // ---------------------------------//
 
   if (!touchflag) {
     fforce = 0.0;
@@ -937,9 +962,102 @@ double PairGranularAccelerated::single(int i, int j, int itype, int jtype,
   vj = v[j];
   omegai = omega[i];
   omegaj = omega[j];
-  history = history;
 
-  calculate_forces();
+  // ---------------------------------//
+  // GranularModel->calculate_forces();
+  // ---------------------------------//
+
+  rinv = 1.0 / r;
+  delta = radsum - r;
+  dR = delta * Reff;
+  scale3(rinv, dx, nx);
+
+  // relative translational velocity
+  sub3(vi, vj, vr);
+
+  // normal component
+  vnnr = dot3(vr, nx);
+  scale3(vnnr, nx, vn);
+
+  // tangential component
+  sub3(vr, vn, vt);
+
+  // relative rotational velocity
+  scaleadd3(radi, omegai, radj, omegaj, wr);
+
+  // relative tangential velocities
+  double temp[3];
+  cross3(wr, nx, temp);
+  sub3(vt, temp, vtr);
+  vrel = len3(vtr);
+
+  // calculate forces/torques
+  double Fdamp, dist_to_contact;
+
+  history_index = model_history_index[NORMAL];
+  if (contact_radius_flag)
+    contact_radius = calculate_contact_radius_normal();
+  Fnormal = calculate_forces_normal();
+
+  history_index = model_history_index[DAMPING];
+  Fdamp = calculate_forces_damping();
+
+  Fntot = Fnormal + Fdamp;
+  if (limit_damping && Fntot < 0.0) Fntot = 0.0;
+
+  set_fncrit_normal(); // Needed for tangential, rolling, twisting
+
+  history_index = model_history_index[TANGENTIAL];
+  calculate_forces_tangential();
+  // sum normal + tangential contributions
+  scale3(Fntot, nx, forces);
+  add3(forces, fs, forces);
+
+  // May need to eventually rethink tris..
+  cross3(nx, fs, torquesi);
+  scale3(-1, torquesi);
+  copy3(torquesi, torquesj);
+
+  dist_to_contact = radi - 0.5 * delta;
+  scale3(dist_to_contact, torquesi);
+  dist_to_contact = radj - 0.5 * delta;
+  scale3(dist_to_contact, torquesj);
+
+  // Extra modes
+  if (rolling_defined || twisting_defined)
+    sub3(omegai, omegaj, relrot);
+
+  if (rolling_defined) {
+    // rolling velocity, see eq. 31 of Wang et al, Particuology v 23, p 49 (2015)
+    // this is different from the Marshall papers, which use the Bagi/Kuhn formulation
+    // for rolling velocity (see Wang et al for why the latter is wrong)
+    vrl[0] = Reff * (relrot[1] * nx[2] - relrot[2] * nx[1]);
+    vrl[1] = Reff * (relrot[2] * nx[0] - relrot[0] * nx[2]);
+    vrl[2] = Reff * (relrot[0] * nx[1] - relrot[1] * nx[0]);
+    history_index = model_history_index[ROLLING];
+    calculate_forces_rolling();
+    double torroll[3];
+    cross3(nx, fr, torroll);
+    scale3(Reff, torroll);
+    add3(torquesi, torroll, torquesi);
+    sub3(torquesj, torroll, torquesj);
+  }
+
+  if (twisting_defined) {
+    // omega_T (eq 29 of Marshall)
+    magtwist = dot3(relrot, nx);
+    history_index = model_history_index[TWISTING];
+    calculate_forces_twisting();
+    double tortwist[3];
+    scale3(magtortwist, nx, tortwist);
+    add3(torquesi, tortwist, torquesi);
+    sub3(torquesj, tortwist, torquesj);
+  }
+  if (heat_defined) {
+    history_index = model_history_index[HEAT];
+    dq = calculate_heat();
+  }
+  // ---------------------------------//
 
   // apply forces & torques
   // Calculate normal component, normalized by r
@@ -1027,7 +1145,7 @@ double PairGranularAccelerated::atom2cut(int i)
 
   cut = atom->radius[i] * 2;
   if (beyond_contact) {
-    cut += pulloff_distance(cut, cut);
+    cut += pulloff_distance_normal(cut, cut);
   }
 
   return cut;
@@ -1043,7 +1161,7 @@ double PairGranularAccelerated::radii2cut(double r1, double r2)
 
   if (beyond_contact) {
     int n = atom->ntypes;
-    double temp = pulloff_distance(r1, r2);
+    double temp = pulloff_distance_normal(r1, r2);
     if (temp > cut) cut = temp;
   }
 
@@ -1112,7 +1230,7 @@ double PairGranularAccelerated::mix_stiffnessG(double E1, double E2, double pois
         Delete all instances of ""
 ------------------------------------------------------------------------- */
 
-bool PairGranularAccelerated::touch()
+bool PairGranularAccelerated::touch_normal()
 {
   bool touchflag = (rsq < radsum * radsum);
   return touchflag;
@@ -1120,21 +1238,21 @@ bool PairGranularAccelerated::touch()
 
 /* ---------------------------------------------------------------------- */
 
-double PairGranularAccelerated::pulloff_distance(double /*radi*/, double /*radj*/)
+double PairGranularAccelerated::pulloff_distance_normal(double /*radi*/, double /*radj*/)
 {
   return 0.0;
 }
 
 /* ---------------------------------------------------------------------- */
 
-double PairGranularAccelerated::calculate_contact_radius()
+double PairGranularAccelerated::calculate_contact_radius_normal()
 {
   return sqrt(dR);
 }
 
 /* ---------------------------------------------------------------------- */
 
-void PairGranularAccelerated::set_fncrit()
+void PairGranularAccelerated::set_fncrit_normal()
 {
   Fncrit = fabs(Fntot);
 }
@@ -1143,6 +1261,7 @@ void PairGranularAccelerated::set_fncrit()
       CUSTOMIZE: Methods from each SubModel, necessary changes include:
         Delete all instances of ""
         Contact_type is always PAIR
+        mixed_coefficients is always false
         Replace unnecessary accessors directly w/ variable
           normal_get_emod() -> Emod
           normal_get_poiss() -> poiss
@@ -1157,8 +1276,7 @@ void PairGranularAccelerated::coeffs_to_local_normal()
   Emod = coeffs[0];
   damp_norm = coeffs[1];
   poiss = coeffs[2];
-  if (!mixed_coefficients)
-    k_norm = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
+  k_norm = FOURTHIRDS * mix_stiffnessE(Emod, Emod, poiss, poiss);
 
   if (Emod < 0.0 || damp_norm < 0.0) error->all(FLERR, "Illegal Hertz material normal model");
 }

@@ -180,6 +180,6 @@ double GranSubModDampingCoeffRestitution::calculate_forces()
     sqrt1 = MAX(0.0, gm->meff * gm->Fnormal / gm->delta);
   else
     sqrt1 = 0.0;
-  damp_prefactor = damp * sqrt(sqrt1);
+  damp_prefactor = damp_damp * sqrt(sqrt1);
   return -damp_prefactor * gm->vnnr;
 }
