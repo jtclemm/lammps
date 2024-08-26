@@ -40,10 +40,10 @@ namespace Granular_NS {
 
     double get_k() const { return k_tang; }
     double get_damp() const { return damp_tang; }
-    double get_mu() const { return mu; }
+    double get_mu() const { return mu_tang; }
 
    protected:
-    double k_tang, damp_tang, mu;    // Used by Marshall twisting model
+    double k_tang, damp_tang, mu_tang;    // Used by Marshall twisting model
   };
 
   /* ---------------------------------------------------------------------- */

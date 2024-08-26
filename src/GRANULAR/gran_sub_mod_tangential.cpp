@@ -163,7 +163,7 @@ void GranSubModTangentialLinearHistory::calculate_forces()
       scale3(Fscrit * magfs_inv, gm->fs, history);
       scale3(damp_tang, gm->vtr, temp_array);
       add3(history, temp_array, history);
-      scale3(-1.0 / k, history);
+      scale3(-1.0 / k_tang, history);
       scale3(Fscrit * magfs_inv, gm->fs);
     } else {
       zero3(gm->fs);
