@@ -169,10 +169,19 @@ void PairBPMSpring::allocate()
    global settings
 ------------------------------------------------------------------------- */
 
-void PairBPMSpring::settings(int narg, char ** /*arg*/)
+void PairBPMSpring::settings(int narg, char ** arg)
 {
-  if (narg != 0) error->all(FLERR, "Illegal pair_style command");
   anharmonic_flag = 0;
+
+  int iarg = 0;
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "anharmonic") != 0) {
+      if (iarg + 1 >= narg)
+        utils::missing_cmd_args(FLERR, "pair_coeff bpm/spring anharmonic", error);
+      anharmonic_flag = utils::logical(FLERR, arg[iarg + 1], false, lmp);
+      iarg += 2;
+    } else error->all(FLERR, "Illegal pair_style command {}", arg[iarg]);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -181,7 +190,7 @@ void PairBPMSpring::settings(int narg, char ** /*arg*/)
 
 void PairBPMSpring::coeff(int narg, char **arg)
 {
-  if (narg < 5)
+  if ((!anharmonic_flag && narg != 5) || (anharmonic_flag && narg != 6))
     error->all(FLERR, "Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
@@ -194,16 +203,8 @@ void PairBPMSpring::coeff(int narg, char **arg)
   double gamma_one = utils::numeric(FLERR, arg[4], false, lmp);
 
   double ka_one = 0.0;
-  int iarg = 5;
-  while (iarg < narg) {
-    if (strcmp(arg[iarg], "anharmonic") != 0) {
-      if (iarg + 1 >= narg)
-        utils::missing_cmd_args(FLERR, "pair_coeff bpm/spring anharmonic", error);
-      ka_one = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
-      anharmonic_flag = 1;
-      iarg += 2;
-    } else error->all(FLERR, "Illegal pair_coeff command {}", arg[iarg]);
-  }
+  if (anharmonic_flag)
+    ka_one = utils::numeric(FLERR, arg[5], false, lmp);
 
   if (cut_one <= 0.0) error->all(FLERR, "Incorrect args for pair coefficients");
 
