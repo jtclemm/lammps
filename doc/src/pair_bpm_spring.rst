@@ -17,7 +17,7 @@ Examples
 
    pair_style bpm/spring
    pair_coeff * * 1.0 1.0 1.0
-   pair_coeff 1 1 1.0 1.0 1.0 50.0
+   pair_coeff 1 1 1.0 1.0 1.0 anharmonic 50.0
 
 Description
 """""""""""
@@ -31,11 +31,12 @@ Style *bpm/spring* computes pairwise forces with the formula
    F = k (r - r_c) + k_a (r - r_c)^3
 
 where :math:`k` is a stiffness, :math:`r_c` is the cutoff
-length, and `k_a` is an anharmonic cubic prefactor. The
-anharmonic term may be useful in some applications to ensure
-particles have minimal overlap. An additional damping force
-is also applied to interacting particles. The force is
-proportional to the difference in the normal velocity of particles
+length, and `k_a` is an optional anharmonic cubic prefactor (see
+discussion below for associated syntax). The anharmonic term
+may be useful in some applications to ensure particles have
+minimal overlap. An additional damping force is also applied
+to interacting particles. The force is proportional to the
+difference in the normal velocity of particles
 
 .. math::
 
@@ -65,6 +66,7 @@ only interact via the bond force. See discussion of the *overlay/pair*
 option for BPM bond styles and the :doc:`special_bonds <special_bonds>`
 command in the :doc:`how to <Howto_bpm>` page on BPMs for more details.
 
+All model choices are entered in the :doc:`pair_coeff <pair_coeff>` command.
 The following coefficients must be defined for each pair of atom types
 via the :doc:`pair_coeff <pair_coeff>` command as in the examples
 above, or in the data file or restart files read by the
@@ -74,9 +76,13 @@ commands, or by mixing as described below:
 * :math:`k`             (force/distance units)
 * :math:`r_c`           (distance units)
 * :math:`\gamma`        (force/velocity units)
+
+Additionally, one may optionally turn on the cubic anharmonic force
+by adding a keyword *anharmonic* followed by a value
+
 * :math:`k_a`           (force/distance\^3 units)
 
-The last coefficient is optional. If not specified, a value of 0 is used.
+Otherwise, forces have no anharmonic contribution.
 
 ----------
 

@@ -29,8 +29,6 @@ using namespace LAMMPS_NS;
 
 PairBPMSpring::PairBPMSpring(LAMMPS *_lmp) : Pair(_lmp), k(nullptr), ka(nullptr), cut(nullptr), gamma(nullptr)
 {
-  writedata = 1;
-  anharmonic_flag = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -174,6 +172,7 @@ void PairBPMSpring::allocate()
 void PairBPMSpring::settings(int narg, char ** /*arg*/)
 {
   if (narg != 0) error->all(FLERR, "Illegal pair_style command");
+  anharmonic_flag = 0;
 }
 
 /* ----------------------------------------------------------------------
@@ -182,7 +181,7 @@ void PairBPMSpring::settings(int narg, char ** /*arg*/)
 
 void PairBPMSpring::coeff(int narg, char **arg)
 {
-  if (narg < 5 || narg > 6)
+  if (narg < 5)
     error->all(FLERR, "Incorrect args for pair coefficients");
   if (!allocated) allocate();
 
@@ -195,8 +194,16 @@ void PairBPMSpring::coeff(int narg, char **arg)
   double gamma_one = utils::numeric(FLERR, arg[4], false, lmp);
 
   double ka_one = 0.0;
-  if (narg == 6)
-    ka_one = utils::numeric(FLERR, arg[5], false, lmp);
+  int iarg = 5;
+  while (iarg < narg) {
+    if (strcmp(arg[iarg], "anharmonic") != 0) {
+      if (iarg + 1 >= narg)
+        utils::missing_cmd_args(FLERR, "pair_coeff bpm/spring anharmonic", error);
+      ka_one = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
+      anharmonic_flag = 1;
+      iarg += 2;
+    } else error->all(FLERR, "Illegal pair_coeff command {}", arg[iarg]);
+  }
 
   if (cut_one <= 0.0) error->all(FLERR, "Incorrect args for pair coefficients");
 
@@ -244,8 +251,6 @@ double PairBPMSpring::init_one(int i, int j)
   k[j][i] = k[i][j];
   gamma[j][i] = gamma[i][j];
   ka[j][i] = ka[i][j];
-
-  if (ka[i][j] != 0.0) anharmonic_flag = 1;
 
   return cut[i][j];
 }
@@ -301,25 +306,25 @@ void PairBPMSpring::read_restart(FILE *fp)
     }
 }
 
+
 /* ----------------------------------------------------------------------
-   proc 0 writes to data file
+   proc 0 writes to restart file
 ------------------------------------------------------------------------- */
 
-void PairBPMSpring::write_data(FILE *fp)
+void PairBPMSpring::write_restart_settings(FILE *fp)
 {
-  for (int i = 1; i <= atom->ntypes; i++)
-    fprintf(fp, "%d %g %g %g %g\n", i, k[i][i], cut[i][i], gamma[i][i], ka[i][i]);
+  fwrite(&anharmonic_flag, sizeof(int), 1, fp);
 }
 
 /* ----------------------------------------------------------------------
-   proc 0 writes all pairs to data file
+   proc 0 reads from restart file, bcasts
 ------------------------------------------------------------------------- */
 
-void PairBPMSpring::write_data_all(FILE *fp)
+void PairBPMSpring::read_restart_settings(FILE *fp)
 {
-  for (int i = 1; i <= atom->ntypes; i++)
-    for (int j = i; j <= atom->ntypes; j++)
-      fprintf(fp, "%d %d %g %g %g %g\n", i, j, k[i][j], cut[i][j], gamma[i][j], ka[i][j]);
+  if (comm->me == 0)
+    utils::sfread(FLERR, &anharmonic_flag, sizeof(int), 1, fp, nullptr, error);
+  MPI_Bcast(&anharmonic_flag, 1, MPI_INT, 0, world);
 }
 
 /* ---------------------------------------------------------------------- */
