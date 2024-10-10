@@ -40,7 +40,8 @@ class PairBPMSpring : public Pair {
   double single(int, int, int, int, double, double, double, double &) override;
 
  protected:
-  double **k, **cut, **gamma;
+  int anharmonic_flag;
+  double **k, **ka, **cut, **gamma;
 
   void allocate();
 };

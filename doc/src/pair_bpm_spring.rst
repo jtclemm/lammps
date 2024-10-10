@@ -17,7 +17,7 @@ Examples
 
    pair_style bpm/spring
    pair_coeff * * 1.0 1.0 1.0
-   pair_coeff 1 1 1.0 1.0 1.0
+   pair_coeff 1 1 1.0 1.0 1.0 50.0
 
 Description
 """""""""""
@@ -28,12 +28,14 @@ Style *bpm/spring* computes pairwise forces with the formula
 
 .. math::
 
-   F = k (r - r_c)
+   F = k (r - r_c) + k_a (r - r_c)^3
 
-where :math:`k` is a stiffness and :math:`r_c` is the cutoff length.
-An additional damping force is also applied to interacting
-particles. The force is proportional to the difference in the
-normal velocity of particles
+where :math:`k` is a stiffness, :math:`r_c` is the cutoff
+length, and `k_a` is an anharmonic cubic prefactor. The
+anharmonic term may be useful in some applications to ensure
+particles have minimal overlap. An additional damping force
+is also applied to interacting particles. The force is
+proportional to the difference in the normal velocity of particles
 
 .. math::
 
@@ -72,7 +74,9 @@ commands, or by mixing as described below:
 * :math:`k`             (force/distance units)
 * :math:`r_c`           (distance units)
 * :math:`\gamma`        (force/velocity units)
+* :math:`k_a`           (force/distance\^3 units)
 
+The last coefficient is optional. If not specified, a value of 0 is used.
 
 ----------
 
