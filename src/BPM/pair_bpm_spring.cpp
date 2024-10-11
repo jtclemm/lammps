@@ -29,6 +29,7 @@ using namespace LAMMPS_NS;
 
 PairBPMSpring::PairBPMSpring(LAMMPS *_lmp) : Pair(_lmp), k(nullptr), ka(nullptr), cut(nullptr), gamma(nullptr)
 {
+  anharmonic_flag = 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -171,8 +172,6 @@ void PairBPMSpring::allocate()
 
 void PairBPMSpring::settings(int narg, char ** arg)
 {
-  anharmonic_flag = 0;
-
   int iarg = 0;
   while (iarg < narg) {
     if (strcmp(arg[iarg], "anharmonic") != 0) {
