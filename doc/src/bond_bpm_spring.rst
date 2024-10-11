@@ -123,7 +123,7 @@ it will trigger an error.
 .. versionadded:: TBD
 
 The *volume/factor* keyword toggles whether an additional multibody
-contribution is added to bond forces based on the formulation in
+contribution is added to he force using the formulation in
 :ref:`(Clemmer2) <multibody-Clemmer>`,
 
 .. math::
@@ -132,11 +132,14 @@ contribution is added to bond forces based on the formulation in
 
 where :math:`\alpha_v` is a user specified coefficient and :math:`V_i`
 and :math:`V_{0,i}` are estimates of the current and local volume
-(or area in 2D) of atom :math:`i`. These volumes are calculated as
-the sum of current or initial bond lengths cubed (or squared in 2D).
-This assumes bonds are evenly distributed on a spherical surface and
-neglects constant prefactors which are irrelevant since only the
-ratio of volumes matters. If a bond is broken (or created),
+of atom :math:`i`. These volumes are calculated as the sum of current
+or initial bond lengths cubed. In 2D, this expression is modified to use
+areas with cubes and cube roots being replaced by squares and square roots.
+This approximation assumes bonds are evenly distributed on a spherical surface
+and neglects constant prefactors which are irrelevant since only the ratio
+of volumes matters. This term may be used to adjust the Poisson's ratio.
+
+If a bond is broken (or created),
 :math:`V_{0,i}` is updated by subtracting (or adding) that bonds
 contribution.
 
