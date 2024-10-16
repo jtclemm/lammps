@@ -40,8 +40,8 @@ Style *bpm/spring* computes pairwise forces with the formula
 
 where :math:`k` is a stiffness, :math:`r_c` is the cutoff
 length, and :math:`k_a` is an optional anharmonic cubic prefactor
-enabled or disabled using the *anharmonic* keyword. The anharmonic
-term may be useful in minimizing particle overlap.
+that can be enabled using the *anharmonic* keyword. The anharmonic
+term may be useful in scenarios that need to prevent large particle overlap.
 
 An additional
 damping force is also applied to interacting particles. The force is

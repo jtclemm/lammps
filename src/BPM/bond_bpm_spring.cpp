@@ -68,9 +68,6 @@ BondBPMSpring::~BondBPMSpring()
     memory->destroy(av);
   }
 
-  if (id_fix) modify->delete_fix(id_fix);
-  delete [] id_fix;
-
   memory->destroy(dvol0);
 }
 

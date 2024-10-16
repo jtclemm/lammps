@@ -133,11 +133,12 @@ contribution is added to he force using the formulation in
 where :math:`\alpha_v` is a user specified coefficient and :math:`V_i`
 and :math:`V_{0,i}` are estimates of the current and local volume
 of atom :math:`i`. These volumes are calculated as the sum of current
-or initial bond lengths cubed. In 2D, this expression is modified to use
-areas with cubes and cube roots being replaced by squares and square roots.
-This approximation assumes bonds are evenly distributed on a spherical surface
-and neglects constant prefactors which are irrelevant since only the ratio
-of volumes matters. This term may be used to adjust the Poisson's ratio.
+or initial bond lengths cubed. In 2D, the volume is replaced with an area
+calculated using bond lengths squared and the cube root in the above equation
+is accordingly replaced with a square root. This approximation assumes bonds
+are evenly distributed on a spherical surface and neglects constant prefactors
+which are irrelevant since only the ratio of volumes matters. This term may be
+used to adjust the Poisson's ratio.
 
 If a bond is broken (or created),
 :math:`V_{0,i}` is updated by subtracting (or adding) that bonds
