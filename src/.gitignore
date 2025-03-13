@@ -372,6 +372,8 @@
 /bond_bpm.h
 /bond_bpm_rotational.cpp
 /bond_bpm_rotational.h
+/bond_bpm_rotational_plastic.cpp
+/bond_bpm_rotational_plastic.h
 /bond_bpm_spring.cpp
 /bond_bpm_spring.h
 /bond_bpm_spring_plastic.cpp
