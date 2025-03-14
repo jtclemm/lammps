@@ -211,7 +211,7 @@ void BondBPMRotationalPlastic::store_data()
 
 double BondBPMRotationalPlastic::elastic_plastic_forces(int i1, int i2, int type, double r_mag, double r0_mag,
                                          double r_mag_inv, double * /*rhat*/, double *r, double *r0,
-                                         double *force1on2, double *torque1on2, double *torque2on1, double &rmag_eq, double &gamma_eq, double &theta_eq, double &psi_eq)
+                                         double *force1on2, double *torque1on2, double *torque2on1, double &req_mag, double &gamma_eq, double &theta_eq, double &psi_eq)
 {
   double breaking, temp, r0_dot_rb, c, gamma;
   double psi, theta, cos_phi, sin_phi;
@@ -234,17 +234,15 @@ double BondBPMRotationalPlastic::elastic_plastic_forces(int i1, int i2, int type
   }
 
   // Plastically evolve bond length
-  double e = (r_mag - rmag_eq) / rmag_eq;
-  if (e > e_plastic[type]) {
-    rmag_eq = r_mag / (1.0 + e_plastic[type]);
-  } else if (e < -e_plastic[type]) {
-    rmag_eq = r_mag / (1.0 - e_plastic[type]);
+  double e = (r_mag - r0_mag) / r0_mag;
+  double ep = (req_mag - r0_mag) / r0_mag;
+  if (e > (ep + e_plastic[type])) {
+    ep = e - e_plastic[type];
+    req_mag = r0_mag + ep * r0_mag;
+  } else if (e < (ep - e_plastic[type])) {
+    ep = e + e_plastic[type];
+    req_mag = r0_mag + ep * r0_mag;
   }
-
-  MathExtra::scale3(rmag_eq * r0_mag_inv, r0);
-  double r0_mag_raw = r0_mag;
-  r0_mag = rmag_eq;
-  r0_mag_inv = 1.0 / r0_mag;
 
   q1[0] = quat[i1][0];
   q1[1] = quat[i1][1];
@@ -259,7 +257,7 @@ double BondBPMRotationalPlastic::elastic_plastic_forces(int i1, int i2, int type
   // Calculate normal forces, rb = bond vector in particle 1's frame
   MathExtra::qconjugate(q2, q2inv);
   MathExtra::quatrotvec(q2inv, r, rb);
-  Fr = Kr_type * (r_mag - r0_mag);
+  Fr = Kr_type * (r_mag - req_mag);
 
   MathExtra::scale3(Fr * r_mag_inv, rb, F_rot);
 
@@ -420,7 +418,7 @@ double BondBPMRotationalPlastic::elastic_plastic_forces(int i1, int i2, int type
   Tb_mag = MathExtra::len3(Tb);
 
   // Check breakage criteria
-  breaking = fabs(r_mag / r0_mag_raw - 1.0) / e_break[type];
+  breaking = fabs(r_mag / r0_mag - 1.0) / e_break[type];
   breaking += (fabs(gamma+gamma_eq) + fabs(psi+psi_eq) + fabs(theta+theta_eq)) / angle_break[type];
 
   return breaking;
@@ -520,7 +518,7 @@ void BondBPMRotationalPlastic::compute(int eflag, int vflag)
   double rsq, r0_mag, r_mag, r_mag_inv;
   double breaking, smooth;
   double force1on2[3], torque1on2[3], torque2on1[3];
-  double rmag_eq, gamma_eq, theta_eq, psi_eq;
+  double req_mag, gamma_eq, theta_eq, psi_eq;
 
   ev_init(eflag, vflag);
 
@@ -561,7 +559,7 @@ void BondBPMRotationalPlastic::compute(int eflag, int vflag)
     r0[0] = bondstore[n][1];
     r0[1] = bondstore[n][2];
     r0[2] = bondstore[n][3];
-    rmag_eq = bondstore[n][4];
+    req_mag = bondstore[n][4];
     gamma_eq = bondstore[n][5];
     theta_eq = bondstore[n][6];
     psi_eq = bondstore[n][7];
@@ -579,9 +577,9 @@ void BondBPMRotationalPlastic::compute(int eflag, int vflag)
     //  Calculate forces, check if bond breaks
     // ------------------------------------------------------//
 
-    breaking = elastic_plastic_forces(i1, i2, type, r_mag, r0_mag, r_mag_inv, rhat, r, r0, force1on2, torque1on2, torque2on1, rmag_eq, gamma_eq, theta_eq, psi_eq);
+    breaking = elastic_plastic_forces(i1, i2, type, r_mag, r0_mag, r_mag_inv, rhat, r, r0, force1on2, torque1on2, torque2on1, req_mag, gamma_eq, theta_eq, psi_eq);
 
-    bondstore[n][4] = rmag_eq;
+    bondstore[n][4] = req_mag;
     bondstore[n][5] = gamma_eq;
     bondstore[n][6] = theta_eq;
     bondstore[n][7] = psi_eq;
@@ -865,7 +863,7 @@ double BondBPMRotationalPlastic::single(int type, double rsq, int i, int j, doub
   r0[0] = bondstore[1];
   r0[1] = bondstore[2];
   r0[2] = bondstore[3];
-  double rmag_eq = bondstore[4];
+  double req_mag = bondstore[4];
   double gamma_eq = bondstore[5];
   double theta_eq = bondstore[6];
   double psi_eq = bondstore[7];
@@ -880,7 +878,7 @@ double BondBPMRotationalPlastic::single(int type, double rsq, int i, int j, doub
 
   double force1on2[3], torque1on2[3], torque2on1[3];
   double breaking = elastic_plastic_forces(i, j, type, r_mag, r0_mag, r_mag_inv, rhat, r, r0, force1on2,
-                                   torque1on2, torque2on1, rmag_eq, gamma_eq, theta_eq, psi_eq);
+                                   torque1on2, torque2on1, req_mag, gamma_eq, theta_eq, psi_eq);
   damping_forces(i, j, type, rhat, r, force1on2, torque1on2, torque2on1);
   fforce = MathExtra::dot3(force1on2, rhat);
   fforce *= -1;
