@@ -853,20 +853,33 @@ double BondBPMRotationalPlastic::single(int type, double rsq, int i, int j, doub
 
   double r0_mag, r_mag, r_mag_inv;
   double r0[3], r[3], rhat[3];
-  double bondstore[8];
-  for (int n = 0; n < atom->num_bond[i]; n++)
-    if (atom->bond_atom[i][n] == atom->tag[j])
-      for (int j = 0; j < 8; j++)
-        bondstore[j] = fix_bond_history->get_atom_value(i, n, j);
 
-  r0_mag = bondstore[0];
-  r0[0] = bondstore[1];
-  r0[1] = bondstore[2];
-  r0[2] = bondstore[3];
-  double req_mag = bondstore[4];
-  double gamma_eq = bondstore[5];
-  double theta_eq = bondstore[6];
-  double psi_eq = bondstore[7];
+  // ep can be updated, so search bondlist vs. fix_bond_history->get_atom_value()
+  //   slower than other bpm/bond styles' single method...
+  tagint *tag = atom->tag;
+  int **bondlist = neighbor->bondlist;
+  int nbondlist = neighbor->nbondlist;
+  double **bondstore = fix_bond_history->bondstore;
+
+  tagint tagi = tag[i];
+  tagint tagj = tag[j];
+  tagint tag1, tag2;
+  int n;
+  for (n = 0; n < nbondlist; n++) {
+    tag1 = tag[bondlist[n][0]];
+    tag2 = tag[bondlist[n][1]];
+    if ((tag1 == tagi && tag2 == tagj) || (tag1 == tagj && tag2 == tagi))
+      break;
+  }
+
+  r0_mag = bondstore[n][0];
+  r0[0] = bondstore[n][1];
+  r0[1] = bondstore[n][2];
+  r0[2] = bondstore[n][3];
+  double req_mag = bondstore[n][4];
+  double gamma_eq = bondstore[n][5];
+  double theta_eq = bondstore[n][6];
+  double psi_eq = bondstore[n][7];
 
   double **x = atom->x;
   MathExtra::scale3(r0_mag, r0);
