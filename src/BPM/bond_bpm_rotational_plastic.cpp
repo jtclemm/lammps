@@ -116,6 +116,10 @@ double BondBPMRotationalPlastic::store_bond(int n, int i, int j)
   bondstore[n][1] = delx * rinv;
   bondstore[n][2] = dely * rinv;
   bondstore[n][3] = delz * rinv;
+  bondstore[n][4] = r;
+  bondstore[n][5] = 0.0;
+  bondstore[n][6] = 0.0;
+  bondstore[n][7] = 0.0;
 
   if (i < atom->nlocal) {
     for (int m = 0; m < atom->num_bond[i]; m++) {
@@ -125,9 +129,9 @@ double BondBPMRotationalPlastic::store_bond(int n, int i, int j)
         fix_bond_history->update_atom_value(i, m, 2, dely * rinv);
         fix_bond_history->update_atom_value(i, m, 3, delz * rinv);
         fix_bond_history->update_atom_value(i, m, 4, r);
-        fix_bond_history->update_atom_value(i, m, 5, 0);
-        fix_bond_history->update_atom_value(i, m, 6, 0);
-        fix_bond_history->update_atom_value(i, m, 7, 0);
+        fix_bond_history->update_atom_value(i, m, 5, 0.0);
+        fix_bond_history->update_atom_value(i, m, 6, 0.0);
+        fix_bond_history->update_atom_value(i, m, 7, 0.0);
       }
     }
   }
@@ -140,9 +144,9 @@ double BondBPMRotationalPlastic::store_bond(int n, int i, int j)
         fix_bond_history->update_atom_value(j, m, 2, dely * rinv);
         fix_bond_history->update_atom_value(j, m, 3, delz * rinv);
         fix_bond_history->update_atom_value(j, m, 4, r);
-        fix_bond_history->update_atom_value(j, m, 5, 0);
-        fix_bond_history->update_atom_value(j, m, 6, 0);
-        fix_bond_history->update_atom_value(j, m, 7, 0);
+        fix_bond_history->update_atom_value(j, m, 5, 0.0);
+        fix_bond_history->update_atom_value(j, m, 6, 0.0);
+        fix_bond_history->update_atom_value(j, m, 7, 0.0);
       }
     }
   }
