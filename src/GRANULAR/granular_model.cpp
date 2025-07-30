@@ -534,6 +534,7 @@ void GranularModel::calculate_forces()
   }
 
   if (heat_defined)
+    // to be modified ...
     dq = heat_model->calculate_heat();
 }
 
