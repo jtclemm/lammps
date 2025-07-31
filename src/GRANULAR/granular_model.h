@@ -71,7 +71,8 @@ class GranularModel : protected Pointers {
   GranSubMod *sub_models[NSUBMODELS];
 
   // Extra options
-  int beyond_contact, limit_damping, history_update, synchronized_verlet;
+  int beyond_contact, limit_damping, history_update, synchronized_verlet, dissipative_heat;
+  double heat_norm_damp, heat_tang_damp, heat_tang_fric;
   ContactType contact_type;
 
   // Particle identifiers
@@ -83,7 +84,8 @@ class GranularModel : protected Pointers {
   double *history;
 
   // Contact properties/output
-  double Fnormal, forces[3], torquesi[3], torquesj[3], dq;
+  double Fnormal, forces[3], torquesi[3], torquesj[3];
+  double dq_conduct, dq_dissipate;
 
   double radi, radj, meff, dt, Ti, Tj, contact_radius;
   double Fntot, magtortwist;

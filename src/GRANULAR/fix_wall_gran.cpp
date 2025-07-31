@@ -110,6 +110,17 @@ FixWallGran::FixWallGran(LAMMPS *lmp, int narg, char **arg) :
       } else if (strcmp(arg[iarg],"limit_damping") == 0) {
         model->limit_damping = 1;
         iarg += 1;
+      } else if (strcmp(arg[iarg], "synchronized_verlet") == 0) {
+        model->synchronized_verlet = 1;
+        iarg += 1;
+      } else if (strcmp(arg[iarg], "dissipative_heat") == 0) {
+        if (iarg + 3 >= narg)
+          error->all(FLERR, "Illegal fix wall/gran command, not enough parameters for dissipative_heat keyword");
+        model->dissipative_heat = 1;
+        model->heat_norm_damp = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
+        model->heat_tang_damp = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
+        model->heat_tang_fric = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
+        iarg += 4;
       } else {
         error->all(FLERR, "Unknown fix wall/gran keyword {}", arg[iarg]);
       }
@@ -536,7 +547,8 @@ void FixWallGran::post_force(int /*vflag*/)
     add3(f[i], forces, f[i]);
 
     add3(torque[i], torquesi, torque[i]);
-    if (heat_flag) heatflow[i] += model->dq;
+    if (heat_flag)
+      heatflow[i] += model->dq_conduct + 0.5 * model->dq_dissipate;
 
     // store contact info
     if (peratom_flag) {

@@ -110,13 +110,13 @@ PairGranular::~PairGranular()
 
 void PairGranular::compute(int eflag, int vflag)
 {
-  int i,j,k,ii,jj,inum,jnum,itype,jtype;
-  double factor_lj,mi,mj,meff;
-  double *forces, *torquesi, *torquesj, dq;
+  int i, j, k, ii, jj, inum, jnum, itype, jtype;
+  double factor_lj, mi, mj, meff;
+  double *forces, *torquesi, *torquesj;
 
-  int *ilist,*jlist,*numneigh,**firstneigh;
-  int *touch,**firsttouch;
-  double *history,*allhistory,**firsthistory;
+  int *ilist, *jlist, *numneigh, **firstneigh;
+  int *touch, **firsttouch;
+  double *history, *allhistory, **firsthistory;
 
   bool touchflag = false;
   const bool history_update = update->setupflag == 0;
@@ -270,9 +270,9 @@ void PairGranular::compute(int eflag, int vflag)
       }
 
       if (heat_flag) {
-        dq = model->dq;
-        heatflow[i] += dq;
-        if (force->newton_pair || j < nlocal) heatflow[j] -= dq;
+        heatflow[i] += model->dq_conduct + 0.5 * model->dq_dissipate;
+        if (force->newton_pair || j < nlocal)
+          heatflow[j] += -model->dq_conduct + 0.5 * model->dq_dissipate;
       }
 
       if (evflag) {
@@ -368,7 +368,7 @@ void PairGranular::coeff(int narg, char **arg)
     } else if (strcmp(arg[iarg], "cutoff") == 0) {
       if (iarg + 1 >= narg)
         error->all(FLERR, "Illegal pair_coeff command, not enough parameters for cutoff keyword");
-      cutoff_one = utils::numeric(FLERR,arg[iarg + 1],false,lmp);
+      cutoff_one = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
       iarg += 2;
     } else if (strcmp(arg[iarg], "limit_damping") == 0) {
       model->limit_damping = 1;
@@ -376,6 +376,14 @@ void PairGranular::coeff(int narg, char **arg)
     } else if (strcmp(arg[iarg], "synchronized_verlet") == 0) {
       model->synchronized_verlet = 1;
       iarg += 1;
+    } else if (strcmp(arg[iarg], "dissipative_heat") == 0) {
+      if (iarg + 3 >= narg)
+        error->all(FLERR, "Illegal pair_coeff command, not enough parameters for dissipative_heat keyword");
+      model->dissipative_heat = 1;
+      model->heat_norm_damp = utils::numeric(FLERR, arg[iarg + 1], false, lmp);
+      model->heat_tang_damp = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
+      model->heat_tang_fric = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
+      iarg += 4;
     } else error->all(FLERR, "Illegal pair_coeff command {}", arg[iarg]);
   }
 

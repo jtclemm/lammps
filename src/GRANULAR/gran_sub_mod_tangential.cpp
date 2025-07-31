@@ -34,6 +34,23 @@ static constexpr double EPSILON = 1e-10;
 GranSubModTangential::GranSubModTangential(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp)
 {
   allow_synchronization = 0;
+  if (gm->dissipative_heat)
+    nsvector = 2;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double GranSubModTangential::calculate_heat()
+{
+  if (gm->heat_tang_damp != 0 || gm->heat_tang_fric != 0)
+    error->one(FLERR, "Granular tangential model {} does not calculate a dissipative heat term", name);
+
+  if (gm->calculate_svector) {
+    gm->svector[index_svector] = 0.0;
+    gm->svector[index_svector + 1] = 0.0;
+  }
+
+  return 0.0;
 }
 
 /* ----------------------------------------------------------------------
@@ -87,6 +104,24 @@ void GranSubModTangentialLinearNoHistory::calculate_forces()
     Ft = 0.0;
 
   scale3(-Ft, gm->vtr, gm->fs);
+}
+
+/* ---------------------------------------------------------------------- */
+
+double GranSubModTangentialLinearNoHistory::calculate_heat()
+{
+  double dq_damp = 1.0; // placeholder
+  double dq_friction = 1.0; // placeholder
+
+  dq_damp *= gm->heat_tang_damp;
+  dq_friction *= gm->heat_tang_fric;
+
+  if (gm->calculate_svector) {
+    gm->svector[index_svector] = dq_damp;
+    gm->svector[index_svector + 1] = dq_friction;
+  }
+
+  return dq_damp + dq_friction;
 }
 
 /* ----------------------------------------------------------------------
