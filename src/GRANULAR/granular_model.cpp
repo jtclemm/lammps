@@ -53,10 +53,15 @@ GranularModel::GranularModel(LAMMPS *lmp) : Pointers(lmp)
 {
   limit_damping = 0;
   synchronized_verlet = 0;
+  dissipative_heat = 0;
   beyond_contact = 0;
   nondefault_history_transfer = 0;
   classic_model = 0;
   contact_type = PAIR;
+
+  heat_norm_damp = 0.0;
+  heat_tang_damp = 0.0;
+  heat_tang_fric = 0.0;
 
   normal_model = nullptr;
   damping_model = nullptr;
@@ -268,21 +273,30 @@ void GranularModel::init()
       beyond_contact = 1;
     size_history += sub_models[i]->size_history;
     if (!sub_models[i]->allow_cohesion && normal_model->get_cohesive_flag())
-      error->all(FLERR,"Cannot use {} model with a cohesive normal model, {}",
+      error->all(FLERR, "Cannot use {} model with a cohesive normal model, {}",
                  sub_models[i]->name, normal_model->name);
     if (sub_models[i]->contact_radius_flag) contact_radius_flag = 1;
   }
 
   if (limit_damping && normal_model->get_cohesive_flag())
-    error->all(FLERR,"Cannot limit damping with a cohesive normal model, {}", normal_model->name);
+    error->all(FLERR, "Cannot limit damping with a cohesive normal model, {}", normal_model->name);
 
   if (synchronized_verlet && !tangential_model->allow_synchronization)
-    error->all(FLERR,"Cannot use synchronized verlet with a non-synchronized tangential model, {}",
+    error->all(FLERR, "Cannot use synchronized verlet with a non-synchronized tangential model, {}",
                      tangential_model->name);
 
   if (synchronized_verlet && !rolling_model->allow_synchronization)
-    error->all(FLERR,"Cannot use synchronized verlet with a non-synchronized rolling model, {}",
+    error->all(FLERR, "Cannot use synchronized verlet with a non-synchronized rolling model, {}",
                      rolling_model->name);
+
+  if (dissipative_heat) {
+    if (heat_norm_damp < 0.0 || heat_norm_damp > 1.0)
+      error->all(FLERR, "Invalid scale factor {} for dissipative normal damping ", heat_norm_damp);
+    if (heat_tang_damp < 0.0 || heat_tang_damp > 1.0)
+      error->all(FLERR, "Invalid scale factor {} for dissipative tangential damping ", heat_tang_damp);
+    if (heat_tang_fric < 0.0 || heat_tang_fric > 1.0)
+      error->all(FLERR, "Invalid scale factor {} for dissipative tangential friction ", heat_tang_fric);
+  }
 
   if (nondefault_history_transfer) {
     transfer_history_factor = new double[size_history];
@@ -476,6 +490,17 @@ void GranularModel::calculate_forces()
   if (limit_damping && Fntot < 0.0) Fntot = 0.0;
 
   normal_model->set_fncrit(); // Needed for tangential, rolling, twisting
+
+  if (heat_defined) {
+    dq_conduct = heat_model->calculate_heat();
+  }
+
+  if (dissipative_heat) {
+    dq_dissipate = damping_model->calculate_heat();
+    dq_dissipate += tangential_model->calculate_heat();
+  }
+
+
   tangential_model->calculate_forces();
 
   // sum normal + tangential contributions
@@ -532,11 +557,6 @@ void GranularModel::calculate_forces()
     add3(torquesi, tortwist, torquesi);
     if (contact_type == PAIR) sub3(torquesj, tortwist, torquesj);
   }
-
-  if (heat_defined)
-    // to be modified ...
-    // another comment ...
-    dq = heat_model->calculate_heat();
 }
 
 /* ----------------------------------------------------------------------

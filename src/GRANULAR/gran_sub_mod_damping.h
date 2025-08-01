@@ -35,6 +35,7 @@ namespace Granular_NS {
    public:
     GranSubModDamping(class GranularModel *, class LAMMPS *);
     void init() override;
+    virtual double calculate_heat();
     virtual double calculate_forces() = 0;
     double get_damp_prefactor() const { return damp_prefactor; }
 
@@ -56,6 +57,7 @@ namespace Granular_NS {
   class GranSubModDampingVelocity : public GranSubModDamping {
    public:
     GranSubModDampingVelocity(class GranularModel *, class LAMMPS *);
+    double calculate_heat() override;
     double calculate_forces() override;
   };
 

@@ -36,6 +36,7 @@ namespace Granular_NS {
   class GranSubModTangential : public GranSubMod {
    public:
     GranSubModTangential(class GranularModel *, class LAMMPS *);
+    virtual double calculate_heat();
     virtual void calculate_forces() = 0;
 
     double get_k() const { return k; }
@@ -60,6 +61,7 @@ namespace Granular_NS {
    public:
     GranSubModTangentialLinearNoHistory(class GranularModel *, class LAMMPS *);
     void coeffs_to_local() override;
+    double calculate_heat() override;
     void calculate_forces() override;
 
    protected:

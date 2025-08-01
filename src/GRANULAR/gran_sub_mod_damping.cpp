@@ -38,7 +38,11 @@ static constexpr double ROOTTHREEBYTWO = 1.22474487139158894067;        // sqrt(
    Default damping model
 ------------------------------------------------------------------------- */
 
-GranSubModDamping::GranSubModDamping(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp) {}
+GranSubModDamping::GranSubModDamping(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp)
+{
+  if (gm->dissipative_heat)
+    nsvector = 1;
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -48,6 +52,17 @@ void GranSubModDamping::init()
     error->all(FLERR, "Only damping mdr may be used with the mdr normal model");
 
   damp = gm->normal_model->get_damp();
+}
+
+/* ---------------------------------------------------------------------- */
+
+double GranSubModDamping::calculate_heat()
+{
+  if (gm->heat_norm_damp != 0)
+    error->one(FLERR, "Granular damping model {} does not calculate a dissipative heat term", name);
+
+  if (gm->calculate_svector) gm->svector[index_svector] = 0.0;
+  return 0.0;
 }
 
 /* ----------------------------------------------------------------------
@@ -82,6 +97,17 @@ double GranSubModDampingVelocity::calculate_forces()
 {
   damp_prefactor = damp;
   return -damp_prefactor * gm->vnnr;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double GranSubModDampingVelocity::calculate_heat()
+{
+  double dq = 1.0; // placeholder
+
+  dq *= gm->heat_norm_damp;
+  if (gm->calculate_svector) gm->svector[index_svector] = dq;
+  return dq;
 }
 
 /* ----------------------------------------------------------------------
