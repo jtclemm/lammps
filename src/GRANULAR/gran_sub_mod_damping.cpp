@@ -38,11 +38,7 @@ static constexpr double ROOTTHREEBYTWO = 1.22474487139158894067;        // sqrt(
    Default damping model
 ------------------------------------------------------------------------- */
 
-GranSubModDamping::GranSubModDamping(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp)
-{
-  if (gm->dissipative_heat)
-    nsvector = 1;
-}
+GranSubModDamping::GranSubModDamping(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp) {}
 
 /* ---------------------------------------------------------------------- */
 
@@ -50,6 +46,9 @@ void GranSubModDamping::init()
 {
   if (gm->normal_model->name == "mdr")
     error->all(FLERR, "Only damping mdr may be used with the mdr normal model");
+
+  if (gm->dissipative_heat)
+    nsvector = 1;
 
   damp = gm->normal_model->get_damp();
 }
@@ -162,6 +161,9 @@ void GranSubModDampingTsuji::init()
   if (gm->normal_model->name == "mdr")
     error->all(FLERR, "Only damping mdr may be used with the mdr normal model");
 
+  if (gm->dissipative_heat)
+    nsvector = 1;
+
   double tmp = gm->normal_model->get_damp();
   damp = 1.2728 - 4.2783 * tmp + 11.087 * square(tmp);
   damp += -22.348 * cube(tmp) + 27.467 * powint(tmp, 4);
@@ -198,6 +200,9 @@ void GranSubModDampingCoeffRestitution::init()
   if (gm->normal_model->name == "mdr")
     error->all(FLERR, "Only damping mdr may be used with the mdr normal model");
 
+  if (gm->dissipative_heat)
+    nsvector = 1;
+
   // Calculate prefactor, assume Hertzian as default
   double cor = gm->normal_model->get_damp();
   double logcor = log(cor);
@@ -233,6 +238,9 @@ void GranSubModDampingMDR::init()
 {
   if (gm->normal_model->name != "mdr")
     error->all(FLERR, "Damping mdr can only be used with mdr normal model");
+
+  if (gm->dissipative_heat)
+    nsvector = 1;
 
   damp = gm->normal_model->get_damp();
 }

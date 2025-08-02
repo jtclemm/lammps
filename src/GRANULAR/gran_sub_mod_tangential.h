@@ -36,6 +36,7 @@ namespace Granular_NS {
   class GranSubModTangential : public GranSubMod {
    public:
     GranSubModTangential(class GranularModel *, class LAMMPS *);
+    void init() override;
     virtual double calculate_heat();
     virtual void calculate_forces() = 0;
 

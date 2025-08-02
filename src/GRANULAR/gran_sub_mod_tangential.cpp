@@ -34,6 +34,12 @@ static constexpr double EPSILON = 1e-10;
 GranSubModTangential::GranSubModTangential(GranularModel *gm, LAMMPS *lmp) : GranSubMod(gm, lmp)
 {
   allow_synchronization = 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void GranSubModTangential::init()
+{
   if (gm->dissipative_heat)
     nsvector = 2;
 }
