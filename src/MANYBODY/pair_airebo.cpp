@@ -42,10 +42,12 @@
 using namespace LAMMPS_NS;
 using namespace MathSpecial;
 
-static constexpr double TOL = 1.0e-9;
-static constexpr int PGDELTA = 1;
+namespace {
+constexpr double TOL = 1.0e-9;
+constexpr int PGDELTA = 1;
 
-static const char *style[3] = {"airebo", "rebo", "airebo/morse"};
+const char *style[3] = {"airebo", "rebo", "airebo/morse"};
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -406,7 +408,7 @@ void PairAIREBO::REBO_neigh()
     REBO_numneigh[i] = n;
     ipage->vgot(n);
     if (ipage->status())
-      error->one(FLERR,"Neighbor list overflow, boost neigh_modify one");
+      error->one(FLERR, Error::NOLASTLINE, "Neighbor list overflow, boost neigh_modify one" + utils::errorurl(36));
   }
 }
 

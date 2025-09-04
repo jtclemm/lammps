@@ -26,6 +26,7 @@
 #include "force.h"
 #include "memory.h"
 #include "neighbor.h"
+#include "update.h"
 
 #include <cmath>
 #include <cstring>
@@ -82,47 +83,7 @@ BondBPMSpringPlastic::~BondBPMSpringPlastic()
 }
 
 /* ----------------------------------------------------------------------
-  Store data for a single bond - if bond added after LAMMPS init (e.g. pour)
-------------------------------------------------------------------------- */
-
-double BondBPMSpringPlastic::store_bond(int n, int i, int j)
-{
-  double delx, dely, delz, r;
-  double **x = atom->x;
-  double **bondstore = fix_bond_history->bondstore;
-  tagint *tag = atom->tag;
-
-  delx = x[i][0] - x[j][0];
-  dely = x[i][1] - x[j][1];
-  delz = x[i][2] - x[j][2];
-
-  r = sqrt(delx * delx + dely * dely + delz * delz);
-  bondstore[n][0] = r;
-  bondstore[n][1] = 0.0;
-
-  if (i < atom->nlocal) {
-    for (int m = 0; m < atom->num_bond[i]; m++) {
-      if (atom->bond_atom[i][m] == tag[j]) {
-        fix_bond_history->update_atom_value(i, m, 0, r);
-        fix_bond_history->update_atom_value(i, m, 1, 0.0);
-      }
-    }
-  }
-
-  if (j < atom->nlocal) {
-    for (int m = 0; m < atom->num_bond[j]; m++) {
-      if (atom->bond_atom[j][m] == tag[i]) {
-        fix_bond_history->update_atom_value(j, m, 0, r);
-        fix_bond_history->update_atom_value(j, m, 1, 0.0);
-      }
-    }
-  }
-
-  return r;
-}
-
-/* ----------------------------------------------------------------------
-  Store data for all bonds called once
+  Store data for all bonds, called once
 ------------------------------------------------------------------------- */
 
 void BondBPMSpringPlastic::store_data()
@@ -148,27 +109,20 @@ void BondBPMSpringPlastic::store_data()
       delz = x[i][2] - x[j][2];
 
       // Get closest image in case bonded with ghost
-      domain->minimum_image(delx, dely, delz);
+      domain->minimum_image(FLERR, delx, dely, delz);
       r = sqrt(delx * delx + dely * dely + delz * delz);
 
       fix_bond_history->update_atom_value(i, m, 0, r);
       fix_bond_history->update_atom_value(i, m, 1, 0);
     }
   }
-
-  fix_bond_history->post_neighbor();
 }
 
 /* ---------------------------------------------------------------------- */
 
 void BondBPMSpringPlastic::compute(int eflag, int vflag)
 {
-  if (!fix_bond_history->stored_flag) {
-    fix_bond_history->stored_flag = true;
-    store_data();
-  }
-
-  if (hybrid_flag) fix_bond_history->compress_history();
+  pre_compute();
 
   int i1, i2, itmp, n, type;
   double delx, dely, delz, delvx, delvy, delvz;
@@ -186,6 +140,7 @@ void BondBPMSpringPlastic::compute(int eflag, int vflag)
   int newton_bond = force->newton_bond;
 
   double **bondstore = fix_bond_history->bondstore;
+  const bool allow_breaks = (update->setupflag == 0) && break_flag;
 
   for (n = 0; n < nbondlist; n++) {
 
@@ -195,8 +150,6 @@ void BondBPMSpringPlastic::compute(int eflag, int vflag)
     i1 = bondlist[n][0];
     i2 = bondlist[n][1];
     type = bondlist[n][2];
-    r0 = bondstore[n][0];
-    ep = bondstore[n][1];
 
     // Ensure pair is always ordered to ensure numerical operations
     // are identical to minimize the possibility that a bond straddling
@@ -207,18 +160,25 @@ void BondBPMSpringPlastic::compute(int eflag, int vflag)
       i2 = itmp;
     }
 
-    // If bond hasn't been set - should be initialized to zero
-    if (r0 < EPSILON || std::isnan(r0)) r0 = store_bond(n, i1, i2);
-
     delx = x[i1][0] - x[i2][0];
     dely = x[i1][1] - x[i2][1];
     delz = x[i1][2] - x[i2][2];
 
     rsq = delx * delx + dely * dely + delz * delz;
     r = sqrt(rsq);
+
+    // If bond hasn't been set (should be initialized to zero)
+    r0 = bondstore[n][0];
+    if (r0 < EPSILON || std::isnan(r0)) {
+      r0 = bondstore[n][0] = r;
+      bondstore[n][1] = 0.0;
+      process_new(n, i1, i2);
+    }
+    ep = bondstore[n][1];
+
     e = (r - r0) / r0;
 
-    if ((fabs(e) > ecrit[type]) && break_flag) {
+    if ((fabs(e) > ecrit[type]) && allow_breaks) {
       bondlist[n][2] = 0;
       process_broken(i1, i2);
       continue;
@@ -271,7 +231,7 @@ void BondBPMSpringPlastic::compute(int eflag, int vflag)
     if (evflag) ev_tally(i1, i2, nlocal, newton_bond, 0.0, fbond, delx, dely, delz);
   }
 
-  if (hybrid_flag) fix_bond_history->uncompress_history();
+  post_compute();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -432,7 +392,7 @@ double BondBPMSpringPlastic::single(int type, double rsq, int i, int j, double &
   if (type <= 0) return 0.0;
 
   // ep can be updated, so search bondlist vs. fix_bond_history->get_atom_value()
-  //   slower than other bpm/bond styles' single method...
+  //   slower than other bpm/bond styles' single method
   tagint *tag = atom->tag;
   int **bondlist = neighbor->bondlist;
   int nbondlist = neighbor->nbondlist;

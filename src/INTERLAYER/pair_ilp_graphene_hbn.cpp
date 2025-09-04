@@ -54,13 +54,14 @@ static const char cite_ilp[] =
     " year =    2018,\n"
     "}\n\n";
 
+namespace {
 // to indicate which potential style was used in outputs
-static std::map<int, std::string> variant_map = {
+std::map<int, const std::string> variant_map = {
     {PairILPGrapheneHBN::ILP_GrhBN, "ilp/graphene/hbn"},
     {PairILPGrapheneHBN::ILP_TMD, "ilp/tmd"},
     {PairILPGrapheneHBN::AIP_WATER_2DM, "aip/water/2dm"},
     {PairILPGrapheneHBN::SAIP_METAL, "saip/metal"}};
-
+}
 /* ---------------------------------------------------------------------- */
 
 PairILPGrapheneHBN::PairILPGrapheneHBN(LAMMPS *lmp) : Pair(lmp), variant(ILP_GrhBN)
@@ -165,7 +166,7 @@ void PairILPGrapheneHBN::settings(int narg, char **arg)
     error->all(FLERR, "Pair style ilp/graphene/hbn must be used as sub-style with hybrid/overlay");
 
   cut_global = utils::numeric(FLERR, arg[0], false, lmp);
-  if (narg == 2) tap_flag = utils::numeric(FLERR, arg[1], false, lmp);
+  if (narg == 2) tap_flag = utils::inumeric(FLERR, arg[1], false, lmp);
 }
 
 /* ----------------------------------------------------------------------
@@ -692,11 +693,11 @@ void PairILPGrapheneHBN::ILP_neigh()
     ILP_firstneigh[i] = neighptr;
     ILP_numneigh[i] = n;
     if (n > 3)
-      error->one(FLERR,
+      error->one(FLERR, Error::NOLASTLINE,
                  "There are too many neighbors for some atoms, please check your configuration");
 
     ipage->vgot(n);
-    if (ipage->status()) error->one(FLERR, "Neighbor list overflow, boost neigh_modify one");
+    if (ipage->status()) error->one(FLERR, Error::NOLASTLINE, "Neighbor list overflow, boost neigh_modify one" + utils::errorurl(36));
   }
 }
 
@@ -835,7 +836,7 @@ void PairILPGrapheneHBN::calc_normal()
       // the magnitude of the normal vector
       nn2 = n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2];
       nn = sqrt(nn2);
-      if (nn == 0) error->one(FLERR, "The magnitude of the normal vector is zero");
+      if (nn == 0) error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
       // the unit normal vector
       normal[i][0] = n1[0] / nn;
       normal[i][1] = n1[1] / nn;
@@ -970,7 +971,7 @@ void PairILPGrapheneHBN::calc_normal()
       // the magnitude of the normal vector
       nn2 = n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2];
       nn = sqrt(nn2);
-      if (nn == 0) error->one(FLERR, "The magnitude of the normal vector is zero");
+      if (nn == 0) error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
       // the unit normal vector
       normal[i][0] = n1[0] / nn;
       normal[i][1] = n1[1] / nn;
@@ -1007,7 +1008,7 @@ void PairILPGrapheneHBN::calc_normal()
         }
       }
     } else {
-      error->one(FLERR, "There are too many neighbors for calculating normals");
+      error->one(FLERR, Error::NOLASTLINE, "There are too many neighbors for calculating normals");
     }
 
     //##############################################################################################
