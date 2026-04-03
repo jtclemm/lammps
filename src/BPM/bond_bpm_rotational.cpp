@@ -1004,6 +1004,8 @@ void BondBPMRotational::coeff(int narg, char **arg)
 
 void BondBPMRotational::init_style()
 {
+  // History: [0]=ri_mag, [1-3]=ri_hat
+  //  if derivative damping: [4]=gamma, [5]=theta, [6]=psi
   if (damping_style == DEM)
     nhistory = 4;
   else
