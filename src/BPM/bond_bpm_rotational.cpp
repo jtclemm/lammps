@@ -120,8 +120,6 @@ BondBPMRotational::BondBPMRotational(LAMMPS *_lmp) :
   damping_style = DERIVATIVE;
 
   update_flag = 1;
-  // History: [0]=ri_mag, [1-3]=ri_hat
-  //  if derivative damping: [4]=gamma, [5]=theta, [6]=psi
   nhistory = 7;
   id_fix_bond_history = utils::strdup("HISTORY_BPM_COROTATIONAL");
 
@@ -826,12 +824,7 @@ void BondBPMRotational::dem_damping_forces(int i1, int i2, int type, double *r,
 
 void BondBPMRotational::compute(int eflag, int vflag)
 {
-  if (!fix_bond_history->stored_flag) {
-    fix_bond_history->stored_flag = true;
-    store_data();
-  }
-
-  if (hybrid_flag) fix_bond_history->compress_history();
+  pre_compute();
 
   int i1, i2, itmp, n, type;
   double ri_norm, ebond, breaking, smooth;
@@ -928,7 +921,7 @@ void BondBPMRotational::compute(int eflag, int vflag)
                    -force1on2[2], rf[0], rf[1], rf[2]);
   }
 
-  if (hybrid_flag) fix_bond_history->uncompress_history();
+  post_compute();
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1011,6 +1004,11 @@ void BondBPMRotational::coeff(int narg, char **arg)
 
 void BondBPMRotational::init_style()
 {
+  if (damping_style == DEM)
+    nhistory = 4;
+  else
+    nhistory = 7;
+
   BondBPM::init_style();
 
   if (!atom->quat_flag || !atom->radius_flag || !atom->omega_flag)
@@ -1061,9 +1059,6 @@ void BondBPMRotational::settings(int narg, char **arg)
       error->all(FLERR, "Illegal bond bpm command, invalid argument {}", arg[iarg]);
     }
   }
-
-  if (damping_style == DEM)
-    nhistory = 4;
 
   if (smooth_flag && !break_flag)
     error->all(FLERR, "Illegal bond bpm command, must turn off smoothing with break no option");
