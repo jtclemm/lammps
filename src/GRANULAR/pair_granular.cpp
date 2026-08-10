@@ -95,6 +95,8 @@ id_history = utils::strdup(std::string("NEIGH_HISTORY_GRANULAR") + std::to_strin
 
 PairGranular::~PairGranular()
 {
+  if (copymode) return;
+
   delete[] svector;
 
   if (!fix_history) modify->delete_fix(id_dummy);
@@ -492,7 +494,8 @@ void PairGranular::init_style()
   // this is so its order in the fix list is preserved
 
   if (use_history && fix_history == nullptr) {
-    fix_history = dynamic_cast<FixNeighHistory *>(modify->replace_fix(id_dummy, fmt::format("{} all NEIGH_HISTORY {}", id_history, size_history),1));
+    fix_history = dynamic_cast<FixNeighHistory *>(modify->replace_fix(
+        id_dummy, fmt::format("{} all {} {}", id_history, history_fix_style(), size_history), 1));
     fix_history->pair = this;
   } else if (use_history) {
     fix_history = dynamic_cast<FixNeighHistory *>(modify->get_fix_by_id(id_history));
@@ -557,6 +560,13 @@ void PairGranular::init_style()
 
   MPI_Allreduce(&onerad_dynamic[1],&maxrad_dynamic[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
   MPI_Allreduce(&onerad_frozen[1],&maxrad_frozen[1],atom->ntypes,MPI_DOUBLE,MPI_MAX,world);
+}
+
+/* ---------------------------------------------------------------------- */
+
+const char *PairGranular::history_fix_style() const
+{
+  return "NEIGH_HISTORY";
 }
 
 /* ----------------------------------------------------------------------

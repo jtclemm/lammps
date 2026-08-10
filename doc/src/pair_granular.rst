@@ -1,7 +1,10 @@
 .. index:: pair_style granular
+.. index:: pair_style granular/kk
 
 pair_style granular command
 ===========================
+
+Accelerator Variants: *granular/kk*
 
 Syntax
 """"""
@@ -1054,12 +1057,48 @@ These extra quantities can be accessed by the :doc:`compute pair/local
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Restrictions
 """"""""""""
 
 This pair style is part of the GRANULAR package.  It is only enabled if
 LAMMPS was built with that package.  See the :doc:`Build package
 <Build_package>` page for more info.
+
+The *granular/kk* style also requires the KOKKOS package.  Its model
+support matrix is:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Category
+     - Supported models
+     - Unsupported models
+   * - Normal
+     - *hooke*, *hertz*, *hertz/material*
+     - *mdr* and other normal models
+   * - Damping
+     - *none*, *velocity*, *mass_velocity*, *viscoelastic*, *tsuji*,
+       *coeff_restitution*
+     - *mdr* and other damping models
+   * - Tangential
+     - *none*, *linear_nohistory*, *linear_history*, *mindlin*,
+       *mindlin/force*
+     - *mindlin_rescale*, *mindlin_rescale/force*, and other tangential models
+   * - Rolling
+     - *none*, *sds*
+     - other rolling models
+   * - Twisting
+     - *none*, *sds*, *marshall*
+     - other twisting models
+   * - Heat
+     - *none*, *radius*, *area*
+     - other heat models
+
+Models requiring nondefault contact-history transfer are unsupported.
 
 This pair style requires that atoms store per-particle radius, torque,
 and angular velocity (omega) as defined by the :doc:`atom_style sphere

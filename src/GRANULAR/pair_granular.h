@@ -72,8 +72,9 @@ class PairGranular : public Pair {
   double *mass_rigid;      // rigid mass for owned+ghost atoms
   int nmax;                // allocated size of mass_rigid
 
-  void allocate();
+  virtual void allocate();
   void prune_models();
+  virtual const char *history_fix_style() const;
 
   int size_history;
   int heat_flag;
