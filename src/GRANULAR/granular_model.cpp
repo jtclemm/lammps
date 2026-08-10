@@ -249,10 +249,8 @@ void GranularModel::init()
   for (int i = 0; i < NSUBMODELS; i++)
     if (!sub_models[i]) construct_sub_model("none", (SubModelType) i);
 
-  // Must have valid normal, damping, and tangential models
+  // Must have a valid normal model
   if (normal_model->name == "none") error->all(FLERR, "Must specify normal granular model");
-  if (damping_model->name == "none") error->all(FLERR, "Must specify damping granular model");
-  if (tangential_model->name == "none") error->all(FLERR, "Must specify tangential granular model");
 
   // Twisting, rolling, and heat are optional
   twisting_defined = rolling_defined = heat_defined = 1;
