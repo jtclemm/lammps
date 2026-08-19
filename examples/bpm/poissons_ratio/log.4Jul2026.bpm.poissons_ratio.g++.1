@@ -1,6 +1,8 @@
-LAMMPS (19 Nov 2024 - Development - patch_19Nov2024-1028-g800a5f6310-modified)
-# Squish three pillars with different Poisson's ratios
-# from left to right, nu ~ 0.5, nu = 0.25 nu ~ 0, nu << 0
+LAMMPS (4 Jul 2026 - Development - patch_4Jul2026-315-g31083a2623-modified)
+# Squish four pillars with different Poisson's ratios
+#   going from nearly incompressible to auxetic
+#   from left to right, nu ~ 0.5, 0.25, 0, <0
+#   calibration from DOI: 10.1039/d3sm01373a
 
 units           lj
 dimension       3
@@ -12,12 +14,12 @@ comm_modify     vel yes cutoff 2.6
 lattice         fcc 1.41
 Lattice spacing in x,y,z = 1.4156209 1.4156209 1.4156209
 region          box block 0 20 -10 10 -1 21 units box
-create_box      4 box bond/types 4 extra/bond/per/atom 20 extra/special/per/atom 50
+create_box      4 box bond/types 4 extra/bond/per/atom 20
 Created orthogonal box = (0 -10 -1) to (20 10 21)
   1 by 1 by 1 MPI processor grid
 mass            * 1.0
 
-# Create roughly jammed initial disordered geometry
+# Create initial disordered geometry somewhat near jamming
 
 region          pillar cylinder z 10.0 0.0 7.0 0.0 20.0 units box
 region          pillarw cylinder z 10.0 0.0 8.0 -1.0 21.0 units box
@@ -52,7 +54,7 @@ Neighbor list info ...
       pair build: half/bin/newton
       stencil: half/bin/3d
       bin: standard
-Per MPI rank memory allocation (min/avg/max) = 9.863 | 9.863 | 9.863 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 6.738 | 6.738 | 6.738 Mbytes
    Step         KinEng         PotEng          Pxx            Pyy            Pzz      
          0   0.1499655      0              0.055275974    0.054026613    0.05516469   
        100   0.0045460156   0.0041409796   0.020750379    0.02025897     0.02055488   
@@ -255,21 +257,21 @@ Per MPI rank memory allocation (min/avg/max) = 9.863 | 9.863 | 9.863 Mbytes
      19800   2.2007283e-05  2.721852e-08   4.5939302e-05  4.5327011e-05  3.3411556e-05
      19900   2.2007538e-05  2.6295204e-08  4.5722301e-05  4.441743e-05   3.4023953e-05
      20000   2.2006515e-05  2.6089093e-08  4.4621124e-05  4.5449725e-05  3.2126359e-05
-Loop time of 7.03939 on 1 procs for 20000 steps with 4348 atoms
+Loop time of 10.0085 on 1 procs for 20000 steps with 4348 atoms
 
-Performance: 24547586.015 tau/day, 2841.156 timesteps/s, 12.353 Matom-step/s
-99.8% CPU use with 1 MPI tasks x no OpenMP threads
+Performance: 17265389.987 tau/day, 1998.309 timesteps/s, 8.689 Matom-step/s
+83.9% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 4.55       | 4.55       | 4.55       |   0.0 | 64.64
-Bond    | 0.00067765 | 0.00067765 | 0.00067765 |   0.0 |  0.01
-Neigh   | 0.3745     | 0.3745     | 0.3745     |   0.0 |  5.32
-Comm    | 0.013687   | 0.013687   | 0.013687   |   0.0 |  0.19
-Output  | 0.006889   | 0.006889   | 0.006889   |   0.0 |  0.10
-Modify  | 1.9222     | 1.9222     | 1.9222     |   0.0 | 27.31
-Other   |            | 0.1715     |            |       |  2.44
+Pair    | 4.4599     | 4.4599     | 4.4599     |   0.0 | 44.56
+Bond    | 0.00093146 | 0.00093146 | 0.00093146 |   0.0 |  0.01
+Neigh   | 0.41997    | 0.41997    | 0.41997    |   0.0 |  4.20
+Comm    | 0.014705   | 0.014705   | 0.014705   |   0.0 |  0.15
+Output  | 1.5878     | 1.5878     | 1.5878     |   0.0 | 15.86
+Modify  | 3.3609     | 3.3609     | 3.3609     |   0.0 | 33.58
+Other   |            | 0.1642     |            |       |  1.64
 
 Nlocal:           4348 ave        4348 max        4348 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
@@ -296,7 +298,7 @@ Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        1        1       
   special bond factors coul:  0        1        1       
      0 = max # of 1-2 neighbors
-   101 = max # of special neighbors
+     1 = max # of special neighbors
   special bonds CPU = 0.001 seconds
   replicate CPU = 0.003 seconds
 
@@ -351,12 +353,12 @@ Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        1        1       
   special bond factors coul:  0        1        1       
     19 = max # of 1-2 neighbors
-   101 = max # of special neighbors
+    19 = max # of special neighbors
   special bonds CPU = 0.002 seconds
 create_bonds    many p2 p2 2 0.0 1.5
 Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
-WARNING: Bonds are defined but no bond style is set (../force.cpp:197)
-WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:199)
+WARNING: Bonds are defined but no bond style is set (../force.cpp:198)
+WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:200)
 Neighbor list info ...
   update: every = 1 steps, delay = 0 steps, check = yes
   max neighbors/atom: 2000, page size: 100000
@@ -379,12 +381,12 @@ Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        1        1       
   special bond factors coul:  0        1        1       
     19 = max # of 1-2 neighbors
-   101 = max # of special neighbors
+    19 = max # of special neighbors
   special bonds CPU = 0.003 seconds
 create_bonds    many p3 p3 3 0.0 1.5
 Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
-WARNING: Bonds are defined but no bond style is set (../force.cpp:197)
-WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:199)
+WARNING: Bonds are defined but no bond style is set (../force.cpp:198)
+WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:200)
 Neighbor list info ...
   update: every = 1 steps, delay = 0 steps, check = yes
   max neighbors/atom: 2000, page size: 100000
@@ -407,12 +409,12 @@ Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        1        1       
   special bond factors coul:  0        1        1       
     19 = max # of 1-2 neighbors
-   101 = max # of special neighbors
+    19 = max # of special neighbors
   special bonds CPU = 0.004 seconds
 create_bonds    many p4 p4 4 0.0 1.5
 Generated 0 of 6 mixed pair_coeff terms from geometric mixing rule
-WARNING: Bonds are defined but no bond style is set (../force.cpp:197)
-WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:199)
+WARNING: Bonds are defined but no bond style is set (../force.cpp:198)
+WARNING: Likewise 1-2 special neighbor interactions != 1.0 (../force.cpp:200)
 Neighbor list info ...
   update: every = 1 steps, delay = 0 steps, check = yes
   max neighbors/atom: 2000, page size: 100000
@@ -435,8 +437,8 @@ Finding 1-2 1-3 1-4 neighbors ...
   special bond factors lj:    0        1        1       
   special bond factors coul:  0        1        1       
     19 = max # of 1-2 neighbors
-   101 = max # of special neighbors
-  special bonds CPU = 0.005 seconds
+    19 = max # of special neighbors
+  special bonds CPU = 0.006 seconds
 
 neighbor        0.3 bin
 special_bonds   lj 0.0 1.0 1.0 coul 1.0 1.0 1.0
@@ -463,7 +465,7 @@ fix             3 top setforce 0.0 0.0 0.0
 compute         zmax all reduce max z
 
 thermo_style    custom step ke pe pxx pyy pzz c_zmax
-dump            1 all custom 100 atomDump id type x y z
+#dump            1 all custom 100 atomDump id type x y z
 
 run             10000
 
@@ -471,7 +473,7 @@ CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE-CITE
 
 Your simulation uses code contributions which should be cited:
 
-- BPM bond style: doi:10.1039/D3SM01373A
+- BPM bond style: https://doi.org/10.1039/D3SM01373A
 
 @Article{Clemmer2024,
  author =  {Clemmer, Joel T. and Monti, Joseph M. and Lechman, Jeremy B.},
@@ -499,7 +501,7 @@ Neighbor list info ...
       pair build: half/bin/newton
       stencil: half/bin/3d
       bin: standard
-Per MPI rank memory allocation (min/avg/max) = 33.55 | 33.55 | 33.55 Mbytes
+Per MPI rank memory allocation (min/avg/max) = 23.8 | 23.8 | 23.8 Mbytes
    Step         KinEng         PotEng          Pxx            Pyy            Pzz           c_zmax    
      20000   7.3311514e-07  0              5.5082149e-05  5.6035691e-05  0.00016879881  20.000342    
      20100   3.1226194e-06  4.1766539e-06 -0.00013996263 -0.00014393529  0.0029331928   19.964952    
@@ -602,21 +604,21 @@ Per MPI rank memory allocation (min/avg/max) = 33.55 | 33.55 | 33.55 Mbytes
      29800   2.3513205e-06  0.032167468   -0.010835186   -0.010613742    0.24331694     16.532071    
      29900   2.3500682e-06  0.03277985    -0.010874694   -0.010649336    0.2449217      16.496681    
      30000   2.348814e-06   0.033396866   -0.010912585   -0.010683036    0.24650812     16.46129     
-Loop time of 96.3898 on 1 procs for 10000 steps with 17392 atoms
+Loop time of 89.9975 on 1 procs for 10000 steps with 17392 atoms
 
-Performance: 896360.661 tau/day, 103.745 timesteps/s, 1.804 Matom-step/s
-99.8% CPU use with 1 MPI tasks x no OpenMP threads
+Performance: 960026.857 tau/day, 111.114 timesteps/s, 1.932 Matom-step/s
+99.7% CPU use with 1 MPI tasks x no OpenMP threads
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Pair    | 2.4048     | 2.4048     | 2.4048     |   0.0 |  2.49
-Bond    | 89.472     | 89.472     | 89.472     |   0.0 | 92.82
-Neigh   | 0.25526    | 0.25526    | 0.25526    |   0.0 |  0.26
-Comm    | 0.0489     | 0.0489     | 0.0489     |   0.0 |  0.05
-Output  | 1.6355     | 1.6355     | 1.6355     |   0.0 |  1.70
-Modify  | 1.8578     | 1.8578     | 1.8578     |   0.0 |  1.93
-Other   |            | 0.7153     |            |       |  0.74
+Pair    | 2.2294     | 2.2294     | 2.2294     |   0.0 |  2.48
+Bond    | 85.17      | 85.17      | 85.17      |   0.0 | 94.64
+Neigh   | 0.26155    | 0.26155    | 0.26155    |   0.0 |  0.29
+Comm    | 0.036585   | 0.036585   | 0.036585   |   0.0 |  0.04
+Output  | 0.015578   | 0.015578   | 0.015578   |   0.0 |  0.02
+Modify  | 1.7021     | 1.7021     | 1.7021     |   0.0 |  1.89
+Other   |            | 0.582      |            |       |  0.65
 
 Nlocal:          17392 ave       17392 max       17392 min
 Histogram: 1 0 0 0 0 0 0 0 0 0
@@ -630,6 +632,4 @@ Ave neighs/atom = 5.9028289
 Ave special neighs/atom = 13.444802
 Neighbor list builds = 23
 Dangerous builds = 0
- 10000
-ERROR: Unknown command:  10000 (../input.cpp:314)
-Last input line: 10000
+Total wall time: 0:01:40
