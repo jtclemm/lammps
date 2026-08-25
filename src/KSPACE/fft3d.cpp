@@ -627,9 +627,6 @@ void fft_3d_destroy_plan(struct fft_plan_3d *plan)
   FFTW_API(destroy_plan)(plan->plan_mid_backward);
   FFTW_API(destroy_plan)(plan->plan_fast_forward);
   FFTW_API(destroy_plan)(plan->plan_fast_backward);
-#if defined(FFT_FFTW_THREADS)
-  FFTW_API(cleanup_threads)();
-#endif
 #else
   if (plan->cfg_slow_forward != plan->cfg_fast_forward &&
       plan->cfg_slow_forward != plan->cfg_mid_forward) {
