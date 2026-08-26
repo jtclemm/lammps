@@ -631,6 +631,8 @@ void PPPM::reset_grid()
 {
   // free all arrays previously allocated
 
+  int peratom_flag = peratom_allocate_flag;
+
   deallocate();
   if (peratom_allocate_flag) deallocate_peratom();
   if (group_allocate_flag) deallocate_groups();
@@ -641,9 +643,9 @@ void PPPM::reset_grid()
 
   // reallocate K-space dependent memory
   // check if grid communication is now overlapping if not allowed
-  // don't invoke allocate peratom() or group(), will be allocated when needed
 
   allocate();
+  if (peratom_flag) allocate_peratom();
 
   if (!overlap_allowed && !gc->ghost_adjacent())
     error->all(FLERR,"PPPM grid stencil extends beyond nearest neighbor processor");
@@ -937,6 +939,7 @@ void PPPM::allocate()
 void PPPM::deallocate()
 {
   delete gc;
+  gc = nullptr;
   memory->destroy(gc_buf1);
   memory->destroy(gc_buf2);
 
@@ -980,8 +983,11 @@ void PPPM::deallocate()
   memory->destroy2d_offset(drho_coeff,(1-order_allocated)/2);
 
   delete fft1;
+  fft1 = nullptr;
   delete fft2;
+  fft2 = nullptr;
   delete remap;
+  remap = nullptr;
 }
 
 /* ----------------------------------------------------------------------
