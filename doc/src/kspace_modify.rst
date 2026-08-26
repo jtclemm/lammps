@@ -11,7 +11,7 @@ Syntax
    kspace_modify keyword value ...
 
 * one or more keyword/value pairs may be listed
-* keyword = *collective* or *collective/self/copy* or *nonblocking* or *compute* or *cutoff/adjust* or *diff* or *disp/auto* or *fftbench* or *force/disp/kspace* or *force/disp/real* or *force* or *gewald/disp* or *gewald* or *kmax/ewald* or *mesh* or *minorder* or *mix/disp* or *order/disp* or *order* or *overlap* or *scafacos* or *slab* or *splittol* or *wire*
+* keyword = *collective* or *collective/self/copy* or *nonblocking* or *compute* or *cutoff/adjust* or *diff* or *disp/auto* or *fftbench* or *force/disp/kspace* or *force/disp/real* or *force* or *gewald/disp* or *gewald* or *kmax/ewald* or *mesh* or *minorder* or *mix/disp* or *order/disp* or *order* or *overlap* or *rebuild/mesh* or *scafacos* or *slab* or *splittol* or *wire*
 
   .. parsed-literal::
 
@@ -45,6 +45,9 @@ Syntax
          N = extent of Gaussian for PPPM mapping of dispersion term to grid
        *overlap* = *yes* or *no* = whether the grid stencil for PPPM is allowed to overlap into more than the nearest-neighbor processor
        *pressure/scalar* value = *yes* or *no*
+       *rebuild/mesh* values = option value
+         option = step or strain
+         value = threshold for either criteria (no units)
        *scafacos* values = option value1 value2 ...
          option = *tolerance*
            value = *energy* or *energy_rel* or *field* or *field_rel* or *potential* or *potential_rel*
@@ -351,6 +354,18 @@ relationship between the Coulombic energy and pressure :ref:`(Hummer) <Hummer>`
 instead of using the virial equation. This option cannot be used to access
 individual components of the pressure tensor, to compute per-atom virial,
 or with suffix kspace/pair styles of MSM, like OMP or GPU.
+
+----------
+
+The *rebuild/mesh* keyword is only applicable to pppm. If used, the
+mesh will be rebuilt when the specified criterion is met. The first
+option is *step*, in which the mesh is regularly rebuilt based on the
+specified interval number of time stepsnumber of steps. The second
+option is *strain*, in which the mesh is rebuilt whenever any of
+the box dimensions (or triclinic tilts) strain beyond the specified
+threshold. When the mesh is rebuilt, the current box shape is saved
+such that strains are measured relative to the shape of the box when
+the mesh was last rebuilt.
 
 ----------
 

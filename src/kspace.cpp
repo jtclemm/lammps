@@ -94,6 +94,9 @@ KSpace::KSpace(LAMMPS *lmp) :
   maxeatom = maxvatom = 0;
   centroidstressflag = CENTROID_NOTAVAIL;
 
+  rebuild_step = -1;
+  rebuild_strain = -1;
+
   execution_space = Host;
   datamask_read = ALL_MASK;
   datamask_modify = ALL_MASK;
@@ -648,6 +651,14 @@ void KSpace::modify_params(int narg, char **arg)
       if (iarg+2 > narg) utils::missing_cmd_args(FLERR,"kspace_modify disp/auto", error);
       auto_disp_flag = utils::logical(FLERR,arg[iarg+1],false,lmp);
       iarg += 2;
+    } else if (strcmp(arg[iarg], "rebuild/mesh") == 0) {
+      if (iarg+3 > narg) utils::missing_cmd_args(FLERR,"kspace_modify rebuild/mesh", error);
+      if (strcmp(arg[iarg+1], "step") == 0) {
+        rebuild_step = utils::inumeric(FLERR,arg[iarg+2],false,lmp);
+      } else if (strcmp(arg[iarg+1], "strain") == 0) {
+        rebuild_strain = utils::numeric(FLERR,arg[iarg+2],false,lmp);
+      }
+      iarg += 3;
     } else {
       int n = modify_param(narg-iarg,&arg[iarg]);
       if (n == 0)

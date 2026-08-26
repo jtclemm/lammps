@@ -77,6 +77,8 @@ class PPPM : public KSpace {
   double sf_coeff[6];    // coefficients for calculating ad self-forces
   double **acons;
 
+  double h_saved[6];
+
   // FFTs and grid communication
 
   class FFT3d *fft1, *fft2;

@@ -115,6 +115,8 @@ class KSpace : protected Pointers {
                                // charges separated by 1 Angstrom
 
   double g_ewald, g_ewald_6;
+  int rebuild_step;
+  double rebuild_strain;
 
   // Parameters required for ESP methods (automatically determined based on the user-specified force accuracy)
 

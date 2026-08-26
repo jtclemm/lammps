@@ -35,6 +35,7 @@
 #include "neighbor.h"
 #include "pair.h"
 #include "remap_wrap.h"
+#include "update.h"
 
 #include <cmath>
 #include <cstring>
@@ -635,8 +636,8 @@ void PPPM::reset_grid()
   if (peratom_allocate_flag) deallocate_peratom();
   if (group_allocate_flag) deallocate_groups();
 
-  // reset portion of global grid that each proc owns
-
+  // recompute global and local grid decomposition
+  set_grid_global();
   set_grid_local();
 
   // reallocate K-space dependent memory
@@ -658,6 +659,10 @@ void PPPM::reset_grid()
   // pre-compute volume-dependent coeffs for portion of grid I now own
 
   setup();
+
+  // copy domain shape matrix to test for changes
+
+  for (int i = 0; i < 6; i++) h_saved[i] = domain->h[i];
 }
 
 /* ----------------------------------------------------------------------
@@ -674,6 +679,26 @@ void PPPM::compute(int eflag, int vflag)
   ev_init(eflag,vflag);
 
   if (evflag_atom && !peratom_allocate_flag) allocate_peratom();
+
+  // if box resized, check if grid needs to be rebuilt
+  int rebuild = 0;
+  if (rebuild_step != -1 && (update->ntimestep % (rebuild_step) == 0))
+    rebuild = 1;
+  if (rebuild_strain != -1) {
+    double *h = domain->h;
+    for (i = 0; i < 3; i++)
+      if (fabs(h_saved[i] - h[i]) / h_saved[i] >= rebuild_strain)
+        rebuild = 1;
+
+    if (fabs(h_saved[3] - h[3]) / h[2]) rebuild = 1; // yz
+    if (fabs(h_saved[4] - h[4]) / h[2]) rebuild = 1; // xz
+    if (fabs(h_saved[5] - h[5]) / h[1]) rebuild = 1; // xy
+  }
+
+  if (update->setupflag) rebuild = 0;
+  if (rebuild) {
+    reset_grid();
+  }
 
   // if atom count has changed, update qsum and qsqsum
 
@@ -937,6 +962,7 @@ void PPPM::allocate()
 void PPPM::deallocate()
 {
   delete gc;
+  gc = nullptr;
   memory->destroy(gc_buf1);
   memory->destroy(gc_buf2);
 
@@ -980,8 +1006,11 @@ void PPPM::deallocate()
   memory->destroy2d_offset(drho_coeff,(1-order_allocated)/2);
 
   delete fft1;
+  fft1 = nullptr;
   delete fft2;
+  fft2 = nullptr;
   delete remap;
+  remap = nullptr;
 }
 
 /* ----------------------------------------------------------------------
