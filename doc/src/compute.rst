@@ -208,6 +208,7 @@ The individual style names on the :doc:`Commands compute <Commands_compute>` pag
 * :doc:`cnp/atom <compute_cnp_atom>` - common neighborhood parameter (CNP) for each atom
 * :doc:`com <compute_com>` - center of mass of group of atoms
 * :doc:`com/chunk <compute_com_chunk>` - center of mass for each chunk
+* :doc:`continuum/chunk <compute_continuum_chunk>` - coarse-grained continuum fields for each chunk
 * :doc:`composition/atom <compute_composition_atom>` - local composition for each atom
 * :doc:`contact/atom <compute_contact_atom>` - contact count for each spherical particle
 * :doc:`coord/atom <compute_coord_atom>` - coordination number for each atom

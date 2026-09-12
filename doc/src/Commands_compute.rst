@@ -32,6 +32,7 @@ OPT.
    * :doc:`cnp/atom (o) <compute_cnp_atom>`
    * :doc:`com <compute_com>`
    * :doc:`com/chunk <compute_com_chunk>`
+   * :doc:`continuum/chunk <compute_continuum_chunk>`
    * :doc:`composition/atom (k) <compute_composition_atom>`
    * :doc:`contact/atom <compute_contact_atom>`
    * :doc:`coord/atom (ko) <compute_coord_atom>`

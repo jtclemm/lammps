@@ -945,6 +945,41 @@ void ComputeChunkAtom::compute_ichunk()
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
+int ComputeChunkAtom::get_which() const
+{
+  return which;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int *ComputeChunkAtom::get_dim()
+{
+  return dim;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int *ComputeChunkAtom::get_nlayers()
+{
+  return nlayers;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double *ComputeChunkAtom::get_delta()
+{
+  return delta;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int ComputeChunkAtom::get_reducedflag() const
+{
+  return scaleflag == REDUCED;
+}
+
 /* ----------------------------------------------------------------------
    setup chunks
    return nchunk = # of chunks

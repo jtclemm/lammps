@@ -376,6 +376,7 @@ bodystyle
 Bogaerts
 Bogoliubov
 Bogusz
+Bokhove
 Bohrs
 boltz
 Bomont
@@ -1490,6 +1491,7 @@ Goedecker
 Goerigk
 Goga
 Goldfarb
+Goldhirsch
 Gompper
 Gonzalez-Melchor
 Goodsell
@@ -4501,6 +4503,7 @@ wca
 webpage
 Weckner
 WeinanE
+Weinhart
 Wennberg
 Westmere
 Westview

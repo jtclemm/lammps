@@ -518,6 +518,8 @@
 /compute_adf.h
 /compute_contact_atom.cpp
 /compute_contact_atom.h
+/compute_continuum_chunk.cpp
+/compute_continuum_chunk.h
 /compute_hexorder_atom.cpp
 /compute_hexorder_atom.h
 /dump_dcd.cpp
@@ -1985,4 +1987,3 @@
 /pair_bondval.h
 /pair_bondval_vec.cpp
 /pair_bondval_vec.h
-

@@ -91,6 +91,7 @@ values.  Any compute whose style name ends in "/chunk" is in this
 category:
 
 * :doc:`compute com/chunk <compute_com_chunk>`
+* :doc:`compute continuum/chunk <compute_continuum_chunk>`
 * :doc:`compute gyration/chunk <compute_gyration_chunk>`
 * :doc:`compute inertia/chunk <compute_inertia_chunk>`
 * :doc:`compute msd/chunk <compute_msd_chunk>`
@@ -101,11 +102,12 @@ category:
 
 They each take the ID of a :doc:`compute chunk/atom
 <compute_chunk_atom>` command as input.  As their names indicate, they
-calculate the center-of-mass, radius of gyration, moments of inertia,
-mean-squared displacement, temperature, torque, and velocity of
-center-of-mass for each chunk of atoms.  The :doc:`compute
-property/chunk <compute_property_chunk>` command can tally the count of
-atoms in each chunk and extract other per-chunk properties.
+calculate the center-of-mass, coarse-grained continuum fields, radius
+of gyration, moments of inertia, mean-squared displacement,
+temperature, torque, and velocity of center-of-mass for each chunk of
+atoms.  The :doc:`compute property/chunk <compute_property_chunk>`
+command can tally the count of atoms in each chunk and extract other
+per-chunk properties.
 
 The reason these various calculations are not part of the :doc:`fix
 ave/chunk command <fix_ave_chunk>`, is that each requires a more

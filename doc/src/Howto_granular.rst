@@ -50,6 +50,14 @@ The compute
 calculates various versions of the fabric tensor for granular and
 non-granular pair styles.
 
+The compute
+
+* :doc:`compute continuum/chunk <compute_continuum_chunk>`
+
+calculates coarse-grained continuum fields on spatial chunks and can be
+combined with :doc:`fix ave/time <fix_ave_time>` for time averaging and
+file output.
+
 Use one of these 4 pair potentials, which compute forces and torques
 between interacting pairs of particles:
 

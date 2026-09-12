@@ -48,6 +48,11 @@ class ComputeChunkAtom : public Compute {
   void unlock(class Fix *) override;
   int setup_chunks();
   void compute_ichunk();
+  int get_which() const;
+  int *get_dim();
+  int *get_nlayers();
+  double *get_delta();
+  int get_reducedflag() const;
 
  private:
   int which, binflag;
