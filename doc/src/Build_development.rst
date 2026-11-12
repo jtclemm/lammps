@@ -4,9 +4,152 @@ Development build options
 The build procedures in LAMMPS offers a few extra options which are
 useful during development, testing or debugging.
 
+.. contents::
+   :local:
+
 ----------
 
-.. _compilation:
+.. _ninja_ccache:
+
+Faster compilation with Ninja and ccache (CMake only)
+-----------------------------------------------------
+
+LAMMPS is a large software package, and compiling it with many packages
+enabled can take a long time.  During development, LAMMPS is typically
+re-compiled many times: after small changes, after switching between
+branches, or in multiple build folders with different settings.  Two
+tools can reduce the time spent waiting for the compilation
+considerably: the `Ninja build tool <https://ninja-build.org/>`_ and the
+`ccache compiler cache <https://ccache.dev/>`_.  Both are available as
+packages for all common Linux distributions and for macOS, e.g.:
+
+.. code-block:: bash
+
+   sudo dnf install ninja-build ccache    # Fedora (RHEL and compatible: with EPEL)
+   sudo apt install ninja-build ccache    # Debian, Ubuntu, and compatible
+   brew install ninja ccache              # macOS with Homebrew
+
+Ninja is also available for Windows.  It is included with Visual Studio,
+and building LAMMPS with CMake inside Visual Studio uses it (see
+:doc:`Build_windows`).
+
+The Ninja build tool
+^^^^^^^^^^^^^^^^^^^^
+
+By default, CMake on Linux and macOS generates build files for the
+``make`` program.  With the ``-G Ninja`` flag, CMake generates build
+files for Ninja instead.  The build command remains the same:
+
+.. code-block:: bash
+
+   cmake -S cmake -B build -G Ninja -C cmake/presets/most.cmake
+   cmake --build build
+
+Ninja is designed for speed: it determines much faster than ``make``
+which files need to be re-compiled, which is particularly noticeable
+when only a few files have changed, and it automatically runs as many
+compilation tasks in parallel as there are CPU cores available.  The
+number of parallel tasks can be limited with ``cmake --build build -j
+N``, e.g. when compiling source files that require a lot of memory (like
+KOKKOS package styles for GPUs) on a machine with limited RAM.
+
+The generator is selected when a build folder is configured for the
+first time and cannot be changed afterwards.  To switch an existing
+build folder to Ninja, either use a new folder or add the ``--fresh``
+flag, which discards all previous settings, so that all options have to
+be provided again:
+
+.. code-block:: bash
+
+   cmake --fresh -S cmake -B build -G Ninja -C cmake/presets/most.cmake
+
+The ccache compiler cache
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ccache program stores the result of each compilation in a cache.
+When the same source file is compiled again with the same compiler and
+the same settings, the stored result is used instead of running the
+compiler again, which takes only a small fraction of the time.  This
+happens frequently during development, e.g. after switching to a
+different branch and back, during a ``git bisect`` session, after
+deleting a build folder, or when compiling in a second build folder with
+the same settings.  For example, on a machine with 16 CPU cores,
+compiling LAMMPS with the ``most`` preset in a new build folder took
+about 4 minutes with an empty cache, but only 11 seconds when all
+results were already in the cache.
+
+There are several ways to make CMake use ccache:
+
+- Set the compiler launcher variables on the CMake command line
+  (recommended):
+
+  .. code-block:: bash
+
+     cmake -S cmake -B build -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+           -D CMAKE_C_COMPILER_LAUNCHER=ccache [more options]
+
+  When compiling packages with Fortran code, also add ``-D
+  CMAKE_Fortran_COMPILER_LAUNCHER=ccache``.
+
+- Put the same settings into a small preset file, e.g. ``ccache.cmake``,
+  and load it with ``-C ccache.cmake``, optionally together with other
+  preset files:
+
+  .. code-block:: cmake
+
+     set(CMAKE_CXX_COMPILER_LAUNCHER ccache CACHE STRING "" FORCE)
+     set(CMAKE_C_COMPILER_LAUNCHER ccache CACHE STRING "" FORCE)
+     set(CMAKE_Fortran_COMPILER_LAUNCHER ccache CACHE STRING "" FORCE)
+
+- Set environment variables with the same names, e.g. ``export
+  CMAKE_CXX_COMPILER_LAUNCHER=ccache``.  CMake uses them as defaults
+  when a build folder is configured for the first time.
+
+- Place the folder with the ccache compiler wrappers first in the
+  ``PATH`` environment variable.  This folder contains links named like
+  compilers (``gcc``, ``g++``, ``cc``, ``c++``, and so on) that call
+  ccache.  On Fedora, this is set up automatically for all users when
+  ccache is installed, using the folder ``/usr/lib64/ccache``.  On
+  Debian and Ubuntu, the folder ``/usr/lib/ccache`` has to be added to
+  ``PATH`` manually.  CMake then reports the compiler as, e.g.,
+  ``/usr/lib64/ccache/c++``.  Since CMake remembers the compiler path,
+  this has to be set up *before* a build folder is configured.
+
+The command ``ccache -s`` shows statistics, including how many
+compilations were taken from the cache ("hits").  With ``ccache -z``
+the statistics are reset, e.g. to see the effect for a single build.
+
+The default settings of ccache can be adjusted for a project of the size
+of LAMMPS (all settings are remembered in the ccache configuration file,
+``ccache --show-config`` displays them):
+
+- **Increase the cache size**: by default, ccache limits the cache size
+  to 5 GB and removes the oldest entries when this limit is reached.  A
+  single build with the ``most`` preset uses about 0.25 GB of cache
+  storage, and with the KOKKOS package (OpenMP) added, it is about 0.85
+  GB.  However, the cache accumulates results from multiple
+  configurations (serial, MPI, debug, KOKKOS, different compilers) and
+  from different branches, so a limit of 20 GB or more is recommended:
+  ``ccache --max-size=20G``.
+
+- **Use fast local storage**: by default, the cache is stored in your
+  home folder.  Placing it on a fast SSD speeds up storing and
+  retrieving results.  On HPC clusters, home folders are usually on
+  network file systems, so a local or scratch file system is the better
+  choice: ``ccache --set-config=cache_dir=/path/to/fast/storage/ccache``.
+
+- **Share results between multiple checkouts**: CMake uses absolute
+  paths, so compilations from different LAMMPS source folders (e.g.
+  multiple clones, or folders created with ``git worktree``) cannot use
+  each other's results by default.  Setting the ``base_dir`` option to a
+  common parent folder, e.g. ``ccache --set-config=base_dir=$HOME``,
+  makes ccache use relative paths for files inside that folder, so that
+  results can be shared.
+
+Please see the `ccache documentation <https://ccache.dev/documentation.html>`_
+for more details.
+
+----------
 
 Monitor compilation flags (CMake only)
 --------------------------------------
@@ -17,18 +160,16 @@ compilation you can use the following option.
 
 .. code-block:: bash
 
-   -D CMAKE_VERBOSE_MAKEFILE=value    # value = no (default) or yes
+   -D CMAKE_VERBOSE_MAKEFILE=value    # value = off (default) or on
 
-Another way of doing this without reconfiguration is calling make with
-variable VERBOSE set to 1:
+Another way of doing this without reconfiguration is adding the
+``--verbose`` flag to the build command:
 
 .. code-block:: bash
 
-   make VERBOSE=1
+   cmake --build build --verbose
 
 ----------
-
-.. _iwyu_processing:
 
 Report missing and unneeded '#include' statements (CMake only)
 --------------------------------------------------------------
@@ -49,22 +190,20 @@ during CMake configuration.
 
 .. code-block:: bash
 
-   -D ENABLE_IWYU=value    # value = no (default) or yes
+   -D ENABLE_IWYU=value    # value = off (default) or on
 
 This will check if the required binary (include-what-you-use or iwyu)
-and python script script (iwyu-tool or iwyu_tool or iwyu_tool.py) can
-be found in the path.  The analysis can then be started with:
+and python script (iwyu-tool or iwyu_tool or iwyu_tool.py) can be found
+in the path.  The analysis can then be started with:
 
 .. code-block:: bash
 
-   make iwyu
+   cmake --build build --target iwyu
 
 This may first run some compilation, as the analysis is dependent
 on recording all commands required to do the compilation.
 
 ----------
-
-.. _sanitizer:
 
 Address, Leak, Undefined Behavior, and Thread Sanitizer Support (CMake only)
 ----------------------------------------------------------------------------
@@ -100,11 +239,13 @@ compilation and linking stages.  This is done through setting the
 Code Coverage and Unit Testing (CMake only)
 -------------------------------------------
 
-The LAMMPS code is subject to multiple levels of automated testing
-during development:
+The LAMMPS code is subject to multiple levels of automated testing when
+pull requests are submitted to `the LAMMPS repository on GitHub
+<https://github.com/lammps/lammps/pulls>`_:
 
-- Integration testing (i.e. whether the code compiles
-  on various platforms and with a variety of compilers and settings),
+- Coding style compliance (see :ref:`Coding style utilities <coding-style>`)
+- Integration testing (i.e. whether the code compiles on multiple
+  platforms and with a variety of compilers and settings),
 - Unit testing (i.e. whether certain functions or classes of the code
   produce the expected results for given inputs),
 - Run testing (i.e. whether selected input decks can run to completion
@@ -113,30 +254,38 @@ during development:
   same results over a given number of steps and operations within a
   given error margin).
 
-The status of this automated testing can be viewed on `https://ci.lammps.org
-<https://ci.lammps.org>`_.
-
-The scripts and inputs for integration, run, and legacy regression
-testing are maintained in a `separate repository
-<https://github.com/lammps/lammps-testing>`_ of the LAMMPS project on
-GitHub.  A few tests are also run as GitHub Actions and their
+The tests are currently run in part as GitHub Actions and their
 configuration files are in the ``.github/workflows/`` folder of the
-LAMMPS git tree.
+LAMMPS git tree. Extensive unit testing is also run on the CI testing
+cluster at Temple University which uses `buildbot <buildbot.net>`_.  You
+can see the status of the CI testing cluster at http://ci.lammps.org/.
+The test status of all these tests is reported with the corresponding
+pull request and the pull request *cannot* be merged without all tests
+passing.
+
+In addition, there is a nightly test run using the ``develop`` branch to
+generate code coverage data for the included tests (see below), provided
+there have been changes to that tree.  The results of this test run can
+be currently viewed at https://download.lammps.org/coverage/tests.html
 
 Regression tests can also be performed locally with the :ref:`regression
-tester tool <regression>`.  The tool checks if a given LAMMPS binary run
-with selected input examples produces thermo output that is consistent
-with the provided log files.  The script can be run in one pass over all
-available input files, but it can also first create multiple lists of
-inputs or folders that can then be run with multiple workers
-concurrently to speed things up.  Another mode allows to do a quick
-check of inputs that contain commands that have changes in the current
-checkout branch relative to a git branch.  This works similar to the two
-pass mode, but will select only shorter runs and no more than 100 inputs
-that are chosen randomly.  This ensures that this test runs
-significantly faster compared to the full test run.  These test runs can
-also be performed with instrumented LAMMPS binaries (see previous
-section).
+tester tool <regression>`.  The tool checks if a given LAMMPS binary,
+when run with selected input examples produces, thermo output that is
+consistent with the provided log files.  The script can be run in one
+pass over all available input files, but it can also first create
+multiple lists of inputs or folders that can then be run with multiple
+workers concurrently to speed things up.  Another mode allows to do a
+quick check of inputs that contain commands that have changes in the
+current checkout branch relative to a git branch.  This works similar to
+the two pass mode, but will select only shorter runs and no more than
+100 inputs that are chosen randomly.  This ensures that the quick test
+runs significantly faster compared to the full test run.  These test
+runs can also be performed with instrumented LAMMPS binaries (see
+previous section).
+
+A summary of all collected testing results and their trends, as well as
+code and development status related information is collected in the
+`LAMMPS Testing Dashboard <https://dashboard.lammps.org>`_ website.
 
 The unit testing facility is integrated into the CMake build process of
 the LAMMPS source code distribution itself.  It can be enabled by
@@ -147,27 +296,32 @@ version of that library will be downloaded and compiled along with
 LAMMPS and the test programs) and will download and compile a specific
 version of the `GoogleTest <https://github.com/google/googletest/>`_ C++
 test framework that is used to implement the tests.  Those unit tests
-may be combined with memory access and leak checking with valgrind
-(see below for how to enable it).  In that case, running so-called
-death tests will create a lot of false positives and thus they can be
-disabled by configuring compilation with the additional setting
-``-D SKIP_DEATH_TESTS=on``.
+may be combined with memory access and leak checking with valgrind (see
+below for how to enable it).  In that case, running so-called death
+tests will create a lot of false positives and thus they can be disabled
+by configuring compilation with the additional setting ``-D
+SKIP_DEATH_TESTS=on``.
 
-.. admonition:: Software version and LAMMPS configuration requirements
-   :class: note
+.. note::
 
-   The compiler and library version requirements for the testing
-   framework are more strict than for the main part of LAMMPS.  For
-   example the default GNU C++ and Fortran compilers of RHEL/CentOS 7.x
-   (version 4.8.x) are not sufficient.  The CMake configuration will try
-   to detect incompatible versions and either skip incompatible tests or
-   stop with an error.  Also the number of available tests will depend on
-   installed LAMMPS packages, development environment, operating system,
-   and configuration settings.
+   When testing is enabled, LAMMPS should also be built as a shared
+   library with ``-D BUILD_SHARED_LIBS=on``.  With the default static
+   LAMMPS library, each of the more than 100 test programs contains its
+   own complete copy of LAMMPS.  With debug information included (as
+   with the default ``RelWithDebInfo`` build type), each test program
+   is then several hundred MBytes large, and the build folder can need
+   70 GBytes and more, even with only a few packages enabled.  With a
+   shared LAMMPS library, all test programs use the same library and
+   need only a few MBytes each.  For more ways to reduce the disk space
+   requirements, see :doc:`Notes for saving disk space <Build_diskspace>`.
 
 After compilation is complete, the unit testing is started in the build
 folder using the ``ctest`` command, which is part of the CMake software.
-The output of this command will be looking something like this:
+The number of available tests will depend on the LAMMPS versions,
+installed LAMMPS packages, configuration settings, development
+environment, and operating system.
+
+The output of the plain ``ctest`` command looks something like the following:
 
 .. code-block:: console
 
@@ -214,14 +368,16 @@ The ``ctest`` command has many options, the most important ones are:
      - verbose output: display output of individual test runs
    * - ``-j <num>``
      - parallel run: run <num> tests in parallel
+   * - ``--test-dir <path>``
+     - provide path to the CMake build folder.  By default ``ctest`` uses ``.``
    * - ``-R <regex>``
-     - run subset of tests matching the regular expression <regex>
+     - run subset of tests matching the regular expression ``<regex>``
    * - ``-E <regex>``
-     - exclude subset of tests matching the regular expression <regex>
+     - exclude subset of tests matching the regular expression ``<regex>``
    * - ``-L <regex>``
-     - run subset of tests with a label matching the regular expression <regex>
+     - run subset of tests with a label matching the regular expression ``<regex>``
    * - ``-LE <regex>``
-     - exclude subset of tests with a label matching the regular expression <regex>
+     - exclude subset of tests with a label matching the regular expression ``<regex>``
    * - ``-N``
      - dry-run: display list of tests without running them
    * - ``-T memcheck``
@@ -238,8 +394,8 @@ will be skipped if prerequisite features are not available in LAMMPS.
 
    The unit test framework was added in spring 2020 and is under active
    development.  The coverage is not complete and will be expanded over
-   time.  Preference is given to parts of the code base that are easy to
-   test or commonly used.
+   time.  Preference was given to test parts of the code base that are
+   easy to test or commonly used.
 
 Tests as shown by the ``ctest`` program are commands defined in the
 ``CMakeLists.txt`` files in the ``unittest`` directory tree.  A few
@@ -256,16 +412,16 @@ These special test programs are structured to perform multiple
 individual tests internally and each of those contains several checks
 (aka assertions) for internal data being changed as expected.
 
-Tests for force computing or modifying styles (e.g. styles for non-bonded
-and bonded interactions and selected fixes) are run by using a more generic
-test program that reads its input from files in YAML format. The YAML file
-provides the information on how to customized the test program to test
-a specific style and - if needed - with specific settings.
-To add a test for another, similar style (e.g. a new pair style) it is
-usually sufficient to add a suitable YAML file.  :doc:`Detailed
-instructions for adding tests <Developer_unittest>` are provided in the
-Programmer Guide part of the manual.  A description of what happens
-during the tests is given below.
+Tests for force computing or modifying styles (e.g. styles for
+non-bonded and bonded interactions and selected fixes) are run by using
+a more generic test program that reads its input from files in YAML
+format.  The YAML file provides the information on how to customized the
+test program to test a specific style and - if needed - with specific
+settings.  To add a test for another, similar style (e.g. a new pair
+style) it is usually sufficient to add a suitable YAML file.
+:doc:`Detailed instructions for adding tests <Developer_unittest>` are
+provided in the Programmer Guide part of the manual.  A description of
+what happens during these tests is given below.
 
 Unit tests for force styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -273,59 +429,97 @@ Unit tests for force styles
 A large part of LAMMPS are different "styles" for computing non-bonded
 and bonded interactions selected through the :doc:`pair_style`,
 :doc:`bond_style`, :doc:`angle_style`, :doc:`dihedral_style`,
-:doc:`improper_style`, and :doc:`kspace_style`.  Since these all share
-common interfaces, it is possible to write generic test programs that
-will call those common interfaces for small test systems with less than
-100 atoms and compare the results with pre-recorded reference results.
-A test run is then a a collection multiple individual test runs each
-with many comparisons to reference results based on template input
-files, individual command settings, relative error margins, and
-reference data stored in a YAML format file with ``.yaml``
-suffix. Currently the programs ``test_pair_style``, ``test_bond_style``,
+:doc:`improper_style`, and :doc:`kspace_style` commands.  Since these
+styles all share common interfaces, it is possible to write generic test
+programs that will assemble LAMMPS inputs from templates with different
+settings and call those common interfaces for small test systems with
+less than 100 atoms and compare the results with pre-recorded reference
+results.  A test run is then a collection of multiple individual test
+runs, each with many comparisons to reference results based on template
+input files, individual command settings, relative error margins, and
+reference data stored in a YAML format file with ``.yaml`` suffix.
+Currently the programs ``test_pair_style``, ``test_bond_style``,
 ``test_angle_style``, ``test_dihedral_style``, and
 ``test_improper_style`` are implemented.  They will compare forces,
 energies and (global) stress for all atoms after a ``run 0`` calculation
 and after a few steps of MD with :doc:`fix nve <fix_nve>`, each in
 multiple variants with different settings and also for multiple
-accelerated styles. If a prerequisite style or package is missing, the
+accelerated styles.  If a prerequisite style or package is missing, the
 individual tests are skipped.  All force style tests will be executed on
 a single MPI process, so using the CMake option ``-D BUILD_MPI=off`` can
 significantly speed up testing, since this will skip the MPI
-initialization for each test run.  Below is an example command and
-output:
+initialization for each test run.
+
+Below is an example command and output for running a single test named
+``MolPairStyle:lj_cut`` (argument to the ``-R`` option which selects
+tests by regular expression) and printing detailed output (the ``-V`` flag):
 
 .. code-block:: console
 
-   $ test_pair_style mol-pair-lj_cut.yaml
-   [==========] Running 6 tests from 1 test suite.
-   [----------] Global test environment set-up.
-   [----------] 6 tests from PairStyle
-   [ RUN      ] PairStyle.plain
-   [       OK ] PairStyle.plain (24 ms)
-   [ RUN      ] PairStyle.omp
-   [       OK ] PairStyle.omp (18 ms)
-   [ RUN      ] PairStyle.intel
-   [       OK ] PairStyle.intel (6 ms)
-   [ RUN      ] PairStyle.opt
-   [  SKIPPED ] PairStyle.opt (0 ms)
-   [ RUN      ] PairStyle.single
-   [       OK ] PairStyle.single (7 ms)
-   [ RUN      ] PairStyle.extract
-   [       OK ] PairStyle.extract (6 ms)
-   [----------] 6 tests from PairStyle (62 ms total)
+   $ ctest -R MolPairStyle:lj_cut$ -V
 
-   [----------] Global test environment tear-down
-   [==========] 6 tests from 1 test suite ran. (63 ms total)
-   [  PASSED  ] 5 tests.
-   [  SKIPPED ] 1 test, listed below:
-   [  SKIPPED ] PairStyle.opt
+   [...]
 
-In this particular case, 5 out of 6 sets of tests were conducted, the
-tests for the ``lj/cut/opt`` pair style was skipped, since the tests
-executable did not include it.  To learn what individual tests are performed,
-you (currently) need to read the source code.  You can use code coverage
-recording (see next section) to confirm how well the tests cover the code
-paths in the individual source files.
+      Start 199: MolPairStyle:lj_cut
+
+   199: Test command: /home/akohlmey/compile/lammps/build-test/test_pair_style "/home/akohlmey/compile/lammps/unittest/force-styles/tests/mol-pair-lj_cut.yaml"
+   199: Working Directory: /home/akohlmey/compile/lammps/build-test/unittest/force-styles
+   199: Environment variables:
+   199:  PYTHONPATH=/home/akohlmey/compile/lammps/unittest/force-styles/tests:/home/akohlmey/compile/lammps/python:
+   199:  PYTHONUNBUFFERED=1
+   199:  PYTHONDONTWRITEBYTECODE=1
+   199:  OMP_PROC_BIND=false
+   199:  OMP_NUM_THREADS=4
+   199:  LAMMPS_POTENTIALS=/home/akohlmey/compile/lammps/potentials
+   199:  LD_LIBRARY_PATH=/home/akohlmey/compile/lammps/build-test:/usr/lib64/mpich/lib:/home/akohlmey/.local/lib::
+   199: Test timeout computed to be: 1500
+   199: [==========] Running 9 tests from 1 test suite.
+   199: [----------] Global test environment set-up.
+   199: [----------] 9 tests from PairStyle
+   199: [ RUN      ] PairStyle.plain
+   199: [       OK ] PairStyle.plain (17 ms)
+   199: [ RUN      ] PairStyle.omp
+   199: [       OK ] PairStyle.omp (3 ms)
+   199: [ RUN      ] PairStyle.kokkos_omp
+   199: [       OK ] PairStyle.kokkos_omp (6 ms)
+   199: [ RUN      ] PairStyle.gpu
+   199: /home/akohlmey/compile/lammps/unittest/force-styles/test_pair_style.cpp:793: Skipped
+   199:
+   199:
+   199: [  SKIPPED ] PairStyle.gpu (0 ms)
+   199: [ RUN      ] PairStyle.intel
+   199: [       OK ] PairStyle.intel (2 ms)
+   199: [ RUN      ] PairStyle.opt
+   199: [       OK ] PairStyle.opt (2 ms)
+   199: [ RUN      ] PairStyle.single
+   199: [       OK ] PairStyle.single (2 ms)
+   199: [ RUN      ] PairStyle.extract
+   199: [       OK ] PairStyle.extract (1 ms)
+   199: [ RUN      ] PairStyle.extract_omp
+   199: [       OK ] PairStyle.extract_omp (1 ms)
+   199: [----------] 9 tests from PairStyle (37 ms total)
+   199:
+   199: [----------] Global test environment tear-down
+   199: [==========] 9 tests from 1 test suite ran. (37 ms total)
+   199: [  PASSED  ] 8 tests.
+   199: [  SKIPPED ] 1 test, listed below:
+   199: [  SKIPPED ] PairStyle.gpu
+   1/1 Test #199: MolPairStyle:lj_cut ..............   Passed    0.75 sec
+
+   The following tests passed:
+           MolPairStyle:lj_cut
+
+   100% tests passed, 0 tests failed out of 1
+
+   Total Test time (real) =   0.76 sec
+
+In this particular case, 8 out of 9 sets of tests were conducted, the
+tests for the ``lj/cut/gpu`` pair style were skipped, since the LAMMPS
+library linked to the test executable did not include the GPU package.
+To learn what individual tests are performed, you (currently) need to
+read the source code.  You can use code coverage recording (see next
+section) to confirm how well the tests cover the code paths in the
+individual source files.
 
 The force style test programs have a common set of options:
 
@@ -343,13 +537,16 @@ The force style test programs have a common set of options:
    * - ``-v``
      - verbose output: also print the executed LAMMPS commands
 
-The ``ctest`` tool has no mechanism to directly pass flags to the individual
-test programs, but a workaround has been implemented where these flags can be
-set in an environment variable ``TEST_ARGS``. Example:
+Since the ``ctest`` tool has no mechanism to directly pass flags to the
+individual test programs, a workaround has been implemented where these
+flags can be set in an environment variable ``TEST_ARGS``. Example:
 
 .. code-block:: bash
 
    env TEST_ARGS=-s ctest -V -R BondStyle
+
+This adds output with statistics for the computed error of the various
+tests relative to the reference (e.g. the per-atom force components).
 
 To add a test for a style that is not yet covered, it is usually best
 to copy a YAML file for a similar style to a new file, edit the details
@@ -358,13 +555,19 @@ run test command with either the ``-g`` and the replace the initial
 test file with the regenerated one or the ``-u`` option.  The ``-u`` option
 will destroy the original file, if the generation run does not complete,
 so using ``-g`` is recommended unless the YAML file is fully tested
-and working.
+and working.  To have the new test file recognized by ``ctest``, you
+need to re-run cmake.  You can verify that the new test is available
+by checking the output of ``ctest -N``.
 
 Some of the force style tests are rather slow to run and some are very
 sensitive to small differences like CPU architecture, compiler
-toolchain, compiler optimization. Those tests are flagged with a "slow"
+tool chain, compiler optimization.  Those tests are flagged with a "slow"
 and/or "unstable" label, and thus those tests can be selectively
-excluded with the ``-LE`` flag or selected with the ``-L`` flag.
+excluded with the ``-LE`` flag to ``ctest`` (see description of the most
+commonly used ``ctest`` flags) or specifically selected using the ``-L``
+flag.  With the Intel compilers, some of the tests with the "unstable"
+label fail, so they should be skipped with ``ctest -LE unstable`` or
+their failures can be ignored.
 
 .. admonition:: Recommendations and notes for YAML files
    :class: note
@@ -441,20 +644,96 @@ YAML format test inputs.
 Use custom linker for faster link times when ENABLE_TESTING is active
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When compiling LAMMPS with enabled tests, most test executables will
-need to be linked against the LAMMPS library.  Since this can be a very
-large library with many C++ objects when many packages are enabled, link
-times can become very long on machines that use the GNU BFD linker (e.g.
-Linux systems).  Alternatives like the ``mold`` linker, the ``lld``
-linker of the LLVM project, or the ``gold`` linker available with GNU
-binutils can speed up this step substantially (in this order).  CMake
-will by default test if any of the three can be enabled and use it when
-``ENABLE_TESTING`` is active.  It can also be selected manually through
-the ``CMAKE_CUSTOM_LINKER`` CMake variable.  Allowed values are
-``mold``, ``lld``, ``gold``, ``bfd``, or ``default``.  The ``default``
-option will use the system default linker otherwise, the linker is
-chosen explicitly.  This option is only available for the GNU or Clang
-C++ compilers.
+When compiling LAMMPS with testing enabled, most test executables will
+need to be linked against the LAMMPS library and re-linked whenever
+there is a change to LAMMPS.  Since this can be a very large library
+with many C++ objects when many packages are enabled, link times can
+become very long on machines that use the GNU BFD linker (e.g.  Linux
+systems).  Alternative linker programs like the ``mold`` linker, the
+``lld`` linker of the LLVM project, or the ``gold`` linker available
+with GNU binutils can speed up this step substantially (in this order).
+CMake will by default test if any of the three can be enabled and use it
+when ``ENABLE_TESTING`` is active.  The linker can also be selected
+manually through the ``LAMMPS_CUSTOM_LINKER`` CMake variable.  Allowed
+values are ``mold``, ``lld``, ``gold``, ``bfd``, or ``default``.  The
+``default`` option will use the system default linker otherwise, the
+linker is chosen explicitly.  This option is only available for the GNU
+or Clang C++ compilers.
+
+Building LAMMPS as a shared library with ``-D BUILD_SHARED_LIBS=on``
+gives a small additional improvement of the link times due to reducing
+file I/O, and it reduces the disk space requirements significantly (see
+the note in the section on unit testing above).  Using an alternate
+linker has an algorithmic improvement through using symbol resolution
+algorithms with lower algorithmic complexity.
+
+Distribute unit tests across multiple NVIDIA GPUs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: TBD
+
+When LAMMPS is compiled with the GPU package or the KOKKOS package with
+GPU support, running tests in parallel with ``ctest -jN`` will run *all*
+tests on the *same* (first available) GPU.  This can lead to false
+negative tests due to insufficient resources on the GPU or undesired
+interactions between multiple GPU kernels.  In case of using NVIDIA
+GPUs, *different* GPUs can be exposed by setting the ``CUDA_VISIBLE_DEVICES``
+environment variable.
+
+With CMake 3.29 or later on Linux and similar operating systems, tests
+can instead be distributed over multiple NVIDIA GPUs through the `CTest
+resource allocation feature
+<https://cmake.org/cmake/help/latest/manual/ctest.1.html#resource-allocation>`_
+where available GPUs are listed as entries with an assigned "slots" value
+in a resource file.  Then every test requests one slot of a GPU and is run
+through a launcher script that sets the assigned GPU.  This will restrict
+the number of concurrent runs to the total number of available slots in
+the resource file. Thus a command like ``ctest -j 8`` runs at most 4
+concurrent tests, if there are only 4 slots configured in the resource file.
+
+The `resource specification file
+<https://cmake.org/cmake/help/latest/manual/ctest.1.html#resource-specification-file>`_
+is in JSON format and its location is set with the CMake variable
+``LAMMPS_TEST_RESOURCE_SPEC_FILE`` and defaults to
+``ctest-resources.json`` in the build folder.  If the file does not
+exist, CMake generates it from the output of the ``nvidia-smi`` command
+with one slot for each GPU it reports.  Such a generated file looks as
+follows:
+
+.. code-block:: json
+
+   {
+     "version": { "major": 1, "minor": 0 },
+     "local": [
+       {
+         "gpus": [
+           { "id": "0", "slots": 1, "name": "Tesla V100-SXM2-16GB", "pci_bus_id": "00000000:1A:00.0" },
+           { "id": "1", "slots": 1, "name": "Tesla V100-SXM2-16GB", "pci_bus_id": "00000000:3A:00.0" }
+         ]
+       }
+     ]
+   }
+
+An existing file is used unchanged, so it can be edited and also be
+shared between multiple build folders.  The ``id`` of an entry is the
+index of the GPU as reported by ``nvidia-smi``.  An entry may be removed
+to keep that GPU free, e.g. for the graphics display of a workstation,
+or the ``slots`` value may be increased to let multiple tests share the same
+GPU.  With KOKKOS/CUDA, however, sharing a GPU from multiple tests may
+(currently in fall 2026) lead to data corruption and spurious failed
+tests.  The ``name`` and ``pci_bus_id`` entries are for information only.
+If no GPU is found, no file is written and the tests are run without
+resource allocation.  Setting ``LAMMPS_TEST_RESOURCE_SPEC_FILE`` to an
+empty string also disables this feature.
+
+If the ``CUDA_VISIBLE_DEVICES`` environment variable is already set
+when running ``ctest``, the tests stay on the GPUs listed there: the GPU
+assigned by CTest then selects the entries of that list in turn, and
+CUDA interprets them as usual (i.e. in the order set by
+``CUDA_DEVICE_ORDER``).  When that list has fewer entries than the
+resource file has slots, concurrent tests may share a GPU.  To avoid
+this, use a resource file that lists only the desired GPUs, e.g. with
+``ctest --resource-spec-file <file>``.
 
 Tests for other components and utility functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -491,10 +770,10 @@ unit tests:
 
 .. code-block:: bash
 
-   make gen_coverage_html   # generate coverage report in HTML format
-   make gen_coverage_xml    # generate coverage report in XML format
-   make clean_coverage_html # delete folder with HTML format coverage report
-   make reset_coverage      # delete all collected coverage data and HTML output
+   cmake --build build --target gen_coverage_html   # generate coverage report in HTML format
+   cmake --build build --target gen_coverage_xml    # generate coverage report in XML format
+   cmake --build build --target clean_coverage_html # delete folder with HTML format coverage report
+   cmake --build build --target reset_coverage      # delete all collected coverage data and HTML output
 
 These reports require `GCOVR <https://gcovr.com/>`_ to be installed. The easiest way
 to do this to install it via pip:
@@ -505,7 +784,9 @@ to do this to install it via pip:
 
 After post-processing with ``gen_coverage_html`` the results are in
 a folder ``coverage_html`` and can be viewed with a web browser.
-The images below illustrate how the data is presented.
+The images below illustrate how the data is presented.  The coverage
+data for testing the current ``develop`` branch is generated nightly
+and currently available at: https://download.lammps.org/coverage/
 
 .. only:: not latex
 
@@ -553,14 +834,17 @@ The images below illustrate how the data is presented.
 
       Source page with branches
 
+.. _coding-style:
+
 Coding style utilities
 ----------------------
 
 To aid with enforcing some of the coding style conventions in LAMMPS
-some additional build targets have been added. These require Python 3.5
-or later and will only work properly on Unix-like operating and file systems.
+some additional build targets have been added to the makefile in the
+``src`` folder.  These require Python 3.5 or later and will only work
+properly on Unix-like operating and file systems.
 
-The following options are available.
+The following options are available (to be run in the ``src`` folder):
 
 .. code-block:: bash
 
@@ -575,6 +859,10 @@ The following options are available.
    make check-docs          # search for several issues in the manual
    make check-version       # list files with pending release version tags
    make check               # run all check targets from above
+
+The whitespace, homepage, and permission checks and fixes are also
+available as targets of the CMake build, e.g. ``cmake --build build
+--target check-whitespace``.
 
 These should help to make source and documentation files conforming
 to some the coding style preferences of the LAMMPS developers.
@@ -607,14 +895,6 @@ commands like the following:
 .. code-block:: bash
 
    clang-format -i some_file.cpp
-
-
-The following target are available for both, GNU make and CMake:
-
-.. code-block:: bash
-
-   make format-src       # apply clang-format to all files in src and the package folders
-   make format-tests     # apply clang-format to all files in the unittest tree
 
 ----------
 

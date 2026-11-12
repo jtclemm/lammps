@@ -32,6 +32,7 @@ class PairSpin : public Pair {
 
   void compute(int, int) override {}
   virtual void compute_single_pair(int, double *) {}
+  double memory_usage() override;
 
   // storing magnetic energies
 
@@ -41,6 +42,7 @@ class PairSpin : public Pair {
  protected:
   double hbar;         // Planck constant (eV.ps.rad-1)
   int lattice_flag;    // flag for mech force computation
+  int full_spin_gradient;    // fm encodes |S|/hbar * (-dU/dS)
 
   virtual void allocate() {}
 };

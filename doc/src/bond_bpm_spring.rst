@@ -50,7 +50,7 @@ Examples
    bond_style bpm/spring volume/factor yes
    bond_coeff 1 1.0 0.05 0.1 0.5
 
-   bond_style bpm/spring myfix 1000 time id1 id2
+   bond_style bpm/spring store/local myfix 1000 time id1 id2
    dump 1 all local 1000 dump.broken f_myfix[1] f_myfix[2] f_myfix[3]
    dump_modify 1 write_header no
 
@@ -69,7 +69,7 @@ the system will not reset the reference state of a bond.
 This bond style only applies central-body forces which conserve the
 translational and rotational degrees of freedom of a bonded set of
 particles based on a model described by Clemmer and Robbins
-:ref:`(Clemmer) <fragment-Clemmer>`. The force has a magnitude of
+:ref:`(Clemmer3) <fragment-Clemmer>`. The force has a magnitude of
 
 .. math::
 
@@ -108,10 +108,10 @@ normalized by :math:`r_0` such that :math:`k` must be given in force units.
 
 By default, pair forces are not calculated between bonded particles.
 Pair forces can alternatively be overlaid on top of bond forces by setting
-the *overlay/pair* keyword to *yes*. These settings require specific
-:doc:`special_bonds <special_bonds>` settings described in the
-restrictions.  Further details can be found in the :doc:`how to <Howto_bpm>`
-page on BPMs.
+the *overlay/pair* keyword to *yes*. This keyword is only necessary if
+bonds can break and requires specific :doc:`special_bonds <special_bonds>`
+settings described in the restrictions.  Further details can be found in
+the :doc:`how to <Howto_bpm>` page on BPMs.
 
 .. versionadded:: 28Mar2023
 
@@ -232,19 +232,24 @@ This bond style is part of the BPM package.  It is only enabled if
 LAMMPS was built with that package.  See the :doc:`Build package
 <Build_package>` page for more info.
 
-By default if pair interactions between bonded atoms are to be disabled,
-this bond style requires setting
+To handle breaking bonds, BPM bond styles have extra requirements for
+special bonds. If bonds cannot break (*break no*), then one can use any
+special bond weights. Otherwise, restrictions depend on whether pair
+forces are overlaid (*pair/overlay yes*). If so, then all weights must
+be one:
+
+.. code-block:: LAMMPS
+
+   special_bonds lj/coul 1 1 1
+
+If pair forces are disabled (*pair/overlay no*), the default, then the
+weights must be
 
 .. code-block:: LAMMPS
 
    special_bonds lj 0 1 1 coul 1 1 1
 
-and :doc:`newton <newton>` must be set to bond off.  If the *overlay/pair*
-keyword is set to *yes*, this bond style alternatively requires setting
-
-.. code-block:: LAMMPS
-
-   special_bonds lj/coul 1 1 1
+and :doc:`newton <newton>` must be set to bond off.
 
 Related commands
 """"""""""""""""
@@ -260,7 +265,7 @@ The option defaults are *overlay/pair* = *no*, *smooth* = *yes*, *normalize* = *
 
 .. _fragment-Clemmer:
 
-**(Clemmer)** Clemmer and Robbins, Phys. Rev. Lett. (2022).
+**(Clemmer3)** Clemmer and Robbins, Phys. Rev. Lett. (2022).
 
 .. _Groot4:
 

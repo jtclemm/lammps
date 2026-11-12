@@ -38,10 +38,9 @@ using namespace LAMMPS_NS;
 using namespace FixConst;
 
 enum { NOBIAS, BIAS };
-enum { CONSTANT, EQUAL, ATOM };
 
 static const char cite_gjf[] =
-    "GJ methods: doi:10.1080/00268976.2019.1662506\n\n"
+    "GJ methods: https://doi.org/10.1080/00268976.2019.1662506\n\n"
     "@Article{gronbech-jensen_complete_2020,\n"
     "title = {Complete set of stochastic Verlet-type thermostats for correct Langevin "
     "simulations},\n"
@@ -54,7 +53,7 @@ static const char cite_gjf[] =
     "year = {2020}\n"
     "}\n\n";
 
-static const char cite_gjf_7[] = "GJ-VII method: doi:10.1063/5.0066008\n\n"
+static const char cite_gjf_7[] = "GJ-VII method: https://doi.org/10.1063/5.0066008\n\n"
                                  "@Article{finkelstein_2021,\n"
                                  "title = {Bringing discrete-time Langevin splitting methods into "
                                  "agreement with thermodynamics},\n"
@@ -70,7 +69,7 @@ static const char cite_gjf_7[] = "GJ-VII method: doi:10.1063/5.0066008\n\n"
                                  "}\n\n";
 
 static const char cite_gjf_8[] =
-    "GJ-VIII method: doi:10.1007/s10955-024-03345-1\n\n"
+    "GJ-VIII method: https://doi.org/10.1007/s10955-024-03345-1\n\n"
     "@Article{gronbech_jensen_2024,\n"
     "title = {On the Definition of Velocity in Discrete-Time, Stochastic Langevin Simulations},\n"
     "volume = {191},\n"
@@ -84,7 +83,7 @@ static const char cite_gjf_8[] =
     "}\n\n";
 
 static const char cite_gjf_vhalf[] =
-    "GJ-I vhalf method: doi:10.1080/00268976.2019.1570369\n\n"
+    "GJ-I vhalf method: https://doi.org/10.1080/00268976.2019.1570369\n\n"
     "@Article{jensen_accurate_2019,\n"
     "title = {Accurate configurational and kinetic statistics in discrete-time Langevin systems},\n"
     "volume = {117},\n"
@@ -97,7 +96,7 @@ static const char cite_gjf_vhalf[] =
     "}\n\n";
 
 static const char cite_gjf_vfull[] =
-    "GJ-I vfull method: doi:10.1080/00268976.2012.760055\n\n"
+    "GJ-I vfull method: https://doi.org/10.1080/00268976.2012.760055\n\n"
     "@Article{gronbech-jensen_simple_2013,\n"
     "title = {A simple and effective Verlet-type algorithm for simulating Langevin dynamics},\n"
     "volume = {111},\n"
@@ -122,6 +121,8 @@ FixGJF::FixGJF(LAMMPS *lmp, int narg, char **arg) :
   time_integrate = 1;
   global_freq = 1;
   nevery = 1;
+  restart_global = 1;
+  restart_peratom = 1;
 
   if (utils::strmatch(arg[3], "^v_")) {
     tstr = utils::strdup(arg[3] + 2);
@@ -198,7 +199,8 @@ FixGJF::FixGJF(LAMMPS *lmp, int narg, char **arg) :
   // no need to set peratom_flag, b/c data is for internal use only
 
   FixGJF::grow_arrays(atom->nmax);
-  atom->add_callback(Atom::GROW);
+  atom->add_callback(this, Atom::GROW);
+  atom->add_callback(this, Atom::RESTART);
 
   // initialize lv to onsite velocity
   int nlocal = atom->nlocal;
@@ -221,7 +223,7 @@ FixGJF::~FixGJF()
   memory->destroy(tforce);
 
   memory->destroy(lv);
-  if (modify->get_fix_by_id(id)) atom->delete_callback(id, Atom::GROW);
+  if (modify->get_fix_by_id(id)) atom->delete_callback(this, Atom::GROW);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -691,4 +693,103 @@ int FixGJF::unpack_exchange(int nlocal, double *buf)
   lv[nlocal][1] = buf[n++];
   lv[nlocal][2] = buf[n++];
   return n;
+}
+
+/* ----------------------------------------------------------------------
+   pack the half-step velocity into the per-atom restart data.  In vhalf
+   mode lv carries the on-site velocity needed to continue the trajectory
+   (atom->v only stores the half-step velocity used for output), so it must
+   be checkpointed for a restart to reproduce the original run.
+------------------------------------------------------------------------- */
+
+int FixGJF::pack_restart(int i, double *buf)
+{
+  // pack buf[0] this way because other fixes unpack it
+  buf[0] = 4;
+  buf[1] = lv[i][0];
+  buf[2] = lv[i][1];
+  buf[3] = lv[i][2];
+  return 4;
+}
+
+/* ----------------------------------------------------------------------
+   unpack the half-step velocity from the restart data
+------------------------------------------------------------------------- */
+
+void FixGJF::unpack_restart(int nlocal, int nth)
+{
+  double **extra = atom->extra;
+
+  // skip to Nth set of extra values
+  // unpack the Nth first values this way because other fixes pack them
+
+  int m = 0;
+  for (int i = 0; i < nth; i++) m += static_cast<int>(extra[nlocal][m]);
+  m++;
+
+  lv[nlocal][0] = extra[nlocal][m++];
+  lv[nlocal][1] = extra[nlocal][m++];
+  lv[nlocal][2] = extra[nlocal][m++];
+
+  // lv now holds a valid on-site velocity from the restart, so the first
+  // post-restart step must use it (see initial_integrate())
+  lv_allocated = 1;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixGJF::maxsize_restart()
+{
+  return 4;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int FixGJF::size_restart(int /*nlocal*/)
+{
+  return 4;
+}
+
+/* ----------------------------------------------------------------------
+   pack the per-processor RNG state into the restart file so that a run
+   continued from a restart reproduces the original stochastic trajectory
+------------------------------------------------------------------------- */
+
+void FixGJF::write_restart(FILE *fp)
+{
+  int nsize = RanMars::STATE_SIZE * comm->nprocs + 1;    // pRNG state per proc + nprocs
+  auto *list = new double[nsize];
+
+  if (comm->me == 0) list[0] = comm->nprocs;
+
+  double state[RanMars::STATE_SIZE];
+  random->get_state(state);
+  MPI_Gather(state, RanMars::STATE_SIZE, MPI_DOUBLE, list + 1, RanMars::STATE_SIZE, MPI_DOUBLE, 0,
+             world);
+
+  if (comm->me == 0) {
+    int size = nsize * sizeof(double);
+    fwrite(&size, sizeof(int), 1, fp);
+    fwrite(list, sizeof(double), nsize, fp);
+  }
+  delete[] list;
+}
+
+/* ----------------------------------------------------------------------
+   use state info from restart file to restore the RNG state
+------------------------------------------------------------------------- */
+
+void FixGJF::restart(char *buf)
+{
+  auto *list = (double *) buf;
+
+  int nprocs = (int) list[0];
+  if (nprocs != comm->nprocs) {
+    if (comm->me == 0)
+      error->warning(FLERR, "Different number of procs. Cannot restore RNG state.");
+  } else {
+    // the size of the stored states depends on the version that wrote the restart file
+    const int stride = RanMars::state_size(list + 1);
+    random->set_state(list + 1 + comm->me * stride);
+  }
 }

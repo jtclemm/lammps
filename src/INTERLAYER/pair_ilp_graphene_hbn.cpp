@@ -27,6 +27,7 @@
 #include "force.h"
 #include "info.h"
 #include "interlayer_taper.h"
+#include "math_special.h"
 #include "memory.h"
 #include "my_page.h"
 #include "neigh_list.h"
@@ -39,12 +40,14 @@
 
 using namespace LAMMPS_NS;
 using namespace InterLayer;
+using MathSpecial::powint;
 
-static constexpr int DELTA = 4;
-static constexpr int PGDELTA = 1;
+namespace {
+constexpr int DELTA = 4;
+constexpr int PGDELTA = 1;
 
-static const char cite_ilp[] =
-    "ilp/graphene/hbn potential doi:10.1021/acs.nanolett.8b02848\n"
+constexpr char cite_ilp[] =
+    "ilp/graphene/hbn potential: https://doi.org/10.1021/acs.nanolett.8b02848\n\n"
     "@Article{Ouyang2018\n"
     " author = {W. Ouyang and D. Mandelli and M. Urbakh and O. Hod},\n"
     " title = {Nanoserpents: Graphene Nanoribbon Motion on Two-Dimensional Hexagonal Materials},\n"
@@ -54,17 +57,19 @@ static const char cite_ilp[] =
     " year =    2018,\n"
     "}\n\n";
 
-namespace {
+// NOLINTBEGIN
 // to indicate which potential style was used in outputs
 std::map<int, const std::string> variant_map = {
     {PairILPGrapheneHBN::ILP_GrhBN, "ilp/graphene/hbn"},
     {PairILPGrapheneHBN::ILP_TMD, "ilp/tmd"},
     {PairILPGrapheneHBN::AIP_WATER_2DM, "aip/water/2dm"},
-    {PairILPGrapheneHBN::SAIP_METAL, "saip/metal"}};
-}
+    {PairILPGrapheneHBN::SAIP_METAL, "saip/metal"},
+    {PairILPGrapheneHBN::SAIP_METAL_TMD, "saip/metal/tmd"}};
+// NOLINTEND
+}    // namespace
 /* ---------------------------------------------------------------------- */
 
-PairILPGrapheneHBN::PairILPGrapheneHBN(LAMMPS *lmp) : Pair(lmp), variant(ILP_GrhBN)
+PairILPGrapheneHBN::PairILPGrapheneHBN(LAMMPS *lmp) : Pair(lmp), variant(ILP_GrhBN), offset(nullptr)
 {
   restartinfo = 0;
   one_coeff = 1;
@@ -462,7 +467,7 @@ void PairILPGrapheneHBN::calc_FvdW(int eflag, int /* vflag */)
         }
 
         TSvdw = 1.0 + exp(-p.d * (r / p.seff - 1.0));
-        TSvdw2inv = pow(TSvdw, -2.0);
+        TSvdw2inv = powint(TSvdw, -2);
         Vilp = -p.C6 * r6inv / TSvdw;
 
         // derivatives
@@ -627,7 +632,7 @@ void PairILPGrapheneHBN::calc_FRep(int eflag, int /* vflag */)
           ev_tally_xyz(i, j, nlocal, newton_pair, evdwl, 0.0, fkcx, fkcy, fkcz, delx, dely, delz);
       }
     }    // loop over jj
-  }      // loop over ii
+  }    // loop over ii
 }
 
 /* ----------------------------------------------------------------------
@@ -697,7 +702,9 @@ void PairILPGrapheneHBN::ILP_neigh()
                  "There are too many neighbors for some atoms, please check your configuration");
 
     ipage->vgot(n);
-    if (ipage->status()) error->one(FLERR, Error::NOLASTLINE, "Neighbor list overflow, boost neigh_modify one" + utils::errorurl(36));
+    if (ipage->status())
+      error->one(FLERR, Error::NOLASTLINE,
+                 "Neighbor list overflow, boost neigh_modify one" + utils::errorurl(36));
   }
 }
 
@@ -836,7 +843,8 @@ void PairILPGrapheneHBN::calc_normal()
       // the magnitude of the normal vector
       nn2 = n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2];
       nn = sqrt(nn2);
-      if (nn == 0) error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
+      if (nn == 0)
+        error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
       // the unit normal vector
       normal[i][0] = n1[0] / nn;
       normal[i][1] = n1[1] / nn;
@@ -971,7 +979,8 @@ void PairILPGrapheneHBN::calc_normal()
       // the magnitude of the normal vector
       nn2 = n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2];
       nn = sqrt(nn2);
-      if (nn == 0) error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
+      if (nn == 0)
+        error->one(FLERR, Error::NOLASTLINE, "The magnitude of the normal vector is zero");
       // the unit normal vector
       normal[i][0] = n1[0] / nn;
       normal[i][1] = n1[1] / nn;
@@ -1041,7 +1050,7 @@ double PairILPGrapheneHBN::single(int /*i*/, int /*j*/, int itype, int jtype, do
   r8inv = r2inv * r6inv;
 
   TSvdw = 1.0 + exp(-p.d * (r / p.seff - 1.0));
-  TSvdw2inv = pow(TSvdw, -2.0);
+  TSvdw2inv = powint(TSvdw, -2);
   Vilp = -p.C6 * r6inv / TSvdw;
   // derivatives
   fpair = -6.0 * p.C6 * r8inv / TSvdw + p.d / p.seff * p.C6 * (TSvdw - 1.0) * r6inv * TSvdw2inv / r;
@@ -1050,4 +1059,16 @@ double PairILPGrapheneHBN::single(int /*i*/, int /*j*/, int itype, int jtype, do
 
   philj = Vilp * Tap;
   return factor_lj * philj;
+}
+
+/* ---------------------------------------------------------------------- */
+
+double PairILPGrapheneHBN::memory_usage()
+{
+  double bytes = Pair::memory_usage();
+  bytes += (double) maxlocal * (sizeof(int) + sizeof(int *));    // ILP_numneigh + ILP_firstneigh
+  bytes += (double) nmax * 3 * sizeof(double);                   // normal[nmax][3]
+  bytes += (double) nmax * 9 * sizeof(double);                   // dnormdri[3][3][nmax]
+  bytes += (double) nmax * 27 * sizeof(double);                  // dnormal[3][3][3][nmax]
+  return bytes;
 }

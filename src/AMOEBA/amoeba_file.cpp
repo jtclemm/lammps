@@ -27,7 +27,7 @@ using namespace LAMMPS_NS;
 
 enum { UNKNOWN, FFIELD, LITERATURE, ATOMTYPE, VDWL, VDWLPAIR, BSTRETCH, SBEND, ABEND,
   PAULI, DISPERSION, UB, OUTPLANE, TORSION, PITORSION, ATOMMULT, QPENETRATION, DIPPOLAR,
-  QTRANSFER, END_OF_FILE };
+  QTRANSFER, QFLUX, END_OF_FILE };
 enum { ALLINGER, BUFFERED_14_7 };
 enum { ARITHMETIC, GEOMETRIC, CUBIC_MEAN, R_MIN, SIGMA, DIAMETER, HARMONIC, HHG, W_H };
 enum { MUTUAL, OPT, TCG, DIRECT };
@@ -105,44 +105,46 @@ void PairAmoeba::read_prmfile(char *filename)
       section = END_OF_FILE;
       while (fgets(line, MAXLINE, fptr)) {
         ++nline;
-        if (utils::strmatch(line, "^\\s*##\\s+\\S+.*##\\s*$")) {
+        if (utils::strmatch(line, R"(^\s*##\s+\S+.*##\s*$)")) {
           auto trimmed = utils::trim(line);
-          if (utils::strmatch(trimmed, "^##\\s*Force Field"))
+          if (utils::strmatch(trimmed, R"(^##\s*Force Field)"))
             section = FFIELD;
-          else if (utils::strmatch(trimmed, "^##\\s*Literature"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Literature)"))
             section = LITERATURE;
-          else if (utils::strmatch(trimmed, "^##\\s*Atom Type"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Atom Type)"))
             section = ATOMTYPE;
-          else if (utils::strmatch(trimmed, "^##\\s*Van der Waals Param"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Van der Waals Param)"))
             section = VDWL;
-          else if (utils::strmatch(trimmed, "^##\\s*Van der Waals Pair"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Van der Waals Pair)"))
             section = VDWLPAIR;
-          else if (utils::strmatch(trimmed, "^##\\s*Bond Stretching"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Bond Stretching)"))
             section = BSTRETCH;
-          else if (utils::strmatch(trimmed, "^##\\s*Stretch-Bend"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Stretch-Bend)"))
             section = SBEND;
-          else if (utils::strmatch(trimmed, "^##\\s*Angle Bending"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Angle Bending)"))
             section = ABEND;
-          else if (utils::strmatch(trimmed, "^##\\s*Pauli Repulsion"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Pauli Repulsion)"))
             section = PAULI;
-          else if (utils::strmatch(trimmed, "^##\\s*Dispersion Param"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Dispersion Param)"))
             section = DISPERSION;
-          else if (utils::strmatch(trimmed, "^##\\s*Urey-Bradley"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Urey-Bradley)"))
             section = UB;
-          else if (utils::strmatch(trimmed, "^##\\s*Out-of-Plane"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Out-of-Plane)"))
             section = OUTPLANE;
-          else if (utils::strmatch(trimmed, "^##\\s*Torsional"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Torsional)"))
             section = TORSION;
-          else if (utils::strmatch(trimmed, "^##\\s*Pi-Torsion"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Pi-Torsion)"))
             section = PITORSION;
-          else if (utils::strmatch(trimmed, "^##\\s*Atomic Multipole"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Atomic Multipole)"))
             section = ATOMMULT;
-          else if (utils::strmatch(trimmed, "^##\\s*Charge Penetration"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Charge Penetration)"))
             section = QPENETRATION;
-          else if (utils::strmatch(trimmed, "^##\\s*Dipole Polarizability"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Dipole Polarizability)"))
             section = DIPPOLAR;
-          else if (utils::strmatch(trimmed, "^##\\s*Charge Transfer"))
+          else if (utils::strmatch(trimmed, R"(^##\s*Charge Transfer)"))
             section = QTRANSFER;
+          else if (utils::strmatch(trimmed, R"(^##\s*Charge Flux)"))
+            section = QFLUX;
           else {
             section = UNKNOWN;
             utils::logmesg(lmp, "Skipping section: {}\n", trimmed.substr(2, trimmed.size() - 4));
@@ -198,7 +200,9 @@ void PairAmoeba::read_prmfile(char *filename)
             if (pos != std::string::npos) trimmed = trimmed.substr(0, pos);
 
             // append to line if next line starts with a number
-            if (utils::is_double(utils::strfind(trimmed, "^\\S+"))) {
+            if (utils::is_double(utils::strfind(trimmed, R"(^\S+)"))) {
+              if (strlen(line) + trimmed.size() + 2 > MAXLINE)
+                error->one(FLERR, "Force field file {} line {} is too long", filename, nline);
               strcat(line, " ");
               strcat(line, trimmed.c_str());
               has_next = false;
@@ -221,7 +225,7 @@ void PairAmoeba::read_prmfile(char *filename)
           }
 
           // skip concatenated line with commented out keyword
-          if (utils::strmatch(trimmed, "^#\\w+")) continue;
+          if (utils::strmatch(trimmed, R"(^#\w+)")) continue;
 
           // exit loop if line is not empty
           if (!trimmed.empty()) {
@@ -303,6 +307,12 @@ void PairAmoeba::read_prmfile(char *filename)
         case QTRANSFER:
           file_charge_transfer(words, nline - 1);
           break;
+        case QFLUX:
+          // charge flux changes the monopoles with the geometry; ignoring it
+          // would silently give a different force field
+          error->all(FLERR, "{} PRM file line {}: charge flux ({}) is not supported",
+                     utils::uppercase(mystyle), nline - 1, words[0]);
+          break;
         case UNKNOWN:
         case END_OF_FILE:
         default:
@@ -317,6 +327,21 @@ void PairAmoeba::read_prmfile(char *filename)
 
   if (forcefield_flag == 0 || atomtype_flag == 0)
     error->all(FLERR, "Pair {} potential file {} incomplete", mystyle, filename);
+
+  // Tinker 8.9 (2021) lowered the overlap prefactor of the Pauli repulsion
+  // 64-fold and multiplied the repulsion sizes in its PRM files by 8; all
+  // older sizes are below 5.1, all newer ones above 9.4
+
+  if (!amoeba && (me == 0)) {
+    double sizmax = 0.0;
+    for (int i = 1; i <= n_amtype; i++) sizmax = MAX(sizmax, sizpr[i]);
+    if ((sizmax > 0.0) && (sizmax < 7.0))
+      error->warning(FLERR,
+                     "{} PRM file {} has Pauli repulsion sizes of at most {}: it probably "
+                     "uses the convention of Tinker before version 8.9, whose sizes must "
+                     "be multiplied by 8",
+                     utils::uppercase(mystyle), filename, sizmax);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -660,6 +685,14 @@ void PairAmoeba::read_keyfile(char *filename)
 
 void PairAmoeba::file_ffield(const std::vector<std::string> &words, int nline)
 {
+  // the direct field is scaled like the polar field: always the case for HIPPO
+
+  if (words[0] == "d-equals-p") {
+    if (amoeba)
+      error->all(FLERR, "AMOEBA PRM file keyword d-equals-p on line {} is not supported", nline);
+    return;
+  }
+
   if (words.size() < 2)
     error->all(FLERR, "Keyword {} without argument(s) in {} PRM file", words[0], mystyle);
 
@@ -862,6 +895,9 @@ void PairAmoeba::file_atomtype(const std::vector<std::string> &words, int nline)
 
   int itype = utils::inumeric(FLERR, words[1], false, lmp);
   int iclass = utils::inumeric(FLERR, words[2], false, lmp);
+  if (itype < 1 || iclass < 1)
+    error->all(FLERR, "{} PRM file atom type or class index on line {} is invalid: {}",
+               utils::uppercase(mystyle), nline, utils::join_words(words, " "));
 
   // grow per-type and per-class vecs/arrays as needed
 
@@ -924,8 +960,14 @@ void PairAmoeba::file_vdwl_pair(const std::vector<std::string> &words, int nline
     memory->grow(vdwl_eps_pair, max_vdwl_pair, "amoeba:vdwl_eps_pair");
   }
 
-  vdwl_class_pair[nvdwl_pair][0] = utils::inumeric(FLERR, words[1], false, lmp);
-  vdwl_class_pair[nvdwl_pair][1] = utils::inumeric(FLERR, words[2], false, lmp);
+  int iclass = utils::inumeric(FLERR, words[1], false, lmp);
+  int jclass = utils::inumeric(FLERR, words[2], false, lmp);
+  if (iclass < 1 || iclass > n_amclass || jclass < 1 || jclass > n_amclass)
+    error->all(FLERR, "{} PRM file VDWPR class index on line {} is invalid: {}",
+               utils::uppercase(mystyle), nline, utils::join_words(words, " "));
+
+  vdwl_class_pair[nvdwl_pair][0] = iclass;
+  vdwl_class_pair[nvdwl_pair][1] = jclass;
   vdwl_sigma_pair[nvdwl_pair] = utils::numeric(FLERR, words[3], false, lmp);
   vdwl_eps_pair[nvdwl_pair] = utils::numeric(FLERR, words[4], false, lmp);
   nvdwl_pair++;

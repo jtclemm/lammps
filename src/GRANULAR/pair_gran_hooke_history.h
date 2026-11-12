@@ -42,8 +42,6 @@ class PairGranHookeHistory : public Pair {
   int pack_forward_comm(int, int *, double *, int, int *) override;
   void unpack_forward_comm(int, int, double *) override;
   double memory_usage() override;
-  double atom2cut(int) override;
-  double radii2cut(double, double) override;
 
  protected:
   double kn, kt, gamman, gammat, xmu;
@@ -61,6 +59,8 @@ class PairGranHookeHistory : public Pair {
 
   class FixDummy *fix_dummy;
   class FixNeighHistory *fix_history;
+  char *id_history;    // id of fix_history, kept so that it survives a restart
+  void set_history_id();
 
   // storage of rigid body masses for use in granular interactions
 

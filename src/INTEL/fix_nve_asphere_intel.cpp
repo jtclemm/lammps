@@ -53,6 +53,8 @@ void FixNVEAsphereIntel::init()
   if (!avec)
     error->all(FLERR,"Compute nve/asphere requires atom style ellipsoid");
 
+  if (atom->superellipsoid_flag)
+    error->all(FLERR, "Fix nve/asphere_intel does not support superellipsoids");
   // check that all particles are finite-size ellipsoids
   // no point particles allowed, spherical is OK
 
@@ -99,8 +101,6 @@ void FixNVEAsphereIntel::initial_integrate(int /*vflag*/)
   #if defined(LMP_SIMD_COMPILER)
 #if defined(USE_OMP_SIMD)
   #pragma omp simd
-#else
-  #pragma simd
 #endif
   #pragma vector aligned
   #endif
@@ -114,8 +114,6 @@ void FixNVEAsphereIntel::initial_integrate(int /*vflag*/)
     #if defined(LMP_SIMD_COMPILER)
 #if defined(USE_OMP_SIMD)
     #pragma omp simd
-#else
-    #pragma simd
 #endif
     #pragma vector aligned
     #endif
@@ -128,8 +126,6 @@ void FixNVEAsphereIntel::initial_integrate(int /*vflag*/)
     #if defined(LMP_SIMD_COMPILER)
 #if defined(USE_OMP_SIMD)
     #pragma omp simd
-#else
-    #pragma simd
 #endif
     #pragma vector aligned
     #endif
@@ -157,8 +153,6 @@ void FixNVEAsphereIntel::final_integrate()
   #if defined(LMP_SIMD_COMPILER)
 #if defined(USE_OMP_SIMD)
   #pragma omp simd
-#else
-  #pragma simd
 #endif
   #pragma vector aligned
   #endif

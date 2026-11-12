@@ -11,7 +11,15 @@ if(ENABLE_TESTING)
     file(READ ${SUPP} SUPPRESSIONS)
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/lammps.supp "${SUPPRESSIONS}")
   endforeach()
-  set(VALGRIND_DEFAULT_OPTIONS "--leak-check=full --show-leak-kinds=all --track-origins=yes --suppressions=${CMAKE_BINARY_DIR}/lammps.supp")
+  # blocks that are still reachable when the process exits are not leaks. reporting
+  # them buries the actual defects under thousands of one-time initializations in
+  # OpenSSL, libcurl, CPython, and GoogleTest, plus everything that is still in use
+  # when a command like "quit" or an error exit terminates the process on purpose.
+  # --max-stackframe is raised because Fortran libraries (e.g. QUIP) place large
+  # automatic arrays on the stack; with the default limit valgrind misreads the
+  # resulting stack pointer jump as a stack switch and then floods the log with
+  # millions of bogus invalid access and uninitialized value errors.
+  set(VALGRIND_DEFAULT_OPTIONS "--leak-check=full --show-leak-kinds=definite,indirect,possible --track-origins=yes --max-stackframe=16777216 --suppressions=${CMAKE_BINARY_DIR}/lammps.supp")
 
   set(MEMORYCHECK_COMMAND "${VALGRIND_BINARY}" CACHE FILEPATH "Memory Check Command")
   set(MEMORYCHECK_COMMAND_OPTIONS "${VALGRIND_DEFAULT_OPTIONS}" CACHE STRING "Memory Check Command Options")
@@ -24,7 +32,7 @@ if(ENABLE_TESTING)
     if(((CMAKE_LINUX_DISTRO STREQUAL "Ubuntu") AND (CMAKE_DISTRO_VERSION VERSION_GREATER_EQUAL 22.04))
         OR ((CMAKE_LINUX_DISTRO STREQUAL "Fedora") AND (CMAKE_DISTRO_VERSION VERSION_GREATER 30)))
       include(CheckCXXCompilerFlag)
-      set(CMAKE_CUSTOM_LINKER_DEFAULT default)
+      set(LAMMPS_CUSTOM_LINKER_DEFAULT default)
       check_cxx_compiler_flag(--ld-path=${CMAKE_LINKER} HAVE_LD_PATH_FLAG)
       check_cxx_compiler_flag(-fuse-ld=mold HAVE_MOLD_LINKER_FLAG)
       check_cxx_compiler_flag(-fuse-ld=lld HAVE_LLD_LINKER_FLAG)
@@ -35,31 +43,97 @@ if(ENABLE_TESTING)
       find_program(HAVE_GOLD_LINKER_BIN ld.gold)
       find_program(HAVE_BFD_LINKER_BIN ld.bfd)
       if(HAVE_MOLD_LINKER_FLAG AND HAVE_MOLD_LINKER_BIN)
-        set(CMAKE_CUSTOM_LINKER_DEFAULT mold)
+        set(LAMMPS_CUSTOM_LINKER_DEFAULT mold)
       elseif(HAVE_LLD_LINKER_FLAG AND HAVE_LLD_LINKER_BIN)
-        set(CMAKE_CUSTOM_LINKER_DEFAULT lld)
+        set(LAMMPS_CUSTOM_LINKER_DEFAULT lld)
       elseif(HAVE_GOLD_LINKER_FLAG AND HAVE_GOLD_LINKER_BIN)
-        set(CMAKE_CUSTOM_LINKER_DEFAULT gold)
+        set(LAMMPS_CUSTOM_LINKER_DEFAULT gold)
       elseif(HAVE_BFD_LINKER_FLAG AND HAVE_BFD_LINKER_BIN)
-        set(CMAKE_CUSTOM_LINKER_DEFAULT bfd)
+        set(LAMMPS_CUSTOM_LINKER_DEFAULT bfd)
       endif()
-      set(CMAKE_CUSTOM_LINKER_VALUES mold lld gold bfd default)
-      set(CMAKE_CUSTOM_LINKER ${CMAKE_CUSTOM_LINKER_DEFAULT} CACHE STRING "Choose a custom linker for faster linking (mold, lld, gold, bfd, default)")
-      validate_option(CMAKE_CUSTOM_LINKER CMAKE_CUSTOM_LINKER_VALUES)
-      mark_as_advanced(CMAKE_CUSTOM_LINKER)
-      if(NOT "${CMAKE_CUSTOM_LINKER}" STREQUAL "default")
-        target_link_options(lammps PUBLIC -fuse-ld=${CMAKE_CUSTOM_LINKER})
+      set(LAMMPS_CUSTOM_LINKER_VALUES mold lld gold bfd default)
+      set(LAMMPS_CUSTOM_LINKER ${LAMMPS_CUSTOM_LINKER_DEFAULT} CACHE STRING "Choose a custom linker for faster linking (mold, lld, gold, bfd, default)")
+      validate_option(LAMMPS_CUSTOM_LINKER LAMMPS_CUSTOM_LINKER_VALUES)
+      mark_as_advanced(LAMMPS_CUSTOM_LINKER)
+      if(NOT "${LAMMPS_CUSTOM_LINKER}" STREQUAL "default")
+        target_link_options(lammps PUBLIC -fuse-ld=${LAMMPS_CUSTOM_LINKER})
       endif()
       if(HAVE_LD_PATH_FLAG)
-        if("${CMAKE_CUSTOM_LINKER}" STREQUAL "mold")
+        if("${LAMMPS_CUSTOM_LINKER}" STREQUAL "mold")
           target_link_options(lammps PUBLIC --ld-path=${HAVE_MOLD_LINKER_BIN})
-        elseif("${CMAKE_CUSTOM_LINKER}" STREQUAL "lld")
+        elseif("${LAMMPS_CUSTOM_LINKER}" STREQUAL "lld")
           target_link_options(lammps PUBLIC --ld-path=${HAVE_LLD_LINKER_BIN})
-        elseif("${CMAKE_CUSTOM_LINKER}" STREQUAL "gold")
+        elseif("${LAMMPS_CUSTOM_LINKER}" STREQUAL "gold")
           target_link_options(lammps PUBLIC --ld-path=${HAVE_GOLD_LINKER_BIN})
-        elseif("${CMAKE_CUSTOM_LINKER}" STREQUAL "bfd")
+        elseif("${LAMMPS_CUSTOM_LINKER}" STREQUAL "bfd")
           target_link_options(lammps PUBLIC --ld-path=${HAVE_BFD_LINKER_BIN})
         endif()
+      endif()
+    endif()
+  endif()
+
+  get_filename_component(LAMMPS_UNITTEST_DIR ${LAMMPS_SOURCE_DIR}/../unittest ABSOLUTE)
+  get_filename_component(LAMMPS_UNITTEST_BIN ${CMAKE_BINARY_DIR}/unittest ABSOLUTE)
+
+  # With enabled GPU support, parallel tests may be dispatched to different NVIDIA GPUs through
+  # the resource allocation feature of CTest and the CUDA_VISIBLE_DEVICES environment variable:
+  # Every test requests one slot of a "gpus" resource, and a launcher script sets the
+  # environment variable accordingly.  Available GPUs are listed in a resource spec file, which
+  # is generated from the output of nvidia-smi if it does not exist. Without a resource spec file,
+  # the tests run the same way as without this feature.
+  set(LAMMPS_TEST_RESOURCE_SPEC_FILE ${CMAKE_BINARY_DIR}/ctest-resources.json CACHE FILEPATH
+    "CTest resource spec file running GPU unit tests concurrently on multiple NVIDIA GPUS (empty to disable)")
+  mark_as_advanced(LAMMPS_TEST_RESOURCE_SPEC_FILE)
+  set(LAMMPS_TEST_LAUNCHER "")
+  if(LAMMPS_TEST_RESOURCE_SPEC_FILE AND (PKG_GPU OR (PKG_KOKKOS AND Kokkos_ENABLE_CUDA)))
+    # the TEST_LAUNCHER target property is required to apply the launcher to the tests
+    if(CMAKE_VERSION VERSION_LESS 3.29 OR NOT UNIX)
+      message(STATUS "Running unit tests across multiple GPUs requires CMake 3.29 or later on a Unix-like OS")
+    else()
+      if(NOT EXISTS ${LAMMPS_TEST_RESOURCE_SPEC_FILE})
+        find_program(NVIDIA_SMI_EXECUTABLE nvidia-smi)
+        mark_as_advanced(NVIDIA_SMI_EXECUTABLE)
+        set(GPU_RESOURCES "")
+        if(NVIDIA_SMI_EXECUTABLE)
+          execute_process(COMMAND ${NVIDIA_SMI_EXECUTABLE} --query-gpu=index,name,pci.bus_id --format=csv,noheader
+                          OUTPUT_VARIABLE GPU_INFO RESULT_VARIABLE GPU_STATUS ERROR_QUIET)
+          if(GPU_STATUS EQUAL 0)
+            string(REGEX MATCHALL "[^\r\n]+" GPU_INFO "${GPU_INFO}")
+            foreach(GPU ${GPU_INFO})
+              if(GPU MATCHES "^ *([0-9]+), *([^,\"]+), *([^,\"]+)$")
+                list(APPEND GPU_RESOURCES "        { \"id\": \"${CMAKE_MATCH_1}\", \"slots\": 1, \"name\": \"${CMAKE_MATCH_2}\", \"pci_bus_id\": \"${CMAKE_MATCH_3}\" }")
+              endif()
+            endforeach()
+          endif()
+        endif()
+        if(GPU_RESOURCES)
+          list(LENGTH GPU_RESOURCES NUM_GPUS)
+          list(JOIN GPU_RESOURCES ",\n" GPU_RESOURCES)
+          message(STATUS "Writing CTest resource spec file for ${NUM_GPUS} GPU(s) to ${LAMMPS_TEST_RESOURCE_SPEC_FILE}")
+          file(WRITE ${LAMMPS_TEST_RESOURCE_SPEC_FILE} "{
+  \"comment\": [
+    \"CTest resource spec file for running unit tests on multiple NVIDIA GPUs concurrently.\",
+    \"Generated from the output of nvidia-smi.  Every test is assigned one slot of one GPU, and\",
+    \"the GPU of each entry is selected by its 'id', which is the nvidia-smi index of the GPU.\"
+  ],
+  \"version\": { \"major\": 1, \"minor\": 0 },
+  \"local\": [
+    {
+      \"gpus\": [
+${GPU_RESOURCES}
+      ]
+    }
+  ]
+}
+")
+        else()
+          message(STATUS "Found no NVIDIA GPUs with nvidia-smi for running unit tests concurrently")
+        endif()
+      endif()
+      if(EXISTS ${LAMMPS_TEST_RESOURCE_SPEC_FILE})
+        message(STATUS "Running unit tests concurrently on the GPUs listed in ${LAMMPS_TEST_RESOURCE_SPEC_FILE}")
+        set(CTEST_RESOURCE_SPEC_FILE ${LAMMPS_TEST_RESOURCE_SPEC_FILE})
+        set(LAMMPS_TEST_LAUNCHER /bin/sh ${LAMMPS_UNITTEST_DIR}/ctest-gpu-launcher.sh)
       endif()
     endif()
   endif()
@@ -67,9 +141,29 @@ if(ENABLE_TESTING)
   include(CTest)
 
   enable_testing()
-  get_filename_component(LAMMPS_UNITTEST_DIR ${LAMMPS_SOURCE_DIR}/../unittest ABSOLUTE)
-  get_filename_component(LAMMPS_UNITTEST_BIN ${CMAKE_BINARY_DIR}/unittest ABSOLUTE)
+  # tests with an executable target as command get the launcher through the TEST_LAUNCHER
+  # target property, all others must have ${LAMMPS_TEST_LAUNCHER} prepended explicitly.
+  # the launcher runs a test launcher set by the user in turn.
+  if(LAMMPS_TEST_LAUNCHER)
+    set(CMAKE_TEST_LAUNCHER ${LAMMPS_TEST_LAUNCHER} ${CMAKE_TEST_LAUNCHER})
+  endif()
   add_subdirectory(${LAMMPS_UNITTEST_DIR} ${LAMMPS_UNITTEST_BIN})
+  unset(CMAKE_TEST_LAUNCHER)
+
+  # request one GPU for every test in the unittest folder and all its subfolders
+  if(LAMMPS_TEST_LAUNCHER)
+    function(request_test_gpus dir)
+      get_property(TESTS DIRECTORY ${dir} PROPERTY TESTS)
+      if(TESTS)
+        set_tests_properties(${TESTS} DIRECTORY ${dir} PROPERTIES RESOURCE_GROUPS "gpus:1")
+      endif()
+      get_property(SUBDIRS DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+      foreach(SUBDIR ${SUBDIRS})
+        request_test_gpus(${SUBDIR})
+      endforeach()
+    endfunction()
+    request_test_gpus(${LAMMPS_UNITTEST_DIR})
+  endif()
 endif()
 
 # Compiler specific features for testing

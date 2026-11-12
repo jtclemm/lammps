@@ -1,7 +1,11 @@
 .. index:: pair_style coul/shield
+.. index:: pair_style coul/shield/kk
+.. index:: pair_style coul/shield/omp
 
 pair_style coul/shield command
 ==============================
+
+Accelerator Variants: *coul/shield/kk*, *coul/shield/omp*
 
 Syntax
 """"""
@@ -62,11 +66,21 @@ The global cutoff (:math:`r_c`) specified in the pair_style command is used.
 
 ----------
 
+.. include:: accel_styles.rst
+
+----------
+
 Mixing, shift, table, tail correction, restart, rRESPA info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This pair style does not support parameter mixing. Coefficients must
 be given explicitly for each type of particle pairs.
+
+.. versionchanged:: TBD
+
+The :doc:`pair_modify <pair_modify>` *shift* option is not available
+for this pair style and ignored.  Instead the taper function should
+be used as it makes the energy go smoothly to zero at the cutoff.
 
 The :doc:`pair_modify <pair_modify>` *table* option is not relevant
 for this pair style.

@@ -21,6 +21,7 @@
 #include "thr_data.h"
 
 #include "atom.h"
+#include "atom_vec.h"
 #include "comm.h"
 #include "error.h"
 #include "force.h"
@@ -65,7 +66,9 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
      _nthr(-1), _neighbor(true), _mixed(false), _reduced(true),
      _pair_compute_flag(false), _kspace_compute_flag(false)
 {
-  if (narg < 4) error->all(FLERR,"Illegal package omp command");
+  if (strcmp(id, "package_omp") != 0)
+    error->all(FLERR, "Fix OMP is for internal use only. Use the package omp command instead");
+  if (narg < 4) utils::missing_cmd_args(FLERR, "package omp", error);
 
   int nthreads = 1;
   if (narg > 3) {
@@ -80,7 +83,7 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
 
 #if defined(_OPENMP)
   if (nthreads < 1)
-    error->all(FLERR,"Illegal number of OpenMP threads requested");
+    error->all(FLERR, 3 - 2, "Illegal number of OpenMP threads requested");
 
   int reset_thr = 0;
 #endif
@@ -97,10 +100,10 @@ FixOMP::FixOMP(LAMMPS *lmp, int narg, char **arg)
   int iarg = 4;
   while (iarg < narg) {
     if (strcmp(arg[iarg],"neigh") == 0) {
-      if (iarg+2 > narg) error->all(FLERR,"Illegal package omp command");
+      if (iarg+2 > narg) utils::missing_cmd_args(FLERR, "package omp neigh", error);
       _neighbor = utils::logical(FLERR,arg[iarg+1],false,lmp) != 0;
       iarg += 2;
-    } else error->all(FLERR,"Illegal package omp command");
+    } else error->all(FLERR, iarg - 2, "Unknown package omp keyword {}", arg[iarg]);
   }
 
   // print summary of settings
@@ -161,7 +164,8 @@ void FixOMP::init()
 {
   // OPENMP package cannot be used with atom_style template
   if (atom->molecular == Atom::TEMPLATE)
-    error->all(FLERR,"OPENMP package does not (yet) work with atom_style template");
+    error->all(FLERR, Error::NOLASTLINE,
+               "OPENMP package does not (yet) work with atom_style template");
 
   // adjust number of data objects when the number of OpenMP
   // threads has been changed somehow
@@ -176,6 +180,7 @@ void FixOMP::init()
 
     for (int i=0; i < _nthr; ++i)
       delete thr[i];
+    delete[] thr;
 
     thr = new ThrData *[nthreads];
     _nthr = nthreads;
@@ -198,7 +203,7 @@ void FixOMP::init()
 
   if (utils::strmatch(update->integrate_style,"^respa")
       && !utils::strmatch(update->integrate_style,"^respa/omp"))
-    error->all(FLERR,"Must use respa/omp for r-RESPA with /omp styles");
+    error->all(FLERR,  Error::NOLASTLINE, "Must use respa/omp for r-RESPA with /omp styles");
 
   _pair_compute_flag = force->pair && force->pair->compute_flag;
   _kspace_compute_flag = force->kspace && force->kspace->compute_flag;
@@ -256,12 +261,16 @@ void FixOMP::init()
     }                                                         \
   }
 
-  if (_pair_compute_flag && (kspace_split <= 0)) {
-    CheckStyleForOMP(pair);
-    CheckHybridForOMP(pair,Pair);
-    if (check_hybrid) {
-      last_pair_hybrid = last_omp_style;
-      last_hybrid_name = last_omp_name;
+  // bonded interactions are computed even if pair_modify compute no is set
+
+  if (kspace_split <= 0) {
+    if (_pair_compute_flag) {
+      CheckStyleForOMP(pair);
+      CheckHybridForOMP(pair,Pair);
+      if (check_hybrid) {
+        last_pair_hybrid = last_omp_style;
+        last_hybrid_name = last_omp_name;
+      }
     }
 
     CheckStyleForOMP(bond);
@@ -318,15 +327,25 @@ void FixOMP::pre_force(int)
   double *erforce = atom->erforce;
   double *desph = atom->desph;
   double *drho = atom->drho;
+  double *edpd_flux = atom->edpd_flux;
+  double **cc_flux = atom->cc_flux;
+  const int ncc = atom->cc_species;
 
 #if defined(_OPENMP)
-#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(f,torque,erforce,desph,drho)
+#pragma omp parallel LMP_DEFAULT_NONE LMP_SHARED(f,torque,erforce,desph,drho,edpd_flux,cc_flux)
 #endif
   {
     const int tid = get_tid();
     thr[tid]->check_tid(tid);
-    thr[tid]->init_force(nall,f,torque,erforce,desph,drho);
+    thr[tid]->init_force(nall,f,torque,erforce,desph,drho,edpd_flux,cc_flux,ncc);
   } // end of omp parallel region
+
+  // the integrators skip their force_clear() when this fix is active,
+  // so we must also clear additional per-atom force-like properties
+  // of the atom style that have no per-thread copies (e.g. magnetic
+  // forces, heat flow, or concentration fluxes)
+
+  if (atom->avec->forceclearflag) atom->avec->force_clear(0, sizeof(double) * nall);
 
   _reduced = false;
 }
@@ -339,4 +358,67 @@ double FixOMP::memory_usage()
   bytes += (double)_nthr * thr[0]->memory_usage();
 
   return bytes;
+}
+
+/* ----------------------------------------------------------------------
+   provide a list of currently defined styles that store a pointer to this
+   fix.  used by the package command to refuse replacing this fix.
+------------------------------------------------------------------------- */
+
+void *FixOMP::extract(const char *name, int &dim)
+{
+  dim = 0;
+  if (strcmp(name, "styles_in_use") != 0) return nullptr;
+
+  styles_in_use.clear();
+  auto add = [&](int flag, const std::string &style) {
+    if (flag & Suffix::OMP) styles_in_use += (styles_in_use.empty() ? "" : ", ") + style;
+  };
+
+  if (force->pair) {
+    add(force->pair->suffix_flag, fmt::format("pair_style {}", force->pair_style));
+    auto *hybrid = dynamic_cast<PairHybrid *>(force->pair);
+    if (hybrid)
+      for (int i = 0; i < hybrid->nstyles; ++i)
+        add(hybrid->styles[i]->suffix_flag,
+            fmt::format("pair_style {} sub-style {}", force->pair_style, hybrid->keywords[i]));
+  }
+  if (force->bond) {
+    add(force->bond->suffix_flag, fmt::format("bond_style {}", force->bond_style));
+    auto *hybrid = dynamic_cast<BondHybrid *>(force->bond);
+    if (hybrid)
+      for (int i = 0; i < hybrid->nstyles; ++i)
+        add(hybrid->styles[i]->suffix_flag,
+            fmt::format("bond_style {} sub-style {}", force->bond_style, hybrid->keywords[i]));
+  }
+  if (force->angle) {
+    add(force->angle->suffix_flag, fmt::format("angle_style {}", force->angle_style));
+    auto *hybrid = dynamic_cast<AngleHybrid *>(force->angle);
+    if (hybrid)
+      for (int i = 0; i < hybrid->nstyles; ++i)
+        add(hybrid->styles[i]->suffix_flag,
+            fmt::format("angle_style {} sub-style {}", force->angle_style, hybrid->keywords[i]));
+  }
+  if (force->dihedral) {
+    add(force->dihedral->suffix_flag, fmt::format("dihedral_style {}", force->dihedral_style));
+    auto *hybrid = dynamic_cast<DihedralHybrid *>(force->dihedral);
+    if (hybrid)
+      for (int i = 0; i < hybrid->nstyles; ++i)
+        add(hybrid->styles[i]->suffix_flag, fmt::format("dihedral_style {} sub-style {}",
+                                                        force->dihedral_style, hybrid->keywords[i]));
+  }
+  if (force->improper) {
+    add(force->improper->suffix_flag, fmt::format("improper_style {}", force->improper_style));
+    auto *hybrid = dynamic_cast<ImproperHybrid *>(force->improper);
+    if (hybrid)
+      for (int i = 0; i < hybrid->nstyles; ++i)
+        add(hybrid->styles[i]->suffix_flag, fmt::format("improper_style {} sub-style {}",
+                                                        force->improper_style, hybrid->keywords[i]));
+  }
+  if (force->kspace)
+    add(force->kspace->suffix_flag, fmt::format("kspace_style {}", force->kspace_style));
+  if (utils::strmatch(update->integrate_style, "/omp$"))
+    add(Suffix::OMP, fmt::format("run_style {}", update->integrate_style));
+
+  return (void *) styles_in_use.c_str();
 }

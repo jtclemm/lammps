@@ -43,8 +43,8 @@
 /** Data type constants for extracting data from atoms, computes and fixes
  *
  * Must be kept in sync with the equivalent constants in ``python/lammps/constants.py``,
- * ``fortran/lammps.f90``, ``tools/swig/lammps.i``, ``src/lmptype.h``, and
- *``examples/COUPLE/plugin/liblammpsplugin.h`` */
+ * ``fortran/lammps.f90``, ``tools/swig/lammps.i``, ``%src/lmptype.h``, and
+ * ``examples/COUPLE/plugin/liblammpsplugin.h`` */
 
 enum _LMP_DATATYPE_CONST {
   LAMMPS_NONE = -1,     /*!< no data type assigned (yet) */
@@ -264,6 +264,7 @@ int lammps_version(void *handle);
 void lammps_get_os_info(char *buffer, int buf_size);
 
 int lammps_config_has_mpi_support();
+int lammps_config_has_omp_support();
 int lammps_config_has_gzip_support();
 int lammps_config_has_png_support();
 int lammps_config_has_jpeg_support();

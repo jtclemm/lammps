@@ -1,4 +1,3 @@
-
 /* ----------------------------------------------------------------------
    LAMMPS - Large-scale Atomic/Molecular Massively Parallel Simulator
    https://www.lammps.org/, Sandia National Laboratories
@@ -32,6 +31,7 @@
 #include "random_mars.h"
 #include "respa.h"
 #include "rigid_const.h"
+#include "safe_pointers.h"
 #include "tokenizer.h"
 #include "update.h"
 #include "variable.h"
@@ -54,10 +54,11 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
     ez_space(nullptr), angmom(nullptr), omega(nullptr), torque(nullptr), quat(nullptr),
     imagebody(nullptr), fflag(nullptr), tflag(nullptr), langextra(nullptr), sum(nullptr),
     all(nullptr), remapflag(nullptr), xcmimage(nullptr), eflags(nullptr), orient(nullptr),
-    dorient(nullptr), id_dilate(nullptr), id_gravity(nullptr), random(nullptr),
+    dorient(nullptr), body_in_defgroup(nullptr), id_dilate(nullptr),
+    id_gravity(nullptr), random(nullptr),
     avec_ellipsoid(nullptr), avec_line(nullptr), avec_tri(nullptr)
 {
-  int i, ibody;
+  int i, j, ibody;
 
   scalar_flag = 1;
   extscalar = 0;
@@ -68,6 +69,8 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   create_attribute = 1;
   dof_flag = 1;
   centroidstressflag = CENTROID_NOTAVAIL;
+  deform_vremap = 0;
+  deform_groupbit = 0;
 
   // perform initial allocation of atom-based arrays
   // register with Atom class
@@ -80,7 +83,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   orient = nullptr;
   dorient = nullptr;
   FixRigid::grow_arrays(atom->nmax);
-  atom->add_callback(Atom::GROW);
+  atom->add_callback(this, Atom::GROW);
 
   // parse args for rigid body specification
   // set nbody and body[i] for each atom
@@ -162,6 +165,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
         molecule = new tagint[nlocal];
         for (i = 0; i < nlocal; i++)
           if (mask[i] & groupbit) molecule[i] = (tagint) ((tagint) value[i] - minval + 1);
+          else molecule[i] = 0;
         delete[] value;
 
       } else
@@ -225,8 +229,7 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
     rstyle = GROUP;
     nbody = utils::inumeric(FLERR, arg[4], false, lmp);
     if (nbody <= 0) error->all(FLERR, "Illegal fix {} number of groups {}", style, nbody);
-    if (narg < 5 + nbody)
-      utils::missing_cmd_args(FLERR, fmt::format("fix {} group", style), error);
+    if (narg < 5 + nbody) utils::missing_cmd_args(FLERR, fmt::format("fix {} group", style), error);
     iarg = 5 + nbody;
 
     int *igroups = new int[nbody];
@@ -281,11 +284,12 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   memory->create(imagebody, nbody, "rigid:imagebody");
   memory->create(fflag, nbody, 3, "rigid:fflag");
   memory->create(tflag, nbody, 3, "rigid:tflag");
-  memory->create(langextra, nbody, 6, "rigid:langextra");
 
   memory->create(sum, nbody, 6, "rigid:sum");
   memory->create(all, nbody, 6, "rigid:all");
   memory->create(remapflag, nbody, 4, "rigid:remapflag");
+
+  memory->create(body_in_defgroup, nbody, "rigid:body_in_defgroup");
 
   // initialize force/torque flags to default = 1.0
   // for 2d: fz, tx, ty = 0.0
@@ -579,9 +583,15 @@ FixRigid::FixRigid(LAMMPS *lmp, int narg, char **arg) :
   else pstyle = ANISO;
 
   // initialize Marsaglia RNG with processor-unique seed
+  // and allocate and initialize langextra array for langevin thermostat
 
-  if (langflag) random = new RanMars(lmp, seed + comm->me);
-  else random = nullptr;
+  if (langflag) {
+    random = new RanMars(lmp, seed + comm->me);
+    memory->create(langextra, nbody, 6, "rigid:langextra");
+    for (i = 0; i < nbody; i++) {
+      for (j = 0; j < 6; j++) langextra[i][j] = 0.0;
+    }
+  }
 
   // initialize vector output quantities in case accessed before run
 
@@ -632,7 +642,7 @@ FixRigid::~FixRigid()
 {
   // unregister callbacks to this fix from Atom class
 
-  if (modify->get_fix_by_id(id)) atom->delete_callback(id,Atom::GROW);
+  if (modify->get_fix_by_id(id)) atom->delete_callback(this, Atom::GROW);
 
   delete random;
   delete[] inpfile;
@@ -674,6 +684,8 @@ FixRigid::~FixRigid()
   memory->destroy(sum);
   memory->destroy(all);
   memory->destroy(remapflag);
+
+  memory->destroy(body_in_defgroup);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -727,7 +739,7 @@ void FixRigid::init()
   //   and gravity is not applied correctly
 
   if (inpfile && !id_gravity) {
-    if (modify->get_fix_by_style("^gravity").size() > 0)
+    if (!modify->get_fix_by_style("^gravity").empty())
       if (comm->me == 0)
         error->warning(FLERR,"Gravity may not be correctly applied to rigid "
                        "bodies if they consist of overlapped particles");
@@ -742,6 +754,44 @@ void FixRigid::init()
     if (ifix->box_change) boxflag = true;
   }
 
+  // check for fix deform with V_REMAP set
+  // if yes, require all atoms in each body be entirely in or out of deform group
+  // can check in init() for fix rigid, needs to be in setup() for fix rigid/small
+  // check at every run, b/c fix deform can be added or unset
+
+  deform_vremap = domain->deform_vremap;
+  deform_groupbit = domain->deform_groupbit;
+
+  if (deform_vremap) {
+    int *mask = atom->mask;
+    int nlocal = atom->nlocal;
+
+    int *bodyone = new int[nbody];
+    int *bodyall = new int[nbody];
+
+    for (int ibody = 0; ibody < nbody; ibody++) bodyone[ibody] = 0;
+    for (int i = 0; i < nlocal; i++) {
+      if (body[i] < 0) continue;
+      if (mask[i] & deform_groupbit) bodyone[body[i]]++;
+    }
+    MPI_Allreduce(bodyone,bodyall,nbody,MPI_INT,MPI_SUM,world);
+
+    for (int ibody = 0; ibody < nbody; ibody++)
+      if (bodyall[ibody] && bodyall[ibody] != nrigid[ibody])
+        error->all(FLERR,"Fix deform remap v with fix rigid requires "
+                            "entire bodies be included/excluded "
+                            "from velocity remap");
+
+    for (int ibody = 0; ibody < nbody; ibody++)
+      if (bodyall[ibody])
+        body_in_defgroup[ibody] = 1;
+      else
+        body_in_defgroup[ibody] = 0;
+
+    delete [] bodyone;
+    delete [] bodyall;
+  }
+
   // add gravity forces based on gravity vector from fix
 
   if (id_gravity) {
@@ -752,6 +802,10 @@ void FixRigid::init()
     int tmp;
     gvec = (double *) ifix->extract("gvec", tmp);
   }
+
+  // error for not supported superellipsoids
+
+  if (atom->superellipsoid_flag) error->all(FLERR,"Superellipsoids not supported in fix rigid");
 
   // timestep info
 
@@ -805,90 +859,16 @@ void FixRigid::setup_pre_neighbor()
 
 void FixRigid::setup(int vflag)
 {
-  int i,n,ibody;
+  int i, ibody, n;
+  const int nlocal = atom->nlocal;
 
-  // fcm = force on center-of-mass of each rigid body
+  // pre-run computation of forces and torques
 
-  double **f = atom->f;
-  int nlocal = atom->nlocal;
-
-  for (ibody = 0; ibody < nbody; ibody++)
-    for (i = 0; i < 6; i++) sum[ibody][i] = 0.0;
-
-  for (i = 0; i < nlocal; i++) {
-    if (body[i] < 0) continue;
-    ibody = body[i];
-    sum[ibody][0] += f[i][0];
-    sum[ibody][1] += f[i][1];
-    sum[ibody][2] += f[i][2];
-  }
-
-  MPI_Allreduce(sum[0],all[0],6*nbody,MPI_DOUBLE,MPI_SUM,world);
-
-  for (ibody = 0; ibody < nbody; ibody++) {
-    fcm[ibody][0] = all[ibody][0];
-    fcm[ibody][1] = all[ibody][1];
-    fcm[ibody][2] = all[ibody][2];
-  }
-
-  // torque = torque on each rigid body
-
-  double **x = atom->x;
-
-  double dx,dy,dz;
-  double unwrap[3];
-
-  for (ibody = 0; ibody < nbody; ibody++)
-    for (i = 0; i < 6; i++) sum[ibody][i] = 0.0;
-
-  for (i = 0; i < nlocal; i++) {
-    if (body[i] < 0) continue;
-    ibody = body[i];
-
-    domain->unmap(x[i],xcmimage[i],unwrap);
-    dx = unwrap[0] - xcm[ibody][0];
-    dy = unwrap[1] - xcm[ibody][1];
-    dz = unwrap[2] - xcm[ibody][2];
-
-    sum[ibody][0] += dy * f[i][2] - dz * f[i][1];
-    sum[ibody][1] += dz * f[i][0] - dx * f[i][2];
-    sum[ibody][2] += dx * f[i][1] - dy * f[i][0];
-  }
-
-  // extended particles add their torque to torque of body
-
-  if (extended) {
-    double **torque_one = atom->torque;
-
-    for (i = 0; i < nlocal; i++) {
-      if (body[i] < 0) continue;
-      ibody = body[i];
-      if (eflags[i] & TORQUE) {
-        sum[ibody][0] += torque_one[i][0];
-        sum[ibody][1] += torque_one[i][1];
-        sum[ibody][2] += torque_one[i][2];
-      }
-    }
-  }
-
-  MPI_Allreduce(sum[0],all[0],6*nbody,MPI_DOUBLE,MPI_SUM,world);
-
-  for (ibody = 0; ibody < nbody; ibody++) {
-    torque[ibody][0] = all[ibody][0];
-    torque[ibody][1] = all[ibody][1];
-    torque[ibody][2] = all[ibody][2];
-  }
+  compute_forces_and_torques();
 
   // enforce 2d body forces and torques
 
   if (domain->dimension == 2) enforce2d();
-
-  // zero langextra in case Langevin thermostat not used
-  // no point to calling post_force() here since langextra
-  // is only added to fcm/torque in final_integrate()
-
-  for (ibody = 0; ibody < nbody; ibody++)
-    for (i = 0; i < 6; i++) langextra[ibody][i] = 0.0;
 
   // virial setup before call to set_v
 
@@ -964,26 +944,53 @@ void FixRigid::initial_integrate(int vflag)
 }
 
 /* ----------------------------------------------------------------------
-   remap xcm of each rigid body back into periodic simulation box
-   done during pre_neighbor so will be after call to pbc()
-     and after fix_deform::pre_exchange() may have flipped box
-   use domain->remap() in case xcm is far away from box
-     due to first-time definition of rigid body in setup_bodies_static()
-     or due to box flip
-   also adjust imagebody = rigid body image flags, due to xcm remap
-   also reset body xcmimage flags of all atoms in bodies
-   xcmimage flags are relative to xcm so that body can be unwrapped
-   if don't do this, would need xcm to move with true image flags
-     then a body could end up very far away from box
-     set_xv() will then compute huge displacements every step to
-       reset coords of all body atoms to be back inside the box,
-       ditto for triclinic box flip, which causes numeric problems
+   adjustment of body image flags due to a box flip
+   invoked via Domain::image_flip() -> Modify::image_flip() by every fix
+     that flips the box (fix deform, fix npt/nph, fix press/langevin, ...)
+   performs same operation Domain::image_flip() does for all per-atom image flags
+   the flipping fix then remaps x,image (and v for fix deform remap v) of all atoms
+     this fix does it in pre_neighbor() for x,v,image of each rigid body
+------------------------------------------------------------------------- */
+
+void FixRigid::image_flip(int flipxy, int flipxz, int flipyz)
+{
+  for (int ibody = 0; ibody < nbody; ibody++)
+    domain->image_flip_one(imagebody[ibody], flipxy, flipxz, flipyz);
+}
+
+/* ----------------------------------------------------------------------
+   called at every reneighbor after atom exchange and comm->borders()
+   performs 2 operations
+   (1) reset body xcm, vcm, image via remap() due to 2 effects
+         incremental movement of body xcm across a periodic boundary
+         box flip by FixDeform or another fix, which invoked image_flip()
+           before atom exchange
+       (a) assign rigid body xcm back into periodic simulation box
+           can be far away, due to box flip or
+             due to first-time definition of rigid body in setup_bodies_static()
+       (b) adjust rigid body image flags due to xcm remap
+       (c) remap vcm if xcm crosses periodic shearing boundary
+   (2) image_shift() resets xcmimage flags for each atom in all bodies
+       based on new body image flags and new atom image flags
+       xcmimage flags are always -1,0,-1 so that body can be unwrapped
+         around in-box xcm and stay close to simulation box
+       if just inferred unwrapped from atom image flags,
+         then an unwrapped body could end up very far away from box
+       set_xv() would then compute huge displacements every step to
+         reset coords of all body atoms to be back inside the box,
+         ditto for triclinic box flip which could cause numeric problems
 ------------------------------------------------------------------------- */
 
 void FixRigid::pre_neighbor()
 {
-  for (int ibody = 0; ibody < nbody; ibody++)
-    domain->remap(xcm[ibody],imagebody[ibody]);
+  for (int ibody = 0; ibody < nbody; ibody++) {
+    // also remap VCM if fix deform AND vremap AND body in fix deform group
+    if (deform_vremap && body_in_defgroup[ibody])
+      domain->remap(xcm[ibody],imagebody[ibody],vcm[ibody]);
+    else
+      domain->remap(xcm[ibody],imagebody[ibody],nullptr);
+  }
+
   image_shift();
 }
 
@@ -1093,13 +1100,15 @@ void FixRigid::image_shift()
    computed by proc 0, broadcast to other procs
    unlike fix langevin, this stores extra force in extra arrays,
      which are added in when final_integrate() calculates a new fcm/torque
+   remove/restore flow bias for all bodies, not just those in fix deform group
 ------------------------------------------------------------------------- */
 
 void FixRigid::apply_langevin_thermostat()
 {
   if (comm->me == 0) {
     double gamma1,gamma2;
-    double wbody[3],tbody[3];
+    double wbody[3],tbody[3],vbias[3];
+
     double delta = update->ntimestep - update->beginstep;
     if (delta != 0.0) delta /= update->endstep - update->beginstep;
     t_target = t_start + delta * (t_stop-t_start);
@@ -1114,9 +1123,11 @@ void FixRigid::apply_langevin_thermostat()
       gamma1 = -masstotal[i] / t_period / ftm2v;
       gamma2 = sqrt(masstotal[i]) * tsqrt *
         sqrt(24.0*boltz/t_period/dt/mvv2e) / ftm2v;
+      if (deform_vremap) remove_bias(i,vcm[i],vbias);
       langextra[i][0] = gamma1*vcm[i][0] + gamma2*(random->uniform()-0.5);
       langextra[i][1] = gamma1*vcm[i][1] + gamma2*(random->uniform()-0.5);
       langextra[i][2] = gamma1*vcm[i][2] + gamma2*(random->uniform()-0.5);
+      if (deform_vremap) restore_bias(vcm[i],vbias);
 
       gamma1 = -1.0 / t_period / ftm2v;
       gamma2 = tsqrt * sqrt(24.0*boltz/t_period/dt/mvv2e) / ftm2v;
@@ -1141,6 +1152,37 @@ void FixRigid::apply_langevin_thermostat()
   }
 
   MPI_Bcast(&langextra[0][0],6*nbody,MPI_DOUBLE,0,world);
+}
+
+/* ----------------------------------------------------------------------
+   remove velocity bias from VCM of Body ibody to leave thermal VCM
+------------------------------------------------------------------------- */
+
+void FixRigid::remove_bias(int ibody, double *vcm, double *vbias)
+{
+  double lamda[3];
+  double *h_rate = domain->h_rate;
+  double *h_ratelo = domain->h_ratelo;
+
+  domain->x2lamda(xcm[ibody], lamda);
+  vbias[0] = h_rate[0] * lamda[0] + h_rate[5] * lamda[1] + h_rate[4] * lamda[2] + h_ratelo[0];
+  vbias[1] = h_rate[1] * lamda[1] + h_rate[3] * lamda[2] + h_ratelo[1];
+  vbias[2] = h_rate[2] * lamda[2] + h_ratelo[2];
+  vcm[0] -= vbias[0];
+  vcm[1] -= vbias[1];
+  vcm[2] -= vbias[2];
+}
+
+/* ----------------------------------------------------------------------
+   add back velocity bias to VCM of Body ibody removed by remove_bias()
+   assume remove_bias() was previously called
+------------------------------------------------------------------------- */
+
+void FixRigid::restore_bias(double *vcm, double *vbias)
+{
+  vcm[0] += vbias[0];
+  vcm[1] += vbias[1];
+  vcm[2] += vbias[2];
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1201,12 +1243,25 @@ void FixRigid::compute_forces_and_torques()
   // include Langevin thermostat forces
 
   for (ibody = 0; ibody < nbody; ibody++) {
-    fcm[ibody][0] = all[ibody][0] + fflag[ibody][0]*langextra[ibody][0];
-    fcm[ibody][1] = all[ibody][1] + fflag[ibody][1]*langextra[ibody][1];
-    fcm[ibody][2] = all[ibody][2] + fflag[ibody][2]*langextra[ibody][2];
-    torque[ibody][0] = all[ibody][3] + tflag[ibody][0]*langextra[ibody][3];
-    torque[ibody][1] = all[ibody][4] + tflag[ibody][1]*langextra[ibody][4];
-    torque[ibody][2] = all[ibody][5] + tflag[ibody][2]*langextra[ibody][5];
+    fcm[ibody][0] = all[ibody][0];
+    fcm[ibody][1] = all[ibody][1];
+    fcm[ibody][2] = all[ibody][2];
+    torque[ibody][0] = all[ibody][3];
+    torque[ibody][1] = all[ibody][4];
+    torque[ibody][2] = all[ibody][5];
+  }
+
+  // add langevin friction to force and torque of each body
+
+  if (langflag) {
+    for (int ibody = 0; ibody < nbody; ibody++) {
+      fcm[ibody][0] += fflag[ibody][0]*langextra[ibody][0];
+      fcm[ibody][1] += fflag[ibody][1]*langextra[ibody][1];
+      fcm[ibody][2] += fflag[ibody][2]*langextra[ibody][2];
+      torque[ibody][0] += tflag[ibody][0]*langextra[ibody][3];
+      torque[ibody][1] += tflag[ibody][1]*langextra[ibody][4];
+      torque[ibody][2] += tflag[ibody][2]*langextra[ibody][5];
+    }
   }
 
   // add gravity force to COM of each body
@@ -1274,7 +1329,7 @@ bigint FixRigid::dof(int tgroup)
     if (body[i] >= 0 && mask[i] & tgroupbit) {
       // do not count point particles or point dipoles as extended particles
       // a spheroid dipole will be counted as extended
-      if (extended && (eflags[i] & ~(POINT | DIPOLE))) mcount[body[i]]++;
+      if (extended && (eflags[i] & ~(POINT | DIPOLE | TORQUE))) mcount[body[i]]++;
       else ncount[body[i]]++;
     }
 
@@ -1630,9 +1685,9 @@ void FixRigid::set_v()
   if (extended) {
     double *shape,*quatatom,*inertiaatom;
 
-    AtomVecEllipsoid::Bonus *ebonus;
+    AtomVecEllipsoid::Bonus *ebonus = nullptr;
     if (avec_ellipsoid) ebonus = avec_ellipsoid->bonus;
-    AtomVecTri::Bonus *tbonus;
+    AtomVecTri::Bonus *tbonus = nullptr;
     if (avec_tri) tbonus = avec_tri->bonus;
     double **omega_one = atom->omega;
     double **angmom_one = atom->angmom;
@@ -1735,13 +1790,11 @@ void FixRigid::setup_bodies_static()
       eflags[i] = 0;
       if (body[i] < 0) continue;
 
-      // set to POINT or SPHERE or ELLIPSOID or LINE
+      // set to POINT or SPHERE or ELLIPSOID or LINE or TRIANGLE
+      // check for bonus data before radius: line and tri particles
+      // also store a bounding-sphere radius for neighboring purposes
 
-      if (radius && radius[i] > 0.0) {
-        eflags[i] |= SPHERE;
-        eflags[i] |= OMEGA;
-        eflags[i] |= TORQUE;
-      } else if (ellipsoid && ellipsoid[i] >= 0) {
+      if (ellipsoid && ellipsoid[i] >= 0) {
         eflags[i] |= ELLIPSOID;
         eflags[i] |= ANGMOM;
         eflags[i] |= TORQUE;
@@ -1753,12 +1806,20 @@ void FixRigid::setup_bodies_static()
         eflags[i] |= TRIANGLE;
         eflags[i] |= ANGMOM;
         eflags[i] |= TORQUE;
+      } else if (radius && radius[i] > 0.0) {
+        eflags[i] |= SPHERE;
+        eflags[i] |= OMEGA;
+        eflags[i] |= TORQUE;
       } else eflags[i] |= POINT;
 
       // set DIPOLE if atom->mu and mu[3] > 0.0
+      // point dipoles also need TORQUE so the torque
+      // from dipole interactions acts on the body
 
-      if (atom->mu_flag && mu[i][3] > 0.0)
+      if (atom->mu_flag && mu[i][3] > 0.0) {
         eflags[i] |= DIPOLE;
+        if (atom->torque_flag) eflags[i] |= TORQUE;
+      }
     }
   }
 
@@ -2025,6 +2086,18 @@ void FixRigid::setup_bodies_static()
     if (MathExtra::dot3(cross,ez_space[ibody]) < 0.0)
       MathExtra::negate3(ez_space[ibody]);
 
+    // for 2d, ensure ez points in the +z direction
+    // negate both ey and ez to keep the eigenbasis right-handed
+    // the theta-based orientation bookkeeping for line particles requires
+    //   the body frame to be a pure rotation around the +z axis
+
+    if (domain->dimension == 2) {
+      if (ez_space[ibody][2] < 0.0) {
+        MathExtra::negate3(ey_space[ibody]);
+        MathExtra::negate3(ez_space[ibody]);
+      }
+    }
+
     // create initial quaternion
 
     MathExtra::exyz_to_q(ex_space[ibody],ey_space[ibody],ez_space[ibody],
@@ -2266,7 +2339,7 @@ void FixRigid::setup_bodies_dynamic()
   // extended particles add their rotation to angmom of body
 
   if (extended) {
-    AtomVecLine::Bonus *lbonus;
+    AtomVecLine::Bonus *lbonus = nullptr;
     if (avec_line) lbonus = avec_line->bonus;
     double **omega_one = atom->omega;
     double **angmom_one = atom->angmom;
@@ -2325,7 +2398,7 @@ void FixRigid::readfile(int which, double *vec, double **array1, double **array2
 {
   int nchunk,id,eofflag,xbox,ybox,zbox;
   int nlines;
-  FILE *fp;
+  SafeFilePtr fp;
   char *eof,*start,*next,*buf;
   char line[MAXLINE] = {'\0'};
 
@@ -2343,7 +2416,6 @@ void FixRigid::readfile(int which, double *vec, double **array1, double **array2
     nlines = utils::inumeric(FLERR, utils::trim(line), true, lmp);
     if (which == 0)
       utils::logmesg(lmp, "Reading rigid body data for {} bodies from file {}\n", nlines, inpfile);
-    if (nlines == 0) fclose(fp);
   }
   MPI_Bcast(&nlines,1,MPI_INT,0,world);
 
@@ -2430,7 +2502,6 @@ void FixRigid::readfile(int which, double *vec, double **array1, double **array2
     nread += nchunk;
   }
 
-  if (comm->me == 0) fclose(fp);
   delete[] buffer;
 }
 
@@ -2445,7 +2516,7 @@ void FixRigid::write_restart_file(const char *file)
   if (comm->me) return;
 
   auto outfile = std::string(file) + ".rigid";
-  FILE *fp = fopen(outfile.c_str(),"w");
+  SafeFilePtr fp = fopen(outfile.c_str(),"w");
   if (fp == nullptr)
     error->one(FLERR,"Cannot open fix rigid restart file {}: {}",outfile,utils::getsyserror());
 
@@ -2479,7 +2550,6 @@ void FixRigid::write_restart_file(const char *file)
             angmom[i][0],angmom[i][1],angmom[i][2],xbox,ybox,zbox);
   }
 
-  fclose(fp);
 }
 
 /* ----------------------------------------------------------------------
@@ -2495,8 +2565,8 @@ double FixRigid::memory_usage()
   bytes += (double)maxvatom*6 * sizeof(double);    // vatom
   if (extended) {
     bytes += (double)nmax * sizeof(int);
-    if (orientflag) bytes = (double)nmax*orientflag * sizeof(double);
-    if (dorientflag) bytes = (double)nmax*3 * sizeof(double);
+    if (orientflag) bytes += (double)nmax*orientflag * sizeof(double);
+    if (dorientflag) bytes += (double)nmax*3 * sizeof(double);
   }
   return bytes;
 }
@@ -2662,6 +2732,8 @@ void FixRigid::reset_dt()
 
 void FixRigid::zero_momentum()
 {
+  setup_bodies_early();
+
   for (int ibody = 0; ibody < nbody; ibody++)
     vcm[ibody][0] = vcm[ibody][1] = vcm[ibody][2] = 0.0;
 
@@ -2676,6 +2748,8 @@ void FixRigid::zero_momentum()
 
 void FixRigid::zero_rotation()
 {
+  setup_bodies_early();
+
   for (int ibody = 0; ibody < nbody; ibody++) {
     angmom[ibody][0] = angmom[ibody][1] = angmom[ibody][2] = 0.0;
     omega[ibody][0] = omega[ibody][1] = omega[ibody][2] = 0.0;
@@ -2683,6 +2757,30 @@ void FixRigid::zero_rotation()
 
   evflag = 0;
   set_v();
+}
+
+/* ----------------------------------------------------------------------
+   initialize rigid bodies from current atom info, if not yet done by a run
+   needed when body properties are used before the first run,
+     e.g. by the velocity command with the rigid keyword
+------------------------------------------------------------------------- */
+
+void FixRigid::setup_bodies_early()
+{
+  if (setupflag) return;
+
+  triclinic = domain->triclinic;
+  avec_ellipsoid = dynamic_cast<AtomVecEllipsoid *>(atom->style_match("ellipsoid"));
+  avec_line = dynamic_cast<AtomVecLine *>(atom->style_match("line"));
+  avec_tri = dynamic_cast<AtomVecTri *>(atom->style_match("tri"));
+
+  setup_bodies_static();
+  if (!inpfile) setup_bodies_dynamic();
+  setupflag = 1;
+
+  for (int ibody = 0; ibody < nbody; ibody++)
+    MathExtra::angmom_to_omega(angmom[ibody],ex_space[ibody],ey_space[ibody],
+                               ez_space[ibody],inertia[ibody],omega[ibody]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -2699,12 +2797,8 @@ int FixRigid::modify_param(int narg, char **arg)
     // must do here and not in init,
     // since modify.cpp::init() uses fix masks before calling fix::init()
 
-    for (int i = 0; i < modify->nfix; i++)
-      if (strcmp(modify->fix[i]->id,id) == 0) {
-        if (earlyflag) modify->fmask[i] |= POST_FORCE;
-        else if (!langflag) modify->fmask[i] &= ~POST_FORCE;
-        break;
-      }
+    if (earlyflag) modify->set_fix_mask(this, POST_FORCE);
+    else if (!langflag) modify->clear_fix_mask(this, POST_FORCE);
     return 2;
   }
 

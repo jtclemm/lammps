@@ -75,7 +75,7 @@ int zstedc_(char *compz, integer *n, doublereal *d__, doublereal *e, doublecompl
         *info = -1;
     } else if (*n < 0) {
         *info = -2;
-    } else if (*ldz < 1 || icompz > 0 && *ldz < max(1, *n)) {
+    } else if (*ldz < 1 || (icompz > 0 && *ldz < max(1, *n))) {
         *info = -6;
     }
     if (*info == 0) {
@@ -87,7 +87,7 @@ int zstedc_(char *compz, integer *n, doublereal *d__, doublereal *e, doublecompl
         } else if (*n <= smlsiz) {
             lwmin = 1;
             liwmin = 1;
-            lrwmin = *n - 1 << 1;
+            lrwmin = (*n - 1) << 1;
         } else if (icompz == 1) {
             lgn = (integer)(log((doublereal)(*n)) / log(2.));
             if (pow_lmp_ii(&c__2, &lgn) < *n) {
@@ -162,7 +162,7 @@ int zstedc_(char *compz, integer *n, doublereal *d__, doublereal *e, doublecompl
         if (orgnrm == 0.) {
             goto L70;
         }
-        eps = dlamch_((char *)"Epsilon", (ftnlen)7);
+        eps = dlamch_((char *)"E", (ftnlen)1);
         start = 1;
     L30:
         if (start <= *n) {

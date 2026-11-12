@@ -24,15 +24,10 @@ from ctypes import CDLL, POINTER, RTLD_GLOBAL, CFUNCTYPE, py_object, byref, cast
 from os.path import dirname, abspath, join
 from inspect import getsourcefile
 
-from lammps.constants import LAMMPS_AUTODETECT, LAMMPS_STRING, \
-  LAMMPS_INT, LAMMPS_INT_2D, LAMMPS_DOUBLE, LAMMPS_DOUBLE_2D, LAMMPS_INT64, LAMMPS_INT64_2D, \
-  LMP_STYLE_GLOBAL, LMP_STYLE_ATOM, LMP_STYLE_LOCAL, \
-  LMP_TYPE_SCALAR, LMP_TYPE_VECTOR, LMP_TYPE_ARRAY, \
-  LMP_SIZE_VECTOR, LMP_SIZE_ROWS, LMP_SIZE_COLS, \
-  LMP_VAR_EQUAL, LMP_VAR_ATOM, LMP_VAR_VECTOR, LMP_VAR_STRING, \
-  LMP_BUFSIZE, get_ctypes_int
-
+from lammps.constants import *
 from lammps.data import NeighList
+
+__all__ = ['MPIAbortException', 'ExceptionCheck', 'command_wrapper', 'lammps']
 
 # -------------------------------------------------------------------------
 
@@ -184,8 +179,8 @@ class lammps:
 
     try:
       if ptr is not None:
-        self.lib = CDLL("",RTLD_GLOBAL)
-    except OSError:
+        self.lib = CDLL(None,RTLD_GLOBAL)
+    except (OSError, TypeError):
       self.lib = None
 
     # load liblammps.so unless name is given
@@ -1189,7 +1184,7 @@ class lammps:
     :param name: name of the property
     :type name:  string
     :return: value of the property or list of values or None
-    :rtype: float, list of float, list of list of floats, or NoneType
+    :rtype: float, list of float, list of list of float, or NoneType
     """
 
     if name:
@@ -2211,6 +2206,20 @@ class lammps:
     """
     return self.lib.lammps_config_has_mpi_support() != 0
 
+   # -------------------------------------------------------------------------
+
+  @property
+  def has_omp_support(self):
+    """ Report whether the LAMMPS shared library was compiled with OpenMP enabled.
+
+    This is a wrapper around the :cpp:func:`lammps_config_has_omp_support`
+    function of the library interface.
+
+    :return: True when compiled with OpenMP enabled, otherwise False
+    :rtype: bool
+    """
+    return self.lib.lammps_config_has_omp_support() != 0
+
   # -------------------------------------------------------------------------
 
   @property
@@ -2284,8 +2293,8 @@ class lammps:
 
   @property
   def has_gzip_support(self):
-    """ Report whether the LAMMPS shared library was compiled with support
-    for reading and writing compressed files through ``gzip``.
+    """ Report whether the ``gzip`` program is available for reading
+    and writing compressed files.
 
     This is a wrapper around the :cpp:func:`lammps_config_has_gzip_support`
     function of the library interface.
@@ -2329,7 +2338,7 @@ class lammps:
 
   @property
   def has_ffmpeg_support(self):
-    """ State of support for writing movies with ``ffmpeg`` in the LAMMPS shared library
+    """ Report whether the ``ffmpeg`` program is available for writing movies.
 
     This is a wrapper around the :cpp:func:`lammps_config_has_ffmpeg_support`
     function of the library interface.
@@ -2476,8 +2485,8 @@ class lammps:
   def available_styles(self, category):
     """Returns a list of styles available for a given category
 
-    This is a wrapper around the functions :cpp:func:`lammps_style_count()`
-    and :cpp:func:`lammps_style_name()` of the library interface.
+    This is a wrapper around the functions :cpp:func:`lammps_style_count`
+    and :cpp:func:`lammps_style_name` of the library interface.
 
     :param category: name of category
     :type  category: string
@@ -2527,8 +2536,17 @@ class lammps:
 
     .. versionadded:: 9Oct2020
 
-    This is a wrapper around the functions :cpp:func:`lammps_id_count()`
-    and :cpp:func:`lammps_id_name()` of the library interface.
+    This is a wrapper around the functions :cpp:func:`lammps_id_count`
+    and :cpp:func:`lammps_id_name` of the library interface.
+
+    .. versionchanged:: 22Jul2025
+
+    This function has a different behavior for the "group" category: rather than
+    only listing the available groups, it will return a full list with LMP_MAX_GROUP
+    elements.  This is because the list may have "holes" when groups are deleted.
+    The returned list has either the name of the group or "None" for empty entries.
+    This way, the value of 1 << idx is the groupbit that can be compared to the
+    per-atom "mask" property to determine if an atom is member of a group.
 
     :param category: name of category
     :type  category: string
@@ -2537,14 +2555,21 @@ class lammps:
     :rtype:  list
     """
 
-    categories = ['compute','dump','fix','group','molecule','region','variable']
+    categories = ['compute','dump','fix','molecule','region','variable']
     available_ids = []
+    sb = create_string_buffer(LMP_BUFSIZE)
     if category in categories:
       num = self.lib.lammps_id_count(self.lmp, category.encode())
-      sb = create_string_buffer(LMP_BUFSIZE)
       for idx in range(num):
         self.lib.lammps_id_name(self.lmp, category.encode(), idx, sb, LMP_BUFSIZE)
         available_ids.append(sb.value.decode())
+    elif category == 'group':
+      for idx in range(LMP_MAX_GROUP):
+        if self.lib.lammps_id_name(self.lmp, category.encode(), idx, sb, LMP_BUFSIZE):
+          available_ids.append(sb.value.decode())
+        else:
+          available_ids.append(None)
+
     return available_ids
 
   # -------------------------------------------------------------------------
@@ -2554,8 +2579,8 @@ class lammps:
 
     .. versionadded:: 10Mar2021
 
-    This is a wrapper around the functions :cpp:func:`lammps_plugin_count()`
-    and :cpp:func:`lammps_plugin_name()` of the library interface.
+    This is a wrapper around the functions :cpp:func:`lammps_plugin_count`
+    and :cpp:func:`lammps_plugin_name` of the library interface.
 
     :return: list of style/name pairs of loaded plugins
     :rtype:  list
@@ -2801,6 +2826,9 @@ class lammps:
 
   def get_neighlist_element_neighbors(self, idx, element):
     """Return data of neighbor list entry
+
+    The neighbor indices may have bits set for special neighbors that need
+    to be removed before using them as local atom indices; see :doc:`Python_neighbor`.
 
     :param element: neighbor list index
     :type  element: int

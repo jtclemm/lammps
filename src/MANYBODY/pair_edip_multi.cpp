@@ -42,7 +42,7 @@ using namespace MathExtra;
 static constexpr int DELTA = 4;
 
 static const char cite_pair_edip[] =
-  "pair edip/multi: doi:10.1103/PhysRevB.86.144118, doi:10.1088/0953-8984/22/3/035802\n\n"
+  "pair_style edip/multi command: https://doi.org/10.1103/PhysRevB.86.144118, https://doi.org/10.1088/0953-8984/22/3/035802\n\n"
   "@article{cjiang2012\n"
   " author    = {Jian, Chao and Morgan, Dane, and Szlufarska, Izabella},\n"
   " title     = {Carbon Tri-Interstitial Defect: {A} Model for {D$_{\\mathrm{II}}$} Center},\n"
@@ -95,6 +95,8 @@ PairEDIPMulti::PairEDIPMulti(LAMMPS *lmp) : Pair(lmp), preForceCoord(nullptr)
 
 PairEDIPMulti::~PairEDIPMulti()
 {
+  if (copymode) return;
+
   memory->destroy(params);
   memory->destroy(elem3param);
 
@@ -154,6 +156,12 @@ void PairEDIPMulti::compute(int eflag, int vflag)
 
     jlist = firstneigh[i];
     jnum = numneigh[i];
+
+    // the per-neighbor scratch array has a fixed size
+
+    if (jnum > leadDimInteractionList)
+      error->one(FLERR, "Pair style edip/multi supports at most {} neighbors per atom; atom {} has {}",
+                 leadDimInteractionList, atom->tag[i], jnum);
 
     // pre-loop to compute environment coordination f(Z)
 

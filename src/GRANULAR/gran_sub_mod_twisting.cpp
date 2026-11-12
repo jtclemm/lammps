@@ -51,6 +51,13 @@ GranSubModTwistingMarshall::GranSubModTwistingMarshall(GranularModel *gm, LAMMPS
   num_coeffs = 0;
   size_history = 3;
   contact_radius_flag = 1;
+
+  // the twist angle is the same seen from either particle: magtwist =
+  // relrot . nx is unchanged when both relrot and nx flip sign, so this
+  // history must NOT be negated when it is transferred
+  nondefault_history_transfer = 1;
+  transfer_history_factor = new double[size_history];
+  for (int i = 0; i < size_history; i++) transfer_history_factor[i] = +1.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -63,27 +70,39 @@ void GranSubModTwistingMarshall::init()
 
 /* ---------------------------------------------------------------------- */
 
-void GranSubModTwistingMarshall::calculate_forces()
+double GranSubModTwistingMarshall::calculate_forces()
 {
-  double signtwist, Mtcrit;
+  double signtwist, Mtcrit, magtortwist;
+
+  double dt = gm->dt;
+  double magtwist = gm->magtwist;
+  double contact_radius = gm->contact_radius;
+  double *history = gm->history;
+  int history_update = gm->history_update;
+
+  double Fncrit = gm->normal_model->get_fncrit();
+  double tdamp = gm->tangential_model->get_damp();
 
   // Calculate twist coefficients from tangential model & contact geometry
   // eq 32 of Marshall paper
-  double k = 0.5 * k_tang * gm->contact_radius * gm->contact_radius;
-  double damp = 0.5 * gm->tangential_model->get_damp() * gm->contact_radius * gm->contact_radius;
-  double mu = TWOTHIRDS * mu_tang * gm->contact_radius;
 
-  if (gm->history_update) { gm->history[history_index] += gm->magtwist * gm->dt; }
+  double k = 0.5 * k_tang * contact_radius * contact_radius;
+  double damp = 0.5 * tdamp * contact_radius * contact_radius;
+  double mu = TWOTHIRDS * mu_tang * contact_radius;
+
+  if (history_update) history[history_index] += magtwist * dt;
 
   // M_t torque (eq 30)
-  gm->magtortwist = -k * gm->history[history_index] - damp * gm->magtwist;
-  signtwist = (gm->magtwist > 0) - (gm->magtwist < 0);
-  Mtcrit = mu * gm->normal_model->get_fncrit();    // critical torque (eq 44)
+  magtortwist = -k * history[history_index] - damp * magtwist;
+  signtwist = (magtwist > 0) - (magtwist < 0);
+  Mtcrit = mu * Fncrit;    // critical torque (eq 44)
 
-  if (fabs(gm->magtortwist) > Mtcrit) {
-    gm->history[history_index] = (Mtcrit * signtwist - damp * gm->magtwist) / k;
-    gm->magtortwist = -Mtcrit * signtwist;    // eq 34
+  if (fabs(magtortwist) > Mtcrit) {
+    history[history_index] = (Mtcrit * signtwist - damp * magtwist) / k;
+    magtortwist = -Mtcrit * signtwist;    // eq 34
   }
+
+  return magtortwist;
 }
 
 /* ----------------------------------------------------------------------
@@ -95,6 +114,11 @@ GranSubModTwistingSDS::GranSubModTwistingSDS(GranularModel *gm, LAMMPS *lmp) :
 {
   num_coeffs = 3;
   size_history = 3;
+
+  // see the comment in the Marshall constructor above
+  nondefault_history_transfer = 1;
+  transfer_history_factor = new double[size_history];
+  for (int i = 0; i < size_history; i++) transfer_history_factor[i] = +1.0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -110,19 +134,28 @@ void GranSubModTwistingSDS::coeffs_to_local()
 
 /* ---------------------------------------------------------------------- */
 
-void GranSubModTwistingSDS::calculate_forces()
+double GranSubModTwistingSDS::calculate_forces()
 {
-  double signtwist, Mtcrit;
+  double signtwist, Mtcrit, magtortwist;
 
-  if (gm->history_update) { gm->history[history_index] += gm->magtwist * gm->dt; }
+  double magtwist = gm->magtwist;
+  double dt = gm->dt;
+  double *history = gm->history;
+  int history_update = gm->history_update;
+
+  double Fncrit = gm->normal_model->get_fncrit();
+
+  if (history_update) history[history_index] += magtwist * dt;
 
   // M_t torque (eq 30)
-  gm->magtortwist = -k * gm->history[history_index] - damp * gm->magtwist;
-  signtwist = (gm->magtwist > 0) - (gm->magtwist < 0);
-  Mtcrit = mu * gm->normal_model->get_fncrit();    // critical torque (eq 44)
+  magtortwist = -k * history[history_index] - damp * magtwist;
+  signtwist = (magtwist > 0) - (magtwist < 0);
+  Mtcrit = mu * Fncrit;    // critical torque (eq 44)
 
-  if (fabs(gm->magtortwist) > Mtcrit) {
-    gm->history[history_index] = (Mtcrit * signtwist - damp * gm->magtwist) / k;
-    gm->magtortwist = -Mtcrit * signtwist;    // eq 34
+  if (fabs(magtortwist) > Mtcrit) {
+    history[history_index] = (Mtcrit * signtwist - damp * magtwist) / k;
+    magtortwist = -Mtcrit * signtwist;    // eq 34
   }
+
+  return magtortwist;
 }

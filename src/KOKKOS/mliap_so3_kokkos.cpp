@@ -59,6 +59,7 @@ MLIAP_SO3Kokkos<DeviceType>::MLIAP_SO3Kokkos(LAMMPS *lmp, double vrcut, int vlma
 template <class DeviceType>
 MLIAP_SO3Kokkos<DeviceType>::~MLIAP_SO3Kokkos()
 {
+  if (copymode) return;
   t_numneighs = int_1d();
   t_jelems = int_1d();
   t_wjelem = float_1d();
@@ -205,7 +206,7 @@ void MLIAP_SO3Kokkos<DeviceType>::init()
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
-void MLIAP_SO3Kokkos<DeviceType>::init_arrays(int nlocal, int ncoefs)
+void MLIAP_SO3Kokkos<DeviceType>::init_arrays(int nlocal, bigint npairs, int ncoefs)
 {
 
   {
@@ -247,6 +248,29 @@ void MLIAP_SO3Kokkos<DeviceType>::init_arrays(int nlocal, int ncoefs)
     memoryKK->create_kokkos(m_clisttot_i, num_of_temp, m_nmax, m_numYlms, "MLIAP_SO3Kokkos:m_clisttot_i");
     alloc_arrays += 2.0 * m_nmax * m_numYlms * num_of_temp * sizeof(double);
     m_init_arrays = 1;
+  }
+
+  // per-pair arrays: grow each one independently and never shrink them.
+  // spectrum() is only called when energies are needed, so spectrum_dxdr()
+  // must not rely on a preceding spectrum() call with the same sizes
+
+  bigint totalp = npairs * m_Nmax * (m_lmax + 1);
+  if (totalp > (bigint)m_sbes_array.extent(0)) {
+    memoryKK->realloc_kokkos(m_sbes_array, "MLIAP_SO3Kokkos:m_sbes_array", totalp);
+    memoryKK->realloc_kokkos(m_sbes_darray, "MLIAP_SO3Kokkos:m_sbes_darray", totalp);
+    alloc_arrays += 2.0 * totalp * sizeof(double);
+  }
+
+  totalp = npairs * m_nmax * (m_lmax + 1);
+  if (totalp > (bigint)m_rip_array.extent(0)) {
+    memoryKK->realloc_kokkos(m_rip_array, "MLIAP_SO3Kokkos:m_rip_array", totalp);
+    memoryKK->realloc_kokkos(m_rip_darray, "MLIAP_SO3Kokkos:m_rip_darray", totalp);
+    alloc_arrays += 2.0 * totalp * sizeof(double);
+  }
+
+  if (npairs > (bigint)k_dplist_r.extent(0)) {
+    memoryKK->realloc_kokkos(k_dplist_r, "MLIAP_SO3Kokkos:m_dplist_r", (int)npairs, ncoefs, 3);
+    alloc_arrays += (double)npairs * ncoefs * 3 * sizeof(double);
   }
 }
 
@@ -349,6 +373,7 @@ void MLIAP_SO3Kokkos<DeviceType>::compute_W(int nmax, double *arr)
 /* ---------------------------------------------------------------------- */
 template <class DeviceType>
 template <typename ViewType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::compute_pi(int nmax, int lmax, ViewType clisttot_r, ViewType clisttot_i, int /*lcl2*/,
                            float_2d plist_r, int indpl) const
@@ -399,6 +424,7 @@ double MLIAP_SO3Kokkos<DeviceType>::compute_g(double r, int n, int nmax, double 
 
 /* ---------------------------------------------------------------------- */
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 double MLIAP_SO3Kokkos<DeviceType>::Cosine(double Rij, double Rc) const
 {
@@ -408,6 +434,7 @@ double MLIAP_SO3Kokkos<DeviceType>::Cosine(double Rij, double Rc) const
 
 /* ---------------------------------------------------------------------- */
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 double MLIAP_SO3Kokkos<DeviceType>::CosinePrime(double Rij, double Rc) const
 {
@@ -417,6 +444,7 @@ double MLIAP_SO3Kokkos<DeviceType>::CosinePrime(double Rij, double Rc) const
 
 /* ---------------------------------------------------------------------- */
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 double MLIAP_SO3Kokkos<DeviceType>::compute_sfac(double r, double rcut) const
 {
@@ -428,6 +456,7 @@ double MLIAP_SO3Kokkos<DeviceType>::compute_sfac(double r, double rcut) const
 
 /* ---------------------------------------------------------------------- */
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 double MLIAP_SO3Kokkos<DeviceType>::compute_dsfac(double r, double rcut) const
 {
@@ -440,6 +469,7 @@ double MLIAP_SO3Kokkos<DeviceType>::compute_dsfac(double r, double rcut) const
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 int MLIAP_SO3Kokkos<DeviceType>::get_sum(int istart, int iend, int id, int imult)
 {
@@ -455,6 +485,7 @@ int MLIAP_SO3Kokkos<DeviceType>::get_sum(int istart, int iend, int id, int imult
 
 template <class DeviceType>
 template <typename UlistView>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::compute_uarray_recursive(double x, double y, double z, double r, int twol,
                                                UlistView ulist_r, UlistView ulist_i, int_1d idxu_block,
@@ -567,6 +598,7 @@ void MLIAP_SO3Kokkos<DeviceType>::init_garray(int nmax, int lmax, double rcut, d
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAPSO3GetSBESArrayTag&, int ii) const{
    int ipair = t_ij(ii);
@@ -627,6 +659,7 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAPSO3GetSBESArrayTag&, in
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAPSO3GetRipArrayTag&, int ii) const{
    int ipair = t_ij(ii);
@@ -662,33 +695,11 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAPSO3GetRipArrayTag&, int
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
-void MLIAP_SO3Kokkos<DeviceType>::spectrum(int nlocal, DAT::tdual_int_1d numneighs, DAT::tdual_int_1d jelems, DAT::tdual_float_1d wjelem,
-                               DAT::tdual_float_2d rij,  DAT::tdual_int_1d k_ij,
+void MLIAP_SO3Kokkos<DeviceType>::spectrum(int nlocal, DAT::tdual_int_1d numneighs, DAT::tdual_int_1d jelems, DAT::tdual_double_1d wjelem,
+                               DAT::tdual_double_2d_lr rij,  DAT::tdual_int_1d k_ij,
                                int nmax, int lmax, double rcut, double alpha, int totaln, int ncoefs)
 {
-  init_arrays(nlocal, ncoefs);
-
-  bigint totali;
-
-  totali = totaln * m_Nmax * (m_lmax + 1);
-  if ( totali > (int)m_sbes_array.extent(0)) {
-    memoryKK->realloc_kokkos(m_sbes_array, "MLIAP_SO3Kokkos:m_sbes_array", totali);
-    memoryKK->realloc_kokkos(m_sbes_darray, "MLIAP_SO3Kokkos:m_sbes_darray", totali);
-    alloc_arrays += 2.0 * totali * sizeof(double);
-  }
-
-  totali = totaln * m_nmax * (m_lmax + 1);
-  if ( totali > (int)m_rip_array.extent(0)) {
-    memoryKK->realloc_kokkos(m_rip_array, "MLIAP_SO3Kokkos:m_rip_array", totali);
-    memoryKK->realloc_kokkos(m_rip_darray, "MLIAP_SO3Kokkos:m_rip_darray", totali);
-    alloc_arrays += 2.0 * totali * sizeof(double);
-  }
-
-  totali = totaln * ncoefs * 3;
-  if ( totali > (int)k_dplist_r.extent(0)) {
-    memoryKK->realloc_kokkos(k_dplist_r, "MLIAP_SO3Kokkos:m_dplist_r", (int)totaln, ncoefs, 3);
-    alloc_arrays += 2.0 * totali * sizeof(double);
-  }
+  init_arrays(nlocal, totaln, ncoefs);
 
   t_numneighs = numneighs.template view<DeviceType>();
   t_jelems = jelems.template view<DeviceType>();
@@ -702,12 +713,16 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum(int nlocal, DAT::tdual_int_1d numneig
 
   {
     Kokkos::RangePolicy<DeviceType,MLIAPSO3GetSBESArrayTag> range(0,nlocal);
+    copymode = 1;
     Kokkos::parallel_for(range, *this);
+    copymode = 0;
   }
 
   {
     Kokkos::RangePolicy<DeviceType,MLIAPSO3GetRipArrayTag> range(0,nlocal);
+    copymode = 1;
     Kokkos::parallel_for(range, *this);
+    copymode = 0;
   }
 
   Kokkos::deep_copy(m_plist_r,0.);
@@ -717,7 +732,9 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum(int nlocal, DAT::tdual_int_1d numneig
     Kokkos::deep_copy(m_clisttot_i, 0);
     {
       Kokkos::RangePolicy<DeviceType,MLIAPSO3SpectrumTag> range(start,end);
-      Kokkos::parallel_for(range, *this);
+      copymode = 1;
+    Kokkos::parallel_for(range, *this);
+    copymode = 0;
     }
   }
 }
@@ -725,6 +742,7 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum(int nlocal, DAT::tdual_int_1d numneig
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>::MLIAPSO3SpectrumTag&, int ii) const {
   int ii_chunk = ii%m_chunk_size;
@@ -738,7 +756,7 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>:
   int ipair = t_ij(ii);
   for (int neighbor = 0; neighbor < t_numneighs[ii]; neighbor++) {
     const int jelem = t_jelems[ipair];
-    int weight = t_wjelem[jelem];
+    double weight = t_wjelem[jelem];
 
     double x = t_rij(ipair, 0);
     double y = t_rij(ipair, 1);
@@ -780,39 +798,12 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>:
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
-void MLIAP_SO3Kokkos<DeviceType>::spectrum_dxdr(int nlocal, DAT::tdual_int_1d numneighs, DAT::tdual_int_1d jelems, DAT::tdual_float_1d wjelem,
-                                    DAT::tdual_float_2d rij, DAT::tdual_int_1d k_ij,
+void MLIAP_SO3Kokkos<DeviceType>::spectrum_dxdr(int nlocal, DAT::tdual_int_1d numneighs, DAT::tdual_int_1d jelems, DAT::tdual_double_1d wjelem,
+                                    DAT::tdual_double_2d_lr rij, DAT::tdual_int_1d k_ij,
                                     int nmax, int lmax, double rcut, double alpha, bigint totaln,
                                     int ncoefs)
 {
-  bigint totali;
-
-  if ( nlocal > (int)m_clisttot_r.extent(0)){
-    memoryKK->create_kokkos(m_clisttot_r, nlocal, m_nmax, m_numYlms, "MLIAP_SO3Kokkos:m_clisttot_r");
-    memoryKK->create_kokkos(m_clisttot_i, nlocal, m_nmax, m_numYlms, "MLIAP_SO3Kokkos:m_clisttot_i");
-    int num_of_temp = std::min(nlocal, m_chunk_size);
-    int delta=num_of_temp-m_ulist_r.extent(0);
-    if (delta > 0){
-      memoryKK->create_kokkos(m_ulist_r, num_of_temp, m_idxu_count, "MLIAP_SO3Kokkos:m_ulist_r");
-      memoryKK->create_kokkos(m_ulist_i, num_of_temp, m_idxu_count, "MLIAP_SO3Kokkos:m_ulist_i");
-      alloc_arrays += 2.0 * m_idxu_count * delta * sizeof(double);
-      memoryKK->create_kokkos(m_dYlm_r, num_of_temp, m_numYlms, 3, "MLIAP_SO3Kokkos:m_dYlm_r");
-      memoryKK->create_kokkos(m_dYlm_i, num_of_temp, m_numYlms, 3, "MLIAP_SO3Kokkos:m_dYlm_i");
-      alloc_arrays += 2.0 * m_numYlms * 3 * delta * sizeof(double);
-    }
-  }
-
-  totali = totaln * m_Nmax * (m_lmax + 1);
-  if ( totali > (int)m_sbes_array.extent(0)) {
-    memoryKK->create_kokkos(m_sbes_array, totali, "MLIAP_SO3Kokkos:m_sbes_array");
-    memoryKK->create_kokkos(m_sbes_darray, totali, "MLIAP_SO3Kokkos:m_sbes_darray");
-
-    totali = totaln * m_nmax * (m_lmax + 1);
-    memoryKK->create_kokkos(m_rip_array, totali, "MLIAP_SO3Kokkos:m_rip_array");
-    memoryKK->create_kokkos(m_rip_darray, totali, "MLIAP_SO3Kokkos:m_rip_darray");
-
-    memoryKK->create_kokkos(k_dplist_r, (int)totaln, ncoefs, 3, "MLIAP_SO3Kokkos:m_dplist_r");
-  }
+  init_arrays(nlocal, totaln, ncoefs);
 
   t_numneighs=numneighs.template view<DeviceType>();
   t_jelems=jelems.template view<DeviceType>();
@@ -826,12 +817,16 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum_dxdr(int nlocal, DAT::tdual_int_1d nu
 
   {
     Kokkos::RangePolicy<DeviceType,MLIAPSO3GetSBESArrayTag> range(0,nlocal);
+    copymode = 1;
     Kokkos::parallel_for(range, *this);
+    copymode = 0;
   }
 
   {
     Kokkos::RangePolicy<DeviceType,MLIAPSO3GetRipArrayTag> range(0,nlocal);
+    copymode = 1;
     Kokkos::parallel_for(range, *this);
+    copymode = 0;
   }
 
   Kokkos::deep_copy(k_dplist_r, 0.0);
@@ -841,7 +836,9 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum_dxdr(int nlocal, DAT::tdual_int_1d nu
     Kokkos::deep_copy(m_clisttot_i, 0);
     {
       Kokkos::RangePolicy<DeviceType,MLIAPSO3SpectrumDXDRTag> range(start,end);
-      Kokkos::parallel_for(range, *this);
+      copymode = 1;
+    Kokkos::parallel_for(range, *this);
+    copymode = 0;
     }
   }
 }
@@ -849,6 +846,7 @@ void MLIAP_SO3Kokkos<DeviceType>::spectrum_dxdr(int nlocal, DAT::tdual_int_1d nu
 /* ---------------------------------------------------------------------- */
 
 template <class DeviceType>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>::MLIAPSO3SpectrumDXDRTag&, int ii) const {
   //TO-DO Need to move m_ulist_r, m_ulist_i into local shared memory
@@ -866,7 +864,7 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>:
   for (int neighbor = 0; neighbor < t_numneighs[ii]; neighbor++) {
 
     const int jelem = t_jelems[ipair];
-    int weight = t_wjelem[jelem];
+    double weight = t_wjelem[jelem];
 
     double x = t_rij(ipair, 0);
     double y = t_rij(ipair, 1);
@@ -885,7 +883,7 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>:
     compute_uarray_recursive(x, y, z, r, twolmax, ulist_r, ulist_i, m_idxu_block, m_rootpq);
 
     double sfac_weight = compute_sfac(r, t_rcut)*double(weight);
-    bigint gindex = (ipair - 1) * findex;
+    bigint gindex = (bigint) (ipair - 1) * findex;
     for (int n = 0; n < t_nmax; n++) {
       int i = 0;
       for (int l = 0; l < t_lmax + 1; l++) {
@@ -906,7 +904,7 @@ void MLIAP_SO3Kokkos<DeviceType>::operator() (const MLIAP_SO3Kokkos<DeviceType>:
   ipair = t_ij(ii);
   for (int neighbor = 0; neighbor < t_numneighs[ii]; neighbor++) {
     const int jelem = t_jelems[ipair];
-    int weight = t_wjelem[jelem];
+    double weight = t_wjelem[jelem];
 
     double x = t_rij(ipair, 0);
     double y = t_rij(ipair, 1);

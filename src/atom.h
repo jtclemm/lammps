@@ -16,6 +16,7 @@
 
 #include "pointers.h"
 
+#include "creator_registry.h"
 #include "json_fwd.h"
 
 #include <map>
@@ -26,6 +27,7 @@ namespace LAMMPS_NS {
 // forward declarations
 
 class AtomVec;
+class Fix;
 class Molecule;
 
 class Atom : protected Pointers {
@@ -114,31 +116,28 @@ class Atom : protected Pointers {
 
   // PERI package
 
-  double *vfrac, *s0;
+  double *vfrac, *s0, *smin;
   double **x0;
 
   // SPIN package
 
   double **sp, **fm, **fm_long;
 
-  // EFF and AWPMD packages
+  // EFF package
 
   int *spin;
   double *eradius, *ervel, *erforce;
-  double *ervelforce;
-  double **cs, **csforce, **vforce;
-  int *etag;
 
   // CG-DNA package
 
-  tagint *id5p;
+  tagint *id3p, *id5p;
+  double *qeff;
 
   // DPD-REACT package
 
   double *uCond, *uMech, *uChem, *uCGnew, *uCG;
   double *duChem;
   double *dpdTheta;
-  int nspecies_dpd;
 
   // MESO package
 
@@ -194,16 +193,14 @@ class Atom : protected Pointers {
   // 1 if variable is used, 0 if not
 
   int labelmapflag, types_style;
-  int ellipsoid_flag, line_flag, tri_flag, body_flag;
-  int peri_flag, electron_flag;
-  int wavepacket_flag, sph_flag;
+  int ellipsoid_flag, line_flag, tri_flag, body_flag, superellipsoid_flag;
+  int peri_flag, electron_flag, sph_flag;
 
   int molecule_flag, molindex_flag, molatom_flag;
   int q_flag, mu_flag;
   int rmass_flag, radius_flag, omega_flag, torque_flag, angmom_flag, quat_flag;
   int temperature_flag, heatflow_flag;
   int vfrac_flag, spin_flag, eradius_flag, ervel_flag, erforce_flag;
-  int cs_flag, csforce_flag, vforce_flag, ervelforce_flag, etag_flag;
   int rheo_status_flag, conductivity_flag, pressure_flag, viscosity_flag;
   int rho_flag, esph_flag, cv_flag, vest_flag;
   int dpd_flag, edpd_flag, tdpd_flag;
@@ -284,12 +281,14 @@ class Atom : protected Pointers {
   double *mass;
   int *mass_setflag;
 
-  // callback ptrs for atom arrays managed by fix classes
+  // fixes with per-atom arrays that must be grown, copied, exchanged, communicated
+  // with the ghost atoms, or stored in restart files together with the atom arrays.
+  // each list is kept in the order of the fixes in the Modify class, so that the
+  // data of all fixes is packed and unpacked in the same order everywhere
 
-  int nextra_grow, nextra_restart, nextra_border;    // # of callbacks of each type
-  int *extra_grow, *extra_restart, *extra_border;    // index of fix to callback to
-  int nextra_grow_max, nextra_restart_max;           // size of callback lists
-  int nextra_border_max;
+  std::vector<Fix *> extra_grow;       // fixes with grow_arrays(), pack_exchange(), ...
+  std::vector<Fix *> extra_restart;    // fixes with pack_restart() and unpack_restart()
+  std::vector<Fix *> extra_border;     // fixes with pack_border() and unpack_border()
   int nextra_store;
 
   int map_style;                    // style of atom map: 0=none, 1=array, 2=hash
@@ -315,8 +314,9 @@ class Atom : protected Pointers {
   // AtomVec factory types and map
 
   using AtomVecCreator = AtomVec *(*)(LAMMPS *);
-  using AtomVecCreatorMap = std::map<std::string, AtomVecCreator>;
-  AtomVecCreatorMap *avec_map;
+
+  // global registry of atom (AtomVec) style factory functions
+  static CreatorRegistry<AtomVecCreator> &avec_styles();
 
   // --------------------------------------------------------------------
   // functions
@@ -336,7 +336,7 @@ class Atom : protected Pointers {
   void setup();
 
   std::string get_style();
-  AtomVec *style_match(const char *);
+  AtomVec *style_match(const std::string &);
   void modify_params(int, char **);
   void tag_check();
   void tag_extend();
@@ -359,10 +359,20 @@ class Atom : protected Pointers {
   void data_fix_compute_variable(int, int);
 
   virtual void allocate_type_arrays();
-  void set_mass(const char *, int, const char *, int, int, int *);
-  void set_mass(const char *, int, int, double);
-  void set_mass(const char *, int, int, char **);
-  void set_mass(double *);
+
+  // A style that reads or writes the plain per-atom arrays on the host says so
+  // with these, so that the KOKKOS package can bring that side up to date
+  // first and can carry the write over to the device afterwards.  They do
+  // nothing without the package.  Use them where a style touches the arrays
+  // directly and then calls something -- a force computation, the
+  // communication -- that works from the KOKKOS copies.
+
+  virtual void sync_host_arrays(uint64_t) {}
+  virtual void modified_host_arrays(uint64_t) {}
+  virtual void set_mass(const char *, int, const char *, int, int, int *);
+  virtual void set_mass(const char *, int, int, double);
+  virtual void set_mass(const char *, int, int, char **);
+  virtual void set_mass(double *);
   void check_mass(const char *, int);
 
   int radius_consistency(int, double &);
@@ -379,16 +389,16 @@ class Atom : protected Pointers {
   void first_reorder();
   virtual void sort();
 
-  void add_callback(int);
-  void delete_callback(const char *, int);
-  void update_callback(int);
+  void add_callback(Fix *, int);
+  void delete_callback(Fix *, int);
+  void sort_callbacks();
 
   int find_custom(const char *, int &, int &);
   int find_custom_ghost(const char *, int &, int &, int &);
   virtual int add_custom(const char *, int, int, int ghost = 0);
   virtual void remove_custom(int, int, int);
 
-  void *extract(const char *);
+  virtual void *extract(const char *);
   int extract_datatype(const char *);
   int extract_size(const char *, int);
 
@@ -425,6 +435,10 @@ class Atom : protected Pointers {
   virtual int map_find_hash(tagint);
 
  protected:
+  // the list of fixes with callbacks for flag = GROW, RESTART, or BORDER
+
+  std::vector<Fix *> &callback_list(int);
+
   // global to local ID mapping
 
   int *map_array;      // direct map via array that holds map_tag_max

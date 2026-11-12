@@ -17,7 +17,6 @@
 ------------------------------------------------------------------------- */
 
 #include "domain.h"
-#include "style_region.h"   // IWYU pragma: keep
 
 #include "atom.h"
 #include "atom_vec.h"
@@ -49,12 +48,16 @@ static constexpr double SMALL = 1.0e-4;
 static constexpr double BONDSTRETCH = 1.1;
 
 /* ----------------------------------------------------------------------
-   one instance per region style in style_region.h
+   process-global registry of region style factory functions.  Shared by all
+   LAMMPS instances and persistent across the "clear" command.  Built-in styles
+   are registered once by the generated register_region_styles(); plugins
+   add/override entries at runtime.
 ------------------------------------------------------------------------- */
 
-template <typename T> static Region *region_creator(LAMMPS *lmp, int narg, char ** arg)
+CreatorRegistry<Domain::RegionCreator> &Domain::region_styles()
 {
-  return new T(lmp, narg, arg);
+  static CreatorRegistry<Domain::RegionCreator> registry;
+  return registry;
 }
 
 /* ----------------------------------------------------------------------
@@ -107,16 +110,6 @@ Domain::Domain(LAMMPS *lmp) : Pointers(lmp)
   delete[] args;
 
   copymode = 0;
-
-  region_map = new RegionCreatorMap();
-
-#define REGION_CLASS
-#define RegionStyle(key,Class) \
-  (*region_map)[#key] = &region_creator<Class>;
-#include "style_region.h"   // IWYU pragma: keep
-
-#undef RegionStyle
-#undef REGION_CLASS
 }
 
 /* ---------------------------------------------------------------------- */
@@ -128,7 +121,6 @@ Domain::~Domain()
   for (const auto &reg : regions) delete reg;
   regions.clear();
   delete lattice;
-  delete region_map;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -182,7 +174,8 @@ void Domain::init()
   for (const auto &fix : fixes)
     if (utils::strmatch(fix->style,"^deform")) {
       deform_flag = 1;
-      if ((dynamic_cast<FixDeform *>(fix))->remapflag == Domain::V_REMAP) {
+      auto *deform = dynamic_cast<FixDeform *>(fix);
+      if (deform && (deform->remapflag == Domain::V_REMAP)) {
         deform_vremap = 1;
         deform_groupbit = fix->groupbit;
       }
@@ -1538,16 +1531,20 @@ void Domain::closest_image(const double * const xi, const double * const xj, dou
 }
 
 /* ----------------------------------------------------------------------
-   remap the point into the periodic box no matter how far away
+   remap the point X into the periodic box no matter how far away
    adjust 3 image flags encoded in image accordingly
    resulting coord must satisfy lo <= coord < hi
    MAX is important since coord - prd < lo can happen when coord = hi
    for triclinic, point is converted to lamda coords (0-1) before doing remap
-   image = 10 bits for each dimension
+   image = 10 or 20 bits for each dimension
    increment/decrement in wrap-around fashion
+   if V is specified (default = nullptr) and deform_vremap set by fix deform:
+     also remap v via h_rate calculated by fix deform
+     currently only used by fix rigid commands to remap body VCM
+       passes v = nullptr if velocity remap should NOT be done for a rigid body
 ------------------------------------------------------------------------- */
 
-void Domain::remap(double *x, imageint &image)
+void Domain::remap(double *x, imageint &image, double *v)
 {
   double *lo,*hi,*period,*coord;
   double lamda[3];
@@ -1569,6 +1566,7 @@ void Domain::remap(double *x, imageint &image)
   if (xperiodic) {
     while (coord[0] < lo[0]) {
       coord[0] += period[0];
+      if (deform_vremap && v) v[0] += h_rate[0];
       idim = image & IMGMASK;
       otherdims = image ^ idim;
       idim--;
@@ -1577,6 +1575,7 @@ void Domain::remap(double *x, imageint &image)
     }
     while (coord[0] >= hi[0]) {
       coord[0] -= period[0];
+      if (deform_vremap && v) v[0] -= h_rate[0];
       idim = image & IMGMASK;
       otherdims = image ^ idim;
       idim++;
@@ -1589,6 +1588,10 @@ void Domain::remap(double *x, imageint &image)
   if (yperiodic) {
     while (coord[1] < lo[1]) {
       coord[1] += period[1];
+      if (deform_vremap && v) {
+        v[0] += h_rate[5];
+        v[1] += h_rate[1];
+      }
       idim = (image >> IMGBITS) & IMGMASK;
       otherdims = image ^ (idim << IMGBITS);
       idim--;
@@ -1597,6 +1600,10 @@ void Domain::remap(double *x, imageint &image)
     }
     while (coord[1] >= hi[1]) {
       coord[1] -= period[1];
+      if (deform_vremap && v) {
+        v[0] -= h_rate[5];
+        v[1] -= h_rate[1];
+      }
       idim = (image >> IMGBITS) & IMGMASK;
       otherdims = image ^ (idim << IMGBITS);
       idim++;
@@ -1609,6 +1616,11 @@ void Domain::remap(double *x, imageint &image)
   if (zperiodic) {
     while (coord[2] < lo[2]) {
       coord[2] += period[2];
+      if (deform_vremap && v) {
+        v[0] += h_rate[4];
+        v[1] += h_rate[3];
+        v[2] += h_rate[2];
+      }
       idim = image >> IMG2BITS;
       otherdims = image ^ (idim << IMG2BITS);
       idim--;
@@ -1617,6 +1629,11 @@ void Domain::remap(double *x, imageint &image)
     }
     while (coord[2] >= hi[2]) {
       coord[2] -= period[2];
+      if (deform_vremap && v) {
+        v[0] -= h_rate[4];
+        v[1] -= h_rate[3];
+        v[2] -= h_rate[2];
+      }
       idim = image >> IMG2BITS;
       otherdims = image ^ (idim << IMG2BITS);
       idim++;
@@ -1630,7 +1647,7 @@ void Domain::remap(double *x, imageint &image)
 }
 
 /* ----------------------------------------------------------------------
-   remap the point into the periodic box no matter how far away
+   remap the point X into the periodic box no matter how far away
    no image flag calculation
    resulting coord must satisfy lo <= coord < hi
    MAX is important since coord - prd < lo can happen when coord = hi
@@ -1677,22 +1694,124 @@ void Domain::remap(double *x)
 }
 
 /* ----------------------------------------------------------------------
-   remap all points into the periodic box no matter how far away
+   remap all atom coords into the periodic box no matter how far away
    adjust 3 image flags encoded in image accordingly
    resulting coord must satisfy lo <= coord < hi
    MAX is important since coord - prd < lo can happen when coord = hi
    for triclinic, point is converted to lamda coords (0-1) within remap()
    image = 10 bits for each dimension
    increment/decrement in wrap-around fashion
+   account for velocity remapping from fix deform if needed
 ------------------------------------------------------------------------- */
 
 void Domain::remap_all()
 {
   double **x = atom->x;
+  double **v = atom->v;
   imageint *image = atom->image;
   int nlocal = atom->nlocal;
 
-  for (int i = 0; i < nlocal; i++) remap(x[i],image[i]);
+  double *lo,*hi,*period,*coord;
+  double lamda[3];
+  imageint idim,otherdims;
+  int *mask = atom->mask;
+  int delta;
+
+  for (int i = 0; i < nlocal; i++) {
+    if (triclinic == 0) {
+      lo = boxlo;
+      hi = boxhi;
+      period = prd;
+      coord = x[i];
+    } else {
+      lo = boxlo_lamda;
+      hi = boxhi_lamda;
+      period = prd_lamda;
+      x2lamda(x[i],lamda);
+      coord = lamda;
+    }
+
+    if (xperiodic) {
+      delta = 0;
+      while (coord[0] < lo[0]) {
+        delta++;
+        coord[0] += period[0];
+        idim = image[i] & IMGMASK;
+        otherdims = image[i] ^ idim;
+        idim--;
+        idim &= IMGMASK;
+        image[i] = otherdims | idim;
+      }
+      while (coord[0] >= hi[0]) {
+        coord[0] -= period[0];
+        delta--;
+        idim = image[i] & IMGMASK;
+        otherdims = image[i] ^ idim;
+        idim++;
+        idim &= IMGMASK;
+        image[i] = otherdims | idim;
+      }
+      coord[0] = MAX(coord[0],lo[0]);
+      if (deform_vremap && mask[i] & deform_groupbit) v[i][0] += delta * h_rate[0];
+    }
+
+    if (yperiodic) {
+      delta = 0;
+      while (coord[1] < lo[1]) {
+        coord[1] += period[1];
+        delta++;
+        idim = (image[i] >> IMGBITS) & IMGMASK;
+        otherdims = image[i] ^ (idim << IMGBITS);
+        idim--;
+        idim &= IMGMASK;
+        image[i] = otherdims | (idim << IMGBITS);
+      }
+      while (coord[1] >= hi[1]) {
+        coord[1] -= period[1];
+        delta--;
+        idim = (image[i] >> IMGBITS) & IMGMASK;
+        otherdims = image[i] ^ (idim << IMGBITS);
+        idim++;
+        idim &= IMGMASK;
+        image[i] = otherdims | (idim << IMGBITS);
+      }
+      coord[1] = MAX(coord[1],lo[1]);
+      if (deform_vremap && mask[i] & deform_groupbit) {
+        v[i][0] += delta * h_rate[5];
+        v[i][1] += delta * h_rate[1];
+      }
+    }
+
+    if (zperiodic) {
+      delta = 0;
+      while (coord[2] < lo[2]) {
+        coord[2] += period[2];
+        delta++;
+        idim = image[i] >> IMG2BITS;
+        otherdims = image[i] ^ (idim << IMG2BITS);
+        idim--;
+        idim &= IMGMASK;
+        image[i] = otherdims | (idim << IMG2BITS);
+      }
+      while (coord[2] >= hi[2]) {
+        coord[2] -= period[2];
+        delta--;
+        idim = image[i] >> IMG2BITS;
+        otherdims = image[i] ^ (idim << IMG2BITS);
+        idim++;
+        idim &= IMGMASK;
+        image[i] = otherdims | (idim << IMG2BITS);
+      }
+      coord[2] = MAX(coord[2],lo[2]);
+      if (deform_vremap && mask[i] & deform_groupbit) {
+        v[i][0] += delta * h_rate[4];
+        v[i][1] += delta * h_rate[3];
+        v[i][2] += delta * h_rate[2];
+      }
+    }
+
+    if (triclinic) lamda2x(coord,x[i]);
+  }
 }
 
 /* ----------------------------------------------------------------------
@@ -1839,12 +1958,45 @@ void Domain::unmap(const double *x, imageint image, double *y)
 }
 
 /* ----------------------------------------------------------------------
-   adjust image flags due to triclinic box flip
-   flip operation is changing box vectors A,B,C to new A',B',C'
+   unmap the point via image flags, accounting for velocity change due
+    to deformation if needed based on mask
+   result returned in y, don't reset image flag
+   for triclinic, use h[] to add in tilt factors in other dims as needed
+------------------------------------------------------------------------- */
+
+void Domain::unmap(const double *x, const double *v, imageint image, int mask, double *y, double *u)
+{
+  int xbox = (image & IMGMASK) - IMGMAX;
+  int ybox = (image >> IMGBITS & IMGMASK) - IMGMAX;
+  int zbox = (image >> IMG2BITS) - IMGMAX;
+
+  if (triclinic == 0) {
+    y[0] = x[0] + xbox*xprd;
+    y[1] = x[1] + ybox*yprd;
+    y[2] = x[2] + zbox*zprd;
+  } else {
+    y[0] = x[0] + h[0]*xbox + h[5]*ybox + h[4]*zbox;
+    y[1] = x[1] + h[1]*ybox + h[3]*zbox;
+    y[2] = x[2] + h[2]*zbox;
+  }
+
+  u[0] = v[0];
+  u[1] = v[1];
+  u[2] = v[2];
+  if (deform_vremap && mask & deform_groupbit) {
+    u[0] += h_rate[0] * xbox + h_rate[5] * ybox + h_rate[4] * zbox;
+    u[1] += h_rate[1] * ybox + h_rate[3] * zbox;
+    u[2] += h_rate[2] * zbox;
+  }
+}
+
+/* ----------------------------------------------------------------------
+   adjust image flags of all atoms due to triclinic box flip in FixDeform
+   flip operation changes box vectors A,B,C to new A',B',C'
      A' = A              (A does not change)
      B' = B + mA         (B shifted by A)
      C' = C + pB + nA    (C shifted by B and/or A)
-   this requires the image flags change from (a,b,c) to (a',b',c')
+   this requires image flags change from (a,b,c) to (a',b',c')
    so that x_unwrap for each atom is same before/after
      x_unwrap_before = xlocal + aA + bB + cC
      x_unwrap_after = xlocal + a'A' + b'B' + c'C'
@@ -1855,6 +2007,10 @@ void Domain::unmap(const double *x, imageint image, double *y)
    in other words, for xy flip, change in x flag depends on current y flag
    this is b/c the xy flip dramatically changes which tiled image of
      simulation box an unwrapped point maps to
+   image_flip_one() does this for a single image flag
+      called directly by rigid fixes for image flag of each rigid body
+   modify->image_flip() lets fixes with their own image flags (rigid bodies)
+     do the same, for every fix that flips the box
 ------------------------------------------------------------------------- */
 
 void Domain::image_flip(int m, int n, int p)
@@ -1862,18 +2018,24 @@ void Domain::image_flip(int m, int n, int p)
   imageint *image = atom->image;
   int nlocal = atom->nlocal;
 
-  for (int i = 0; i < nlocal; i++) {
-    int xbox = (image[i] & IMGMASK) - IMGMAX;
-    int ybox = (image[i] >> IMGBITS & IMGMASK) - IMGMAX;
-    int zbox = (image[i] >> IMG2BITS) - IMGMAX;
+  for (int i = 0; i < nlocal; i++)
+    image_flip_one(image[i], m, n, p);
 
-    ybox -= p*zbox;
-    xbox -= m*ybox + n*zbox;
+  modify->image_flip(m, n, p);
+}
 
-    image[i] = ((imageint) (xbox + IMGMAX) & IMGMASK) |
-      (((imageint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) |
-      (((imageint) (zbox + IMGMAX) & IMGMASK) << IMG2BITS);
-  }
+void Domain::image_flip_one(imageint &image, int m, int n, int p)
+{
+  int xbox = (image & IMGMASK) - IMGMAX;
+  int ybox = (image >> IMGBITS & IMGMASK) - IMGMAX;
+  int zbox = (image >> IMG2BITS) - IMGMAX;
+
+  ybox -= p*zbox;
+  xbox -= m*ybox + n*zbox;
+
+  image = ((imageint) (xbox + IMGMAX) & IMGMASK) |
+    (((imageint) (ybox + IMGMAX) & IMGMASK) << IMGBITS) |
+    (((imageint) (zbox + IMGMAX) & IMGMASK) << IMG2BITS);
 }
 
 /* ----------------------------------------------------------------------
@@ -1966,7 +2128,7 @@ int Domain::ownatom(int /*id*/, double *x, imageint *image, int shrinkexceed)
 
 void Domain::set_lattice(int narg, char **arg)
 {
-  if (lattice) delete lattice;
+  delete lattice;
   lattice = nullptr;
   lattice = new Lattice(lmp,narg,arg);
 }
@@ -1985,9 +2147,9 @@ void Domain::add_region(int narg, char **arg)
   }
 
   if (strcmp(arg[1],"none") == 0)
-    error->all(FLERR,"Unrecognized region style 'none'");
+    error->all(FLERR, 1, "Unrecognized region style 'none'");
 
-  if (get_region_by_id(arg[0])) error->all(FLERR,"Reuse of region ID {}", arg[0]);
+  if (get_region_by_id(arg[0])) error->all(FLERR, Error::ARGZERO, "Reuse of region ID {}", arg[0]);
 
   // create the Region
   Region *newregion = nullptr;
@@ -1995,28 +2157,24 @@ void Domain::add_region(int narg, char **arg)
   if (lmp->suffix_enable) {
     if (lmp->non_pair_suffix()) {
       std::string estyle = std::string(arg[1]) + "/" + lmp->non_pair_suffix();
-      if (region_map->find(estyle) != region_map->end()) {
-        RegionCreator &region_creator = (*region_map)[estyle];
-        newregion = region_creator(lmp, narg, arg);
-      }
+      RegionCreator region_creator = region_styles().find(estyle);
+      if (region_creator) newregion = region_creator(lmp, narg, arg);
     }
 
     if (!newregion && lmp->suffix2) {
       std::string estyle = std::string(arg[1]) + "/" + lmp->suffix2;
-      if (region_map->find(estyle) != region_map->end()) {
-        RegionCreator &region_creator = (*region_map)[estyle];
-        newregion = region_creator(lmp, narg, arg);
-      }
+      RegionCreator region_creator = region_styles().find(estyle);
+      if (region_creator) newregion = region_creator(lmp, narg, arg);
     }
   }
 
-  if (!newregion && (region_map->find(arg[1]) != region_map->end())) {
-    RegionCreator &region_creator = (*region_map)[arg[1]];
-    newregion = region_creator(lmp, narg, arg);
+  if (!newregion) {
+    if (RegionCreator region_creator = region_styles().find(arg[1]))
+      newregion = region_creator(lmp, narg, arg);
   }
 
   if (!newregion)
-    error->all(FLERR,utils::check_packages_for_style("region",arg[1],lmp));
+    error->all(FLERR, 1, utils::check_packages_for_style("region",arg[1],lmp));
 
   // initialize any region variables via init()
   // in case region is used between runs, e.g. to print a variable
@@ -2049,7 +2207,7 @@ void Domain::delete_region(const std::string &id)
    return null if no match
 ------------------------------------------------------------------------- */
 
-Region *Domain::get_region_by_id(const std::string &name) const
+Region *Domain::get_region_by_id(const std::string &name)
 {
   for (const auto &reg : regions)
     if (name == reg->id) return reg;
@@ -2061,7 +2219,7 @@ Region *Domain::get_region_by_id(const std::string &name) const
    return vector with matching pointers
 ------------------------------------------------------------------------- */
 
-const std::vector<Region *> Domain::get_region_by_style(const std::string &name) const
+std::vector<Region *> Domain::get_region_by_style(const std::string &name)
 {
   std::vector<Region *> matches;
   if (name.empty()) return matches;
@@ -2076,9 +2234,9 @@ const std::vector<Region *> Domain::get_region_by_style(const std::string &name)
    return list of regions as vector
 ------------------------------------------------------------------------- */
 
-const std::vector<Region *> Domain::get_region_list()
+std::vector<Region *> Domain::get_region_list()
 {
-  return std::vector<Region *>(regions.begin(), regions.end());
+  return {regions.begin(), regions.end()};
 }
 
 /* ----------------------------------------------------------------------

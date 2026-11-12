@@ -48,15 +48,15 @@ if(BUILD_MPI)
   if((CMAKE_SYSTEM_NAME STREQUAL "Windows") AND CMAKE_CROSSCOMPILING)
     message(STATUS "Downloading and configuring MS-MPI 10.1 for Windows cross-compilation")
     set(MPICH2_WIN64_DEVEL_URL "${LAMMPS_THIRDPARTY_URL}/msmpi-win64-devel.tar.gz" CACHE STRING "URL for MS-MPI (win64) tarball")
-    set(MPICH2_WIN64_DEVEL_MD5 "86314daf1bffb809f1fcbefb8a547490" CACHE STRING "MD5 checksum of MS-MPI (win64) tarball")
+    set(MPICH2_WIN64_DEVEL_SHA256 "939f5bad74311a84839196ca9140549189ef00785b0ef8e94ad6a180014ccb7f" CACHE STRING "SHA256 checksum of MS-MPI (win64) tarball")
     mark_as_advanced(MPICH2_WIN64_DEVEL_URL)
-    mark_as_advanced(MPICH2_WIN64_DEVEL_MD5)
+    mark_as_advanced(MPICH2_WIN64_DEVEL_SHA256)
 
     include(ExternalProject)
     if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
       ExternalProject_Add(mpi4win_build
         URL     ${MPICH2_WIN64_DEVEL_URL}
-        URL_MD5 ${MPICH2_WIN64_DEVEL_MD5}
+        URL_HASH SHA256=${MPICH2_WIN64_DEVEL_SHA256}
         CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
         BUILD_BYPRODUCTS <SOURCE_DIR>/lib/libmsmpi.a)
     else()
@@ -119,10 +119,8 @@ if(BUILD_OMP)
 
   if (((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 9.0)) OR
       (CMAKE_CXX_COMPILER_ID STREQUAL "PGI") OR
-      ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)) OR
-      ((CMAKE_CXX_COMPILER_ID STREQUAL "Intel") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.0)))
+      ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 10.0)))
     # GCC 9.x and later plus Clang 10.x and later implement strict OpenMP 4.0 semantics for consts.
-    # Intel 18.0 was tested to support both, so we switch to OpenMP 4+ from 19.x onward to be safe.
     target_compile_definitions(lammps INTERFACE -DLAMMPS_OMP_COMPAT=4)
   else()
     target_compile_definitions(lammps INTERFACE -DLAMMPS_OMP_COMPAT=3)

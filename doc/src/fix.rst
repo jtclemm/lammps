@@ -194,12 +194,13 @@ accelerated styles exist.
 * :doc:`adapt/fep <fix_adapt_fep>` - enhanced version of fix adapt
 * :doc:`addforce <fix_addforce>` - add a force to each atom
 * :doc:`add/heat <fix_add_heat>` - add a heat flux to each atom
-* :doc:`addtorque <fix_addtorque>` - add a torque to a group of atoms
+* :doc:`addtorque/atom <fix_addtorque_atom>` - add a torque to a finite-size particles
+* :doc:`addtorque/group <fix_addtorque_group>` - add a torque to a group of atoms
 * :doc:`alchemy <fix_alchemy>` - perform an "alchemical transformation" between two partitions
+* :doc:`align/self <fix_align_self>` - add torque to groups of atoms due to a self-alignment
 * :doc:`amoeba/bitorsion <fix_amoeba_bitorsion>` - torsion/torsion terms in AMOEBA force field
 * :doc:`amoeba/pitorsion <fix_amoeba_pitorsion>` - 6-body terms in AMOEBA force field
 * :doc:`append/atoms <fix_append_atoms>` - append atoms to a running simulation
-* :doc:`atc <fix_atc>` - initiates a coupled MD/FE simulation
 * :doc:`atom/swap <fix_atom_swap>` - Monte Carlo atom type swapping
 * :doc:`atom_weight/apip <fix_atom_weight_apip>` - compute atomic load of an :doc:`APIP potential <Howto_apip>` for load balancing
 * :doc:`ave/atom <fix_ave_atom>` - compute per-atom time-averaged quantities
@@ -213,6 +214,7 @@ accelerated styles exist.
 * :doc:`ave/time <fix_ave_time>` - compute/output global time-averaged quantities
 * :doc:`aveforce <fix_aveforce>` - add an averaged force to each atom
 * :doc:`balance <fix_balance>` - perform dynamic load-balancing
+* :doc:`baoab <fix_baoab>` -  BAOAB Langevin dynamics integrator
 * :doc:`brownian <fix_brownian>` - overdamped translational brownian motion
 * :doc:`brownian/asphere <fix_brownian>` - overdamped translational and rotational brownian motion for ellipsoids
 * :doc:`brownian/sphere <fix_brownian>` - overdamped translational and rotational brownian motion for spheres
@@ -257,10 +259,19 @@ accelerated styles exist.
 * :doc:`filter/corotate <fix_filter_corotate>` - implement corotation filter to allow larger timesteps with r-RESPA
 * :doc:`flow/gauss <fix_flow_gauss>` - Gaussian dynamics for constant mass flux
 * :doc:`freeze <fix_freeze>` - freeze atoms in a granular simulation
-* :doc:`gcmc <fix_gcmc>` - grand canonical insertions/deletions
+* :doc:`gcmc <fix_gcmc>` - grand canonical Monte Carlo insertions/deletions/translations/rotations
+* :doc:`gemc <fix_gemc>` - Gibbs ensemble Monte Carlo exchanges/volumes/translations/rotations
 * :doc:`gjf <fix_gjf>` - statistically correct Langevin temperature control using the GJ methods
 * :doc:`gld <fix_gld>` - generalized Langevin dynamics integrator
 * :doc:`gle <fix_gle>` - generalized Langevin equation thermostat
+* :doc:`graphics/arrows <fix_graphics_arrows>` - add arrow graphics objects to :doc:`dump image <dump_image>` output
+* :doc:`graphics/chunk <fix_graphics_chunk>` - add convex hull graphics for :doc:`chunks <compute_chunk_atom>` to :doc:`dump image <dump_image>` output
+* :doc:`graphics/isosurface <fix_graphics_isosurface>` - add an isosurface for a group of atoms to :doc:`dump image <dump_image>` output
+* :doc:`graphics/labels <fix_graphics_labels>` - add images or text as graphics objects to :doc:`dump image <dump_image>` output
+* :doc:`graphics/lines <fix_graphics_lines>` - add a trace of atom positions to :doc:`dump image <dump_image>` output
+* :doc:`graphics/objects <fix_graphics_objects>` - add graphics objects to :doc:`dump image <dump_image>` output
+* :doc:`graphics/periodic <fix_graphics_periodic>` - add selected periodic images of atoms and bonds to :doc:`dump image <dump_image>` output
+* :doc:`graphics/replica <fix_graphics_replica>` - add atoms from other replica to :doc:`dump image <dump_image>` output
 * :doc:`gravity <fix_gravity>` - add gravity to atoms in a granular simulation
 * :doc:`grem <fix_grem>` - implements the generalized replica exchange method
 * :doc:`halt <fix_halt>` - terminate a dynamics run or minimization
@@ -269,14 +280,17 @@ accelerated styles exist.
 * :doc:`hmc <fix_hmc>` -  Hybrid/Hamiltonian Monte Carlo (HMC) particle propagation
 * :doc:`hyper/global <fix_hyper_global>` - global hyperdynamics
 * :doc:`hyper/local <fix_hyper_local>` - local hyperdynamics
+* :doc:`ilves <fix_ilves>` - ILVES constraints on bonds and/or angles
 * :doc:`imd <fix_imd>` - implements the "Interactive MD" (IMD) protocol
 * :doc:`indent <fix_indent>` - impose force due to an indenter
 * :doc:`ipi <fix_ipi>` - enable LAMMPS to run as a client for i-PI path-integral simulations
 * :doc:`lambda/apip <fix_lambda_apip>` - compute switching parameter, that controls the precision of an :doc:`APIP potential <Howto_apip>`
+* :doc:`lambda/la/csp/apip <fix_lambda_la_csp_apip>` - compute a conservative switching parameter, that controls the precision of an :doc:`APIP potential <Howto_apip>`
 * :doc:`langevin <fix_langevin>` - Langevin temperature control
 * :doc:`langevin/drude <fix_langevin_drude>` - Langevin temperature control of Drude oscillators
 * :doc:`langevin/eff <fix_langevin_eff>` - Langevin temperature control for the electron force field model
 * :doc:`langevin/spin <fix_langevin_spin>` - Langevin temperature control for a spin or spin-lattice system
+* :doc:`langevin/tspin <fix_langevin_tspin>` - Langevin temperature control for inertial spin dynamics
 * :doc:`lb/fluid <fix_lb_fluid>` - lattice-Boltzmann fluid on a uniform mesh
 * :doc:`lb/momentum <fix_lb_momentum>` - :doc:`fix momentum <fix_momentum>` replacement for use with a lattice-Boltzmann fluid
 * :doc:`lb/viscous <fix_lb_viscous>` - :doc:`fix viscous <fix_viscous>` replacement for use with a lattice-Boltzmann fluid
@@ -316,7 +330,6 @@ accelerated styles exist.
 * :doc:`nve <fix_nve>` - constant NVE time integration
 * :doc:`nve/asphere <fix_nve_asphere>` - NVE for aspherical particles
 * :doc:`nve/asphere/noforce <fix_nve_asphere_noforce>` - NVE for aspherical particles without forces
-* :doc:`nve/awpmd <fix_nve_awpmd>` - NVE for the Antisymmetrized Wave Packet Molecular Dynamics model
 * :doc:`nve/body <fix_nve_body>` - NVE for body particles
 * :doc:`nve/dot <fix_nve_dot>` - rigid body constant energy time integrator for coarse grain models
 * :doc:`nve/dotc/langevin <fix_nve_dotc_langevin>` - Langevin style rigid body time integrator for coarse grain models
@@ -328,6 +341,9 @@ accelerated styles exist.
 * :doc:`nve/sphere <fix_nve_sphere>` - NVE for spherical particles
 * :doc:`nve/bpm/sphere <fix_nve_bpm_sphere>` - NVE for spherical particles used in the BPM package
 * :doc:`nve/spin <fix_nve_spin>` - NVE for a spin or spin-lattice system
+* :doc:`nve/tspin <fix_nve_tspin>` - NVE for inertial spin dynamics with a dynamical spin modulus
+* :doc:`nph/tspin <fix_nvt_tspin>` - NPH for inertial spin dynamics
+* :doc:`npt/tspin <fix_nvt_tspin>` - NPT for inertial spin dynamics
 * :doc:`nve/tri <fix_nve_tri>` - NVE for triangles
 * :doc:`nvk <fix_nvk>` - constant kinetic energy time integration
 * :doc:`nvt <fix_nh>` - NVT time integration via Nose/Hoover
@@ -338,6 +354,7 @@ accelerated styles exist.
 * :doc:`nvt/sllod <fix_nvt_sllod>` - NVT for NEMD with SLLOD equations
 * :doc:`nvt/sllod/eff <fix_nvt_sllod_eff>` - NVT for NEMD with SLLOD equations for the electron force field model
 * :doc:`nvt/sphere <fix_nvt_sphere>` - NVT for spherical particles
+* :doc:`nvt/tspin <fix_nvt_tspin>` - NVT for inertial spin dynamics via Nose/Hoover
 * :doc:`nvt/uef <fix_nh_uef>` - NVT style time integration with diagonal flow
 * :doc:`oneway <fix_oneway>` - constrain particles on move in one direction
 * :doc:`orient/bcc <fix_orient>` - add grain boundary migration force for BCC
@@ -352,7 +369,6 @@ accelerated styles exist.
 * :doc:`pimd/nvt/bosonic <fix_pimd>` - Bosonic Feynman path-integral molecular dynamics with Nose-Hoover thermostat
 * :doc:`planeforce <fix_planeforce>` - constrain atoms to move in a plane
 * :doc:`plumed <fix_plumed>` - wrapper on PLUMED free energy library
-* :doc:`poems <fix_poems>` - constrain clusters of atoms to move as coupled rigid bodies
 * :doc:`polarize/bem/gmres <fix_polarize>` - compute induced charges at the interface between impermeable media with different dielectric constants with generalized minimum residual (GMRES)
 * :doc:`polarize/bem/icc <fix_polarize>` - compute induced charges at the interface between impermeable media with different dielectric constants with the successive over-relaxation algorithm
 * :doc:`polarize/functional <fix_polarize>` - compute induced charges at the interface between impermeable media with different dielectric constants with the energy variational approach
@@ -371,11 +387,15 @@ accelerated styles exist.
 * :doc:`qeq/dynamic <fix_qeq>` - charge equilibration via dynamic method
 * :doc:`qeq/fire <fix_qeq>` - charge equilibration via FIRE minimizer
 * :doc:`qeq/point <fix_qeq>` - charge equilibration via point method
+* :doc:`qeq/point/xlmd <fix_qeq>` - charge equilibration via point method with extended-Lagrangian propagation
 * :doc:`qeq/reaxff <fix_qeq_reaxff>` - charge equilibration for ReaxFF potential
 * :doc:`qeq/rel/reaxff <fix_qeq_rel_reaxff>` - charge equilibration for ReaxFF potential with alternate efield implementation
 * :doc:`qeq/shielded <fix_qeq>` - charge equilibration via shielded method
+* :doc:`qeq/shielded/xlmd <fix_qeq>` - charge equilibration via shielded method with extended-Lagrangian propagation
 * :doc:`qeq/slater <fix_qeq>` - charge equilibration via Slater method
+* :doc:`qeq/slater/xlmd <fix_qeq>` - charge equilibration via Slater method with extended-Lagrangian propagation
 * :doc:`qmmm <fix_qmmm>` - functionality to enable a quantum mechanics/molecular mechanics coupling
+* :doc:`qmmm/xtb <fix_qmmm_xtb>` - self-consistent GFN-xTB QM/MM with periodic PPPM electrostatics
 * :doc:`qtb <fix_qtb>` - implement quantum thermal bath scheme
 * :doc:`qtpie/reaxff <fix_qtpie_reaxff>` - apply QTPIE charge equilibration
 * :doc:`rattle <fix_shake>` - RATTLE constraints on bonds and/or angles
@@ -405,6 +425,7 @@ accelerated styles exist.
 * :doc:`set <fix_set>` - reset an atom property via an atom-style variable every N steps
 * :doc:`setforce <fix_setforce>` - set the force on each atom
 * :doc:`setforce/spin <fix_setforce>` - set magnetic precession vectors on each atom
+* :doc:`settorque/atom <fix_settorque_atom>` - set the torque on each finite-size atom
 * :doc:`sgcmc <fix_sgcmc>` - fix for hybrid semi-grand canonical MD/MC simulations
 * :doc:`shake <fix_shake>` - SHAKE constraints on bonds and/or angles
 * :doc:`shardlow <fix_shardlow>` - integration of DPD equations of motion using the Shardlow splitting
@@ -421,9 +442,13 @@ accelerated styles exist.
 * :doc:`spring/chunk <fix_spring_chunk>` - apply harmonic spring force to each chunk of atoms
 * :doc:`spring/rg <fix_spring_rg>` - spring on radius of gyration of group of atoms
 * :doc:`spring/self <fix_spring_self>` - spring from each atom to its origin
+* :doc:`spring/tspin <fix_spring_tspin>` - harmonic restoring potential on the spin modulus
 * :doc:`srd <fix_srd>` - stochastic rotation dynamics (SRD)
 * :doc:`store/force <fix_store_force>` - store force on each atom
 * :doc:`store/state <fix_store_state>` - store attributes for each atom
+* :doc:`surface/global <fix_surface_global>` - global granular surface model, each proc has copy
+* :doc:`surface/local <fix_surface_local>` - local granular surface model, distributed across procs
+* :doc:`symmetry <fix_symmetry>` - constrain MD to obey a chosen crystallographic space-group symmetry
 * :doc:`tdpd/source <fix_dpd_source>` - add external concentration source
 * :doc:`temp/berendsen <fix_temp_berendsen>` - temperature control by Berendsen thermostat
 * :doc:`temp/csld <fix_temp_csvr>` - canonical sampling thermostat with Langevin dynamics
@@ -437,21 +462,26 @@ accelerated styles exist.
 * :doc:`ti/spring <fix_ti_spring>` - perform thermodynamic integration between a solid and an Einstein crystal
 * :doc:`tmd <fix_tmd>` - guide a group of atoms to a new configuration
 * :doc:`ttm <fix_ttm>` - two-temperature model for electronic/atomic coupling (replicated grid)
+* :doc:`ttm/cascade <fix_ttm>` - a two-temperature model for radiation damage cascades
 * :doc:`ttm/grid <fix_ttm>` - two-temperature model for electronic/atomic coupling (distributed grid)
 * :doc:`ttm/mod <fix_ttm>` - enhanced two-temperature model with additional options
+* :doc:`ttm/thermal <fix_ttm>` - a two-temperature model for thermal transport
 * :doc:`tune/kspace <fix_tune_kspace>` - auto-tune :math:`k`-space parameters
 * :doc:`vector <fix_vector>` - accumulate a global vector every *N* timesteps
 * :doc:`viscosity <fix_viscosity>` - Mueller-Plathe momentum exchange for viscosity calculation
 * :doc:`viscous <fix_viscous>` - viscous damping for granular simulations
+* :doc:`viscous/nonlinear <fix_viscous_nonlinear>` - nonlinear (Schiller-Naumann) viscous drag for granular simulations
 * :doc:`viscous/sphere <fix_viscous_sphere>` - viscous damping on angular velocity for granular simulations
 * :doc:`wall/body/polygon <fix_wall_body_polygon>` - time integration for body particles of style :doc:`rounded/polygon <Howto_body>`
 * :doc:`wall/body/polyhedron <fix_wall_body_polyhedron>` - time integration for body particles of style :doc:`rounded/polyhedron <Howto_body>`
+* :doc:`wall/body/polyhedron/granular <fix_wall_body_polyhedron_granular>` - walls with the contact models of pair style granular for body particles of style :doc:`rounded/polyhedron <Howto_body>`
 * :doc:`wall/colloid <fix_wall>` - Lennard-Jones wall interacting with finite-size particles
 * :doc:`wall/ees <fix_wall_ees>` - wall for ellipsoidal particles
 * :doc:`wall/flow <fix_wall_flow>` - flow boundary conditions
 * :doc:`wall/gran <fix_wall_gran>` - frictional wall(s) for granular simulations
 * :doc:`wall/gran/region <fix_wall_gran_region>` - :doc:`fix wall/region <fix_wall_region>` equivalent for use with granular particles
 * :doc:`wall/harmonic <fix_wall>` - harmonic spring wall
+* :doc:`wall/harmonic/outside <fix_wall>` - harmonic spring wall for containing particles
 * :doc:`wall/lj1043 <fix_wall>` - Lennard-Jones 10--4--3 wall
 * :doc:`wall/lj126 <fix_wall>` - Lennard-Jones 12--6 wall
 * :doc:`wall/lj93 <fix_wall>` - Lennard-Jones 9--3 wall

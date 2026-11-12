@@ -153,7 +153,7 @@ TEST_F(LibraryObjects, variables)
 
     EXPECT_EQ(lammps_extract_variable_datatype(lmp, "ten"), LMP_VAR_EQUAL);
     ptr = lammps_extract_variable(lmp, "ten", nullptr);
-    EXPECT_THAT(*(double *)ptr, 1.0);
+    EXPECT_THAT(*(double *)ptr, 10.0);
     lammps_free(ptr);
     variable->internal_set(variable->find("ten"), 2.5);
     ptr = lammps_extract_variable(lmp, "ten", nullptr);
@@ -261,6 +261,7 @@ TEST_F(LibraryObjects, eval)
     EXPECT_EQ(lammps_has_error(lmp), 0);
     EXPECT_DOUBLE_EQ(lammps_eval(lmp, "count(all)"), 36.0);
     EXPECT_EQ(lammps_has_error(lmp), 0);
-    EXPECT_DOUBLE_EQ(lammps_eval(lmp, "pe"), -3.9848867644689534);
+    // the lattice constant comes from pow(), whose last bit differs between C libraries
+    EXPECT_NEAR(lammps_eval(lmp, "pe"), -3.9848867644689534, 1.0e-13);
     EXPECT_EQ(lammps_has_error(lmp), 0);
 }

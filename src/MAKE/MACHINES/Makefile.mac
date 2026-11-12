@@ -7,12 +7,12 @@ SHELL = /bin/sh
 # specify flags and libraries needed for your compiler
 
 CC =		c++
-CCFLAGS =	-O -std=c++11
+CCFLAGS =	-O -std=c++17
 SHFLAGS =	-fPIC
 DEPFLAGS =	-M
 
 LINK =		c++
-LINKFLAGS =	-O -std=c++11
+LINKFLAGS =	-O -std=c++17
 LIB =           
 SIZE =		size
 
@@ -28,7 +28,7 @@ SHLIBFLAGS =	-shared
 # LAMMPS ifdef settings
 # see possible settings in Section 3.5 of the manual
 
-LMP_INC =	-DLAMMPS_GZIP
+LMP_INC =
 
 # MPI library
 # see discussion in Section 3.4 of the manual

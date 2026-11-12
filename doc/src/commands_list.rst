@@ -33,6 +33,7 @@ Commands
    displace_atoms
    dynamical_matrix
    echo
+   fenix
    fix
    fix_modify
    fitpod_command
@@ -110,7 +111,9 @@ Commands
    units
    variable
    velocity
+   velocity_tspin
    write_coeff
    write_data
    write_dump
+   write_molecule
    write_restart

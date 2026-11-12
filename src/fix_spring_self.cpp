@@ -55,7 +55,7 @@ FixSpringSelf::FixSpringSelf(LAMMPS *lmp, int narg, char **arg) :
   } else {
     k = utils::numeric(FLERR,arg[3],false,lmp);
     kstyle = CONSTANT;
-    if (k <= 0.0) error->all(FLERR,"Illegal force constant for fix spring/self command");
+    if (k <= 0.0) error->all(FLERR, 3, "Illegal force constant for fix spring/self command");
   }
 
   xflag = yflag = zflag = 1;
@@ -83,8 +83,8 @@ FixSpringSelf::FixSpringSelf(LAMMPS *lmp, int narg, char **arg) :
 
   xoriginal = nullptr;
   FixSpringSelf::grow_arrays(atom->nmax);
-  atom->add_callback(Atom::GROW);
-  atom->add_callback(Atom::RESTART);
+  atom->add_callback(this, Atom::GROW);
+  atom->add_callback(this, Atom::RESTART);
 
   // xoriginal = initial unwrapped positions of atoms
 
@@ -109,8 +109,8 @@ FixSpringSelf::~FixSpringSelf()
 
   // unregister callbacks to this fix from Atom class
 
-  atom->delete_callback(id,Atom::GROW);
-  atom->delete_callback(id,Atom::RESTART);
+  atom->delete_callback(this, Atom::GROW);
+  atom->delete_callback(this, Atom::RESTART);
 
   // delete locally stored arrays
 
@@ -138,13 +138,16 @@ void FixSpringSelf::init()
 
   if (kstr) {
     kvar = input->variable->find(kstr);
-    if (kvar < 0) error->all(FLERR, "Variable {} for fix spring/self does not exist", kstr);
-    if (input->variable->equalstyle(kvar))
+    if (kvar < 0)
+      error->all(FLERR, Error::NOLASTLINE, "Variable {} for fix spring/self does not exist", kstr);
+    if (input->variable->equalstyle(kvar)) {
       kstyle = EQUAL;
-    else if (input->variable->atomstyle(kvar))
+    } else if (input->variable->atomstyle(kvar)) {
       kstyle = ATOM;
-    else
-      error->all(FLERR, "Variable {} for fix spring/self is invalid style", kstr);
+    } else {
+      error->all(FLERR, Error::NOLASTLINE, "Variable {} for fix spring/self is invalid style",
+                 kstr);
+    }
   }
 
 
@@ -207,7 +210,8 @@ void FixSpringSelf::post_force(int /*vflag*/)
     if (kstyle == EQUAL) {
       k = input->variable->compute_equal(kvar);
       if (k < 0.0)
-        error->all(FLERR,"Evaluation of {} gave bad value {} for fix spring/self", kstr, k);
+        error->all(FLERR, Error::NOLASTLINE,
+                   "Evaluation of {} gave bad value {} for fix spring/self", kstr, k);
     }
     for (int i = 0; i < nlocal; i++)
       if (mask[i] & groupbit) {

@@ -27,7 +27,8 @@ struct HyperOneCoeff {
   tagint tag;
 };
 
-template <class T> class MyPage {
+// aligned to 64 bytes, so that the per-thread pages in an array do not share cache lines
+template <class T> class alignas(64) MyPage {
  public:
   bigint ndatum;    // total # of stored datums
   int nchunk;       // total # of stored chunks
@@ -82,13 +83,13 @@ template <class T> class MyPage {
    *
    * \return total storage used in bytes */
 
-  double size() const { return (double) npage * pagesize * sizeof(T); }
+  [[nodiscard]] double size() const { return (double) npage * pagesize * sizeof(T); }
 
   /** Return error status
    *
    * \return 0 if no error, 1 requested chunk size > maxchunk, 2 if malloc failed */
 
-  int status() const { return errorflag; }
+  [[nodiscard]] int status() const { return errorflag; }
 
  private:
   T **pages;    // list of allocated pages

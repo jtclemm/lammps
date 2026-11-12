@@ -27,10 +27,12 @@
 #include "error.h"
 #include "force.h"
 #include "math_const.h"
+#include "math_special.h"
 #include "memory.h"
+#include "potential_file_reader.h"
 #include "random_mars.h"
 #include "respa.h"
-#include "potential_file_reader.h"
+#include "safe_pointers.h"
 #include "update.h"
 
 #include <cmath>
@@ -40,6 +42,8 @@
 using namespace LAMMPS_NS;
 using namespace FixConst;
 using namespace MathConst;
+using MathSpecial::cube;
+using MathSpecial::powint;
 
 // OFFSET avoids outside-of-box atoms being rounded to grid pts incorrectly
 // SHIFT = 0.0 assigns atoms to lower-left grid pt
@@ -48,7 +52,7 @@ using namespace MathConst;
 //   to spatially average consistent with the TTM grid
 
 static const char cite_fix_ttm_mod[] =
-  "fix ttm/mod command: doi:10.1088/0953-8984/26/47/475401, doi:10.1002/ctpp.201310025\n\n"
+  "fix ttm/mod command: https://doi.org/10.1088/0953-8984/26/47/475401, https://doi.org/10.1002/ctpp.201310025\n\n"
   "@article{Pisarev2014,\n"
   "author = {Pisarev, V. V. and Starikov, S. V.},\n"
   "title = {Atomistic Simulation of Ion Track Formation in {UO$_2$}.},\n"
@@ -156,6 +160,20 @@ FixTTMMod::FixTTMMod(LAMMPS *lmp, int narg, char **arg) :
   if (surface_l >= surface_r)
     error->all(FLERR, "Left surface coordinate must be less than right surface coordinate");
 
+  // warn if the electron-ion coupling region does not span the whole box.
+  // when surface tracking is disabled (movsur == 0), only atoms in grid
+  // cells with surface_l <= ix < surface_r are coupled to the electrons.
+  // a too-small rsurface (or non-zero lsurface) silently restricts the
+  // coupling to a sub-slab.  for a fully periodic bulk run (equivalent to
+  // fix ttm) lsurface = 0 and rsurface = Nx must be used.
+
+  if (comm->me == 0 && movsur == 0 && (surface_l > 0 || surface_r < nxgrid))
+    error->warning(FLERR, "Fix ttm/mod electron-ion coupling is restricted to grid cells "
+                   "{} <= ix < {} in the x-direction (set by lsurface/rsurface); atoms in "
+                   "other cells are not coupled to the electronic subsystem. For a fully "
+                   "periodic bulk simulation set lsurface = 0 and rsurface = {} (= Nx).",
+                   surface_l, surface_r, nxgrid);
+
   // initialize Marsaglia RNG with processor-unique seed
 
   random = new RanMars(lmp,seed + comm->me);
@@ -189,8 +207,8 @@ FixTTMMod::FixTTMMod(LAMMPS *lmp, int narg, char **arg) :
     flangevin[i][2] = 0.0;
   }
 
-  atom->add_callback(Atom::GROW);
-  atom->add_callback(Atom::RESTART);
+  atom->add_callback(this, Atom::GROW);
+  atom->add_callback(this, Atom::RESTART);
 
   // initialize electron temperatures on grid
 
@@ -420,6 +438,7 @@ void FixTTMMod::read_parameters(const std::string &filename)
 
     try {
       PotentialFileReader reader(lmp, filename, "ttm/mod parameter");
+      reader.ignore_comments(false);
 
       // C0 (metal)
 
@@ -625,7 +644,7 @@ void FixTTMMod::write_electron_temperatures(const std::string &filename)
 {
   if (comm->me) return;
 
-  FILE *fp = fopen(filename.c_str(),"w");
+  SafeFilePtr fp = fopen(filename.c_str(),"w");
   if (!fp) error->one(FLERR,"Fix ttm/mod could not open output file {}: {}",
                       filename, utils::getsyserror());
   utils::print(fp,"# DATE: {} UNITS: {} COMMENT: Electron temperature "
@@ -642,7 +661,6 @@ void FixTTMMod::write_electron_temperatures(const std::string &filename)
         fprintf(fp,"%d %d %d %20.16g\n",ix+1,iy+1,iz+1,T_electron[iz][iy][ix]);
       }
 
-  fclose(fp);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -666,12 +684,12 @@ double FixTTMMod::el_sp_heat_integral(double T_e)
 {
   double T_temp = T_e/1000.0, T_reduced = T_damp*T_temp;
   if (T_damp != 0)
-    return electronic_density*(MY_PIS*(3*esheat_4/pow(T_damp,5)+2*esheat_2/pow(T_damp,3)+4*esheat_0/T_damp)*erf(T_reduced)+
-                               4*esheat_3/pow(T_damp,4)+4*esheat_1/T_damp/T_damp-
-                               ((6*esheat_4*T_temp+4*esheat_3)/pow(T_damp,4)+
-                                (4*esheat_1+4*esheat_4*pow(T_temp,3)+4*esheat_3*T_temp*T_temp+4*esheat_2*T_temp)/T_damp/T_damp)*exp(-T_reduced*T_reduced))*125.0+electronic_density*C_limit*T_e;
+    return electronic_density*(MY_PIS*(3*esheat_4/powint(T_damp,5)+2*esheat_2/cube(T_damp)+4*esheat_0/T_damp)*erf(T_reduced)+
+                               4*esheat_3/powint(T_damp,4)+4*esheat_1/T_damp/T_damp-
+                               ((6*esheat_4*T_temp+4*esheat_3)/powint(T_damp,4)+
+                                (4*esheat_1+4*esheat_4*cube(T_temp)+4*esheat_3*T_temp*T_temp+4*esheat_2*T_temp)/T_damp/T_damp)*exp(-T_reduced*T_reduced))*125.0+electronic_density*C_limit*T_e;
   else
-    return electronic_density*((esheat_0 + C_limit)*T_e + esheat_1*T_temp*T_e/2.0 + esheat_2*T_temp*T_temp*T_e/3.0 + esheat_3*pow(T_temp,3)*T_e/4.0 + esheat_4*pow(T_temp,4)*T_e/5.0);
+    return electronic_density*((esheat_0 + C_limit)*T_e + esheat_1*T_temp*T_e/2.0 + esheat_2*T_temp*T_temp*T_e/3.0 + esheat_3*cube(T_temp)*T_e/4.0 + esheat_4*powint(T_temp,4)*T_e/5.0);
 }
 
 /* ---------------------------------------------------------------------- */

@@ -44,7 +44,7 @@ Syntax
              v_name2 = variable with name2 for change rate as function of time
 
        *xy*, *xz*, *yz* args = style value
-         style = *final* or *delta* or *vel* or *erate* or *trate* or *wiggle* or *variable*
+         style = *final* or *delta* or *vel* or *erate* or *erate/rescale* or *trate* or *wiggle* or *variable*
            *final* value = tilt
              tilt = tilt factor at end of run (distance units)
            *delta* value = dtilt
@@ -53,6 +53,8 @@ Syntax
              V = change tilt factor at this velocity (distance/time units),
                  effectively an engineering shear strain rate
            *erate* value = R
+             R = engineering shear strain rate (1/time units)
+           *erate/rescale* value = R
              R = engineering shear strain rate (1/time units)
            *trate* value = R
              R = true shear strain rate (1/time units)
@@ -130,6 +132,13 @@ commands <fix_nh_uef>`.
    1\,048\,575`
 
 ----------
+
+For N > 0, the box is updated at the end of the time step every N
+steps. For N = 0, the box is updated immediately after position updates
+on every time step. The latter is required for accurate NEMD simulations
+with :doc:`fix nvt/sllod <fix_nvt_sllod>`, but is not compatible with the
+*variable* style.  Note, if using N = 0 with :doc:`run_style <run_style>`
+"respa" the box will be updated in the inner loop.
 
 For the *x*, *y*, *z* parameters, the associated dimension cannot be
 shrink-wrapped.  For the *xy*, *yz*, *xz* parameters, the associated
@@ -382,6 +391,57 @@ original y box length.  R = 1 or 2 means the tilt factor will increase
 by 1 or 2 every picosecond.  R = -0.01 means a decrease in shear
 strain by 0.01 every picosecond.
 
+.. versionchanged:: 11Feb2026
+
+The *erate/rescale* style operates similarly to the *erate* style with
+a specified strain rate in units of 1/time. The difference is that
+the change in the tilt factor will depend on the current length of
+the box perpendicular to the shear direction, *L*, instead of the
+original length, *L0*.  It will also account for the effects of elongation
+and shearing in other directions, with evolution as follows.
+The xy and yz tilt factors, :math:`T_{\alpha \beta}`, will evolve according to
+
+.. math::
+
+   \frac{d T_{\alpha\beta}(t)}{dt} = L_{\beta} \cdot \mathrm{erate} + \frac{1}{L_{\alpha}} \cdot \frac{d L_{\alpha}(t)}{dt} \cdot T_{\alpha\beta}(t)
+
+where :math:`\alpha` and :math:`\beta` denote the two directions
+(e.g. x and y, or y and z).
+The xz tilt factor has an additional term which accounts for xy shear
+with yz tilt, and evolves as
+
+.. math::
+
+   \frac{d T_{xz}(t)}{dt} = L_z \cdot \mathrm{erate} + \frac{1}{L_x} \cdot \frac{d L_x(t)}{dt} \cdot T_{xz}(t) + \frac{1}{L_y} \cdot \frac{d T_{xy}(t)}{dt} \cdot T_{yz}(t)
+
+If xy is also *erate/rescale*, then :math:`\frac{d T_{xy}(t)}{dt}`
+is calculated as the first term on the RHS of the previous equation
+so that it is equal to :math:`\mathrm{erate}_{xy}`.
+With x/y/z = *trate* and xy/xz/yz = *erate/rescale*, this is equivalent
+to evolving the lattice vectors, :math:`\mathbf{v} \in \{\mathbf{a}, \mathbf{b}, \mathbf{c}\}`,
+according to
+
+.. math::
+
+   \frac{d \mathbf{v}(t)}{dt} = \mathbf{v}(t) \cdot \nabla \mathbf{u}
+
+where :math:`\nabla\mathbf{u}` is the flow tensor which remains constant
+and is given by
+
+.. math::
+
+   \nabla\mathbf{u} = \left[\begin{array}{ccc}\mathrm{trate}_x & 0 & 0 \\ \mathrm{erate}_{xy} & \mathrm{trate}_y & 0 \\ \mathrm{erate}_{xz} & \mathrm{erate}_{yz} & \mathrm{trate}_z\end{array}\right]
+
+The tilt factors are integrated in two half-steps before and
+after any changes to the x, y and z lengths, with the first half-step
+taking the order xz, yz, xy and the second half-step taking the
+reverse order so that the full step is reversible.  This option may be
+useful in scenarios where *L* changes in time.  It is required by
+:doc:`fix nvt/sllod <fix_nvt_sllod>` in such cases for calculating
+viscosity of mixed flows.  Note, under mixed xy and yz shear, the xz
+component can be set to use the *erate/rescale* style with a value
+of zero in order to maintain a constant :math:`\nabla\mathbf{u}`.
+
 The *trate* style changes a tilt factor at a "constant true shear
 strain rate".  Note that this is not an "engineering shear strain
 rate", as the other styles are.  Rather, for a "true" rate, the rate
@@ -531,15 +591,20 @@ box without explicit remapping of their coordinates.
 
 .. note::
 
-   When non-equilibrium MD (NEMD) simulations are performed using
-   this fix, the option "remap v" should normally be used.  This is
-   because :doc:`fix nvt/sllod <fix_nvt_sllod>` adjusts the atom positions
-   and velocities to induce a velocity profile that matches the changing
-   box size/shape.  Thus atom coordinates should NOT be remapped by fix
-   deform, but velocities SHOULD be when atoms cross periodic boundaries,
-   since that is consistent with maintaining the velocity profile already
-   created by fix nvt/sllod.  LAMMPS will warn you if the *remap* setting
-   is not consistent with fix nvt/sllod.
+   When non-equilibrium MD (NEMD) simulations are performed using this
+   fix with a Nose-Hoover thermostat and the SLLOD algorithm, the
+   option "remap v" should normally be used.  This is because
+   :doc:`fix nvt/sllod <fix_nvt_sllod>` with the "peculiar no" option
+   (the default) adjusts the atom positions and velocities to induce a
+   velocity profile that matches the changing box size/shape.  Thus
+   atom coordinates should NOT be remapped by :doc:`fix deform
+   <fix_deform>`, but velocities SHOULD be when atoms cross periodic
+   boundaries, since that is consistent with maintaining the velocity
+   profile already created by :doc:`fix nvt/sllod <fix_nvt_sllod>`.
+   If :doc:`fix nvt/sllod <fix_nvt_sllod>` uses "peculiar yes" then
+   fix deform should use "remap none".  LAMMPS will warn you if the
+   *remap* setting is not consistent with the :doc:`fix nvt/sllod
+   <fix_nvt_sllod>` command.
 
 .. note::
 
@@ -552,32 +617,61 @@ box without explicit remapping of their coordinates.
    <compute_temp_deform>`), will typically accomplish that.  If you do
    not use a thermostat, then there is no driving force pushing the
    atoms to flow in a manner consistent with the deforming box.
-   E.g. for a shearing system the box deformation velocity may vary
-   from 0 at the bottom to 10 at the top of the box.  But the stream
-   velocity profile of the atoms may vary from -5 at the bottom to +5
-   at the top.  You can monitor these effects using the :doc:`fix
-   ave/chunk <fix_ave_chunk>`, :doc:`compute temp/deform
-   <compute_temp_deform>`, and :doc:`compute temp/profile
-   <compute_temp_profile>` commands.  One way to induce atoms to
-   stream consistent with the box deformation is to give them an
-   initial velocity profile, via the :doc:`velocity ramp <velocity>`
-   command, that matches the box deformation rate.  This also
-   typically helps the system come to equilibrium more quickly, even
-   if a thermostat is used.
+   E.g. consider a shearing system where the box deformation velocity
+   varies from 0 at the bottom to 10 at the top of the box.  But the
+   stream velocity profile of the atoms ends up varying from -5 at the
+   bottom to +5 at the top, inconsistent with the box.  You can
+   monitor these effects using the :doc:`fix ave/chunk
+   <fix_ave_chunk>`, :doc:`compute temp/deform <compute_temp_deform>`,
+   and :doc:`compute temp/profile <compute_temp_profile>` commands.
+   One way to induce atoms to stream consistent with the box
+   deformation is to give them an initial velocity profile, via the
+   :doc:`velocity ramp <velocity>` command, that matches the box
+   deformation rate.  This also typically helps the system come to
+   equilibrium more quickly, even if a thermostat is used.  In some
+   cases, a convenient way to induce the correct streaming velocity is
+   with the *kick* = yes option of :doc:`fix nvt/sllod
+   <fix_nvt_sllod>`, which superimposes the initial velocity profile
+   such that the velocity added to a particle at the corner of the box
+   will be the same as the velocity of that corner.  This ensures the
+   flow is consistent with the box deformation and crossing of
+   periodic boundaries is minimized, but is not compatible with all
+   deformation styles. See :doc:`fix nvt/sllod <fix_nvt_sllod>` for
+   details.
 
 .. note::
 
-   If a :doc:`fix rigid <fix_rigid>` is defined for rigid bodies, and
-   *remap* is set to *x*, then the center-of-mass coordinates of rigid
-   bodies will be remapped to the changing simulation box.  This will
-   be done regardless of whether atoms in the rigid bodies are in the
-   fix deform group or not.  The velocity of the centers of mass are
-   not remapped even if *remap* is set to *v*, since :doc:`fix
-   nvt/sllod <fix_nvt_sllod>` does not currently do anything special
-   for rigid particles.  If you wish to perform a NEMD simulation of
-   rigid particles, you can either thermostat them independently or
-   include a background fluid and thermostat the fluid via :doc:`fix
-   nvt/sllod <fix_nvt_sllod>`.
+   For NEMD simulations, if a :doc:`fix rigid <fix_rigid>` or
+   :doc:`fix rigid/small <fix_rigid>` command is used for rigid
+   bodies, and *remap* is set to *x*, then the center-of-mass
+   coordinates of rigid bodies will be remapped to the changing
+   simulation box.  This will be done regardless of whether atoms in
+   the rigid bodies are in the fix deform group or not.
+
+.. note::
+
+   For NEMD simulations, if a :doc:`fix rigid <fix_rigid>` or
+   :doc:`fix rigid/small <fix_rigid>` command is defined for rigid
+   bodies and you intend for the rigid bodies to flow with the box
+   deformation you should set *remap* to *v* and use the Langevin
+   thermostat option provided by the fix rigid commands and their variants.
+   The Langevin thermostat subtracts the streaming velocity before
+   thermostatting it. This is not done in the Nose/Hoover thermostat
+   options. The center-of-mass velocities of each rigid body will
+   only be remapped if the entire rigid body is in the fix group
+   defined by the :doc:`fix deform <fix_deform>` command.  In this
+   case, it is an error to define any rigid body as a mix of atoms
+   inside and outside the fix group defined by :doc:`fix deform
+   <fix_deform>`\ .
+
+.. note::
+
+   For NEMD simulation with a mixture of rigid bodies and background
+   solvent (and optionally also non-rigid bodies, e.g. flexible
+   molecules) you can set *remap* to *v* and thermostat the rigid
+   bodies and solvent separately using the fix commands for each
+   constituent described in the preceding notes.  Atoms in flexible
+   molecules can be thermostatted the same as solvent particles.
 
 The *flip* keyword allows the tilt factors for a triclinic box to
 exceed half the distance of the parallel box length, as discussed

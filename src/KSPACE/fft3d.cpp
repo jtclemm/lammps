@@ -18,6 +18,7 @@
                            FFTW3, KISS FFT, Dfti/MKL, and ACML
                          Phil Blood (PSC) added single precision FFTs
                          Paul Coffman (IBM) added MPI collectives remap
+                         Nick Hagerty (ORNL) added non-blocking MPI pt2pt remap
 ------------------------------------------------------------------------- */
 
 #include "fft3d.h"
@@ -240,6 +241,7 @@ void fft_3d(FFT_DATA *in, FFT_DATA *out, int flag, struct fft_plan_3d *plan)
                           2 = permute twice = slow->fast, fast->mid, mid->slow
    nbuf                 returns size of internal storage buffers used by FFT
    usecollective        use collective MPI operations for remapping data
+   usenonblocking       use non-blocking or blocking MPI pt2pt operations for remapping data
 ------------------------------------------------------------------------- */
 
 struct fft_plan_3d *fft_3d_create_plan(
@@ -248,10 +250,10 @@ struct fft_plan_3d *fft_3d_create_plan(
        int in_klo, int in_khi,
        int out_ilo, int out_ihi, int out_jlo, int out_jhi,
        int out_klo, int out_khi,
-       int scaled, int permute, int *nbuf, int usecollective)
+       int scaled, int permute, int *nbuf, int usecollective, int usenonblocking)
 {
   struct fft_plan_3d *plan;
-  int me,nprocs,nthreads;
+  int me,nprocs;
   int flag,remapflag;
   int first_ilo,first_ihi,first_jlo,first_jhi,first_klo,first_khi;
   int second_ilo,second_ihi,second_jlo,second_jhi,second_klo,second_khi;
@@ -264,12 +266,14 @@ struct fft_plan_3d *fft_3d_create_plan(
   MPI_Comm_rank(comm,&me);
   MPI_Comm_size(comm,&nprocs);
 
+#if defined(FFT_MKL_THREADS) || defined(FFT_FFTW_THREADS)
 #if defined(_OPENMP)
   // query OpenMP info.
   // should have been initialized systemwide in Comm class constructor
-  nthreads = omp_get_max_threads();
+  int nthreads = omp_get_max_threads();
 #else
-  nthreads = 1;
+  int nthreads = 1;
+#endif
 #endif
 
   // compute division of procs in 2 dimensions not on-processor
@@ -311,7 +315,7 @@ struct fft_plan_3d *fft_3d_create_plan(
     first_khi = (ip2+1)*nslow/np2 - 1;
     plan->pre_plan = remap_3d_create_plan(comm,in_ilo,in_ihi,in_jlo,in_jhi,in_klo,in_khi,
                                           first_ilo,first_ihi,first_jlo,first_jhi,
-                                          first_klo,first_khi,2,0,0,FFT_PRECISION,0);
+                                          first_klo,first_khi,2,0,0,FFT_PRECISION,0,0);
     if (plan->pre_plan == nullptr) {
       free(plan);
       return nullptr;
@@ -336,7 +340,7 @@ struct fft_plan_3d *fft_3d_create_plan(
   plan->mid1_plan = remap_3d_create_plan(comm, first_ilo,first_ihi,first_jlo,first_jhi,
                                          first_klo,first_khi,second_ilo,second_ihi,
                                          second_jlo,second_jhi,second_klo,second_khi,
-                                         2,1,0,FFT_PRECISION,usecollective);
+                                         2,1,0,FFT_PRECISION,usecollective,usenonblocking);
   if (plan->mid1_plan == nullptr) return nullptr;
 
   // 1d FFTs along mid axis
@@ -377,7 +381,7 @@ struct fft_plan_3d *fft_3d_create_plan(
                          second_jlo,second_jhi,second_klo,second_khi,
                          second_ilo,second_ihi,
                          third_jlo,third_jhi,third_klo,third_khi,
-                         third_ilo,third_ihi,2,1,0,FFT_PRECISION,usecollective);
+                         third_ilo,third_ihi,2,1,0,FFT_PRECISION,usecollective,usenonblocking);
   if (plan->mid2_plan == nullptr) return nullptr;
 
   // 1d FFTs along slow axis
@@ -406,7 +410,7 @@ struct fft_plan_3d *fft_3d_create_plan(
                            third_klo,third_khi,third_ilo,third_ihi,
                            third_jlo,third_jhi,
                            out_klo,out_khi,out_ilo,out_ihi,
-                           out_jlo,out_jhi,2,(permute+1)%3,0,FFT_PRECISION,0);
+                           out_jlo,out_jhi,2,(permute+1)%3,0,FFT_PRECISION,0,0);
     if (plan->post_plan == nullptr) return nullptr;
   }
 
@@ -520,10 +524,8 @@ struct fft_plan_3d *fft_3d_create_plan(
 
 #elif defined(FFT_FFTW3) || defined(FFT_NVPL)
 #if defined(FFT_FFTW_THREADS)
-  if (nthreads > 1) {
-    FFTW_API(init_threads)();
-    FFTW_API(plan_with_nthreads)(nthreads);
-  }
+  FFTW_API(init_threads)();
+  FFTW_API(plan_with_nthreads)(nthreads);
 #endif
 
   plan->plan_fast_forward =
@@ -623,9 +625,12 @@ void fft_3d_destroy_plan(struct fft_plan_3d *plan)
   FFTW_API(destroy_plan)(plan->plan_mid_backward);
   FFTW_API(destroy_plan)(plan->plan_fast_forward);
   FFTW_API(destroy_plan)(plan->plan_fast_backward);
-#if defined(FFT_FFTW_THREADS)
-  FFTW_API(cleanup_threads)();
-#endif
+
+  // we used to call fftw_cleanup_threads() here, but the data it cleans up is global,
+  // so when multiple FFT3d instances exist, we will have a use-after-free error and
+  // an occasional segmentation fault. Better to not clean up. Because it is global data,
+  // there is no memory leak from repeatedly creating and deleting FFT3d instances.
+
 #else
   if (plan->cfg_slow_forward != plan->cfg_fast_forward &&
       plan->cfg_slow_forward != plan->cfg_mid_forward) {

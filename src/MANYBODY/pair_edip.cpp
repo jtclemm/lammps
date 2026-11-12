@@ -72,6 +72,8 @@ PairEDIP::PairEDIP(LAMMPS *lmp) :
 
 PairEDIP::~PairEDIP()
 {
+  if (copymode) return;
+
   memory->destroy(params);
   memory->destroy(elem3param);
 
@@ -174,6 +176,12 @@ void PairEDIP::compute(int eflag, int vflag)
 
     jlist = firstneigh[i];
     jnum = numneigh[i];
+
+    // the per-neighbor scratch arrays have a fixed size
+
+    if (jnum > leadDimInteractionList)
+      error->one(FLERR, "Pair style edip supports at most {} neighbors per atom; atom {} has {}",
+                 leadDimInteractionList, atom->tag[i], jnum);
 
     // pre-loop to compute environment coordination f(Z)
 
@@ -483,7 +491,7 @@ void PairEDIP::allocateGrids()
   // tauFunctionGrid
 
   maxArgumentTauFunctionGrid = leadDimInteractionList;
-  numGridPointsTauFunctionGrid = (int) ((maxArgumentTauFunctionGrid) *GRIDDENSITY) + 2;
+  numGridPointsTauFunctionGrid = (int) (maxArgumentTauFunctionGrid * GRIDDENSITY) + 2;
 
   memory->create(tauFunctionGrid, numGridPointsTauFunctionGrid, "edip:tauFunctionGrid");
   memory->create(tauFunctionDerivedGrid, numGridPointsTauFunctionGrid,
@@ -493,14 +501,14 @@ void PairEDIP::allocateGrids()
 
   maxArgumentExpMinusBetaZeta_iZeta_i = leadDimInteractionList;
   numGridPointsExpMinusBetaZeta_iZeta_i =
-      (int) ((maxArgumentExpMinusBetaZeta_iZeta_i) *GRIDDENSITY) + 2;
+      (int) (maxArgumentExpMinusBetaZeta_iZeta_i * GRIDDENSITY) + 2;
   memory->create(expMinusBetaZeta_iZeta_iGrid, numGridPointsExpMinusBetaZeta_iZeta_i,
                  "edip:expMinusBetaZeta_iZeta_iGrid");
 
   // qFunctionGrid
 
   maxArgumentQFunctionGrid = leadDimInteractionList;
-  numGridPointsQFunctionGrid = (int) ((maxArgumentQFunctionGrid) *GRIDDENSITY) + 2;
+  numGridPointsQFunctionGrid = (int) (maxArgumentQFunctionGrid * GRIDDENSITY) + 2;
   memory->create(qFunctionGrid, numGridPointsQFunctionGrid, "edip:qFunctionGrid");
 
   // cutoffFunction
@@ -625,7 +633,7 @@ void PairEDIP::initGrids()
 
   maxArgumentTauFunctionGrid = leadDimInteractionList;
 
-  numGridPointsTauFunctionGrid = (int) ((maxArgumentTauFunctionGrid) *GRIDDENSITY) + 2;
+  numGridPointsTauFunctionGrid = (int) (maxArgumentTauFunctionGrid * GRIDDENSITY) + 2;
 
   r = 0.0;
   deltaArgumentTauFunctionGrid = 1.0 / GRIDDENSITY;
@@ -641,7 +649,7 @@ void PairEDIP::initGrids()
   maxArgumentExpMinusBetaZeta_iZeta_i = leadDimInteractionList;
 
   numGridPointsExpMinusBetaZeta_iZeta_i =
-      (int) ((maxArgumentExpMinusBetaZeta_iZeta_i) *GRIDDENSITY) + 2;
+      (int) (maxArgumentExpMinusBetaZeta_iZeta_i * GRIDDENSITY) + 2;
 
   r = 0.0;
   deltaArgumentExpMinusBetaZeta_iZeta_i = 1.0 / GRIDDENSITY;
@@ -654,7 +662,7 @@ void PairEDIP::initGrids()
   // qFunctionGrid
 
   maxArgumentQFunctionGrid = leadDimInteractionList;
-  numGridPointsQFunctionGrid = (int) ((maxArgumentQFunctionGrid) *GRIDDENSITY) + 2;
+  numGridPointsQFunctionGrid = (int) (maxArgumentQFunctionGrid * GRIDDENSITY) + 2;
 
   r = 0.0;
   deltaArgumentQFunctionGrid = 1.0 / GRIDDENSITY;

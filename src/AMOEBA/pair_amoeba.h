@@ -328,10 +328,11 @@ class PairAmoeba : public Pair {
   // Kspace data for induce and polar
 
   double *qfac;        // convoulution pre-factors
-  double *gridfft1;    // copy of p_kspace FFT grid
+  FFT_SCALAR *gridfft1;    // copy of p_kspace FFT grid
 
   double **cmp, **fmp;    // Cartesian and fractional multipoles
   double **cphi, **fphi;
+  double **cphidir, **fphidir;    // udirect1() potential, kept apart from multipole_kspace()
 
   double *_moduli_array;    // buffers for moduli
   double *_moduli_bsarray;
@@ -494,7 +495,7 @@ class PairAmoeba : public Pair {
 
   // inline function for neighbor list unmasking
 
-  inline int sbmask15(int j) const { return j >> SBBITS15 & 7; }
+  [[nodiscard]] int sbmask15(int j) const { return j >> SBBITS15 & 7; }
 };
 }    // namespace LAMMPS_NS
 #endif

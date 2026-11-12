@@ -40,9 +40,9 @@ as described below.
 
 To calculate contact forces and torques, four pair styles are available
 
-* :doc:`pair_style gran/history <pair_gran>`
-* :doc:`pair_style gran/no_history <pair_gran>`
-* :doc:`pair_style gran/hertzian <pair_gran>`
+* :doc:`pair_style gran/hooke <pair_gran>`
+* :doc:`pair_style gran/hooke/history <pair_gran>`
+* :doc:`pair_style gran/hertz/history <pair_gran>`
 * :doc:`pair_style granular <pair_granular>`
 
 The *gran/X* pair styles were the first DEM pair styles implemented and
@@ -89,6 +89,14 @@ models for this wall. Another option is :doc:`fix wall/gran/region
 <region>` command which supports many geometric primitive shapes.
 Note that these commands have options to translate or rotate walls
 in time.
+
+These doc pages describe how to define and use granular surfaces:
+
+* :doc:`Howto granular surfaces <Howto_granular_surfaces>`
+* :doc:`fix surface/global <fix_surface_global>`
+* :doc:`fix surface/local <fix_surface_local>`
+* :doc:`pair_style surf/granular <pair_surf_granular>`
+
 
 For simulations with periodic boundary conditions, there are multiple
 fixes that apply global deformation, either by specifying strain and/or
@@ -177,6 +185,11 @@ using the *multi* option in the :doc:`neighbor command <neighbor>` and
 the associated information on its documentation page.
 
 To simulate aspherical granular particles, there are two primary options.
+
+Aspherical granular particles can be simulated by creating clusters of spherical
+particles using either the :doc:`rigid <fix_rigid>` or :doc:`BPM <Howto_bpm>`
+package or by using :doc:`superellipsoids <pair_granular_superellipsoid>`.
+
 The first is the :doc:`rigid package <fix_rigid>` which combines an
 assortment of spherical particles into a single rigid body. This method
 is also known as the multi-sphere approach in the literature. The second

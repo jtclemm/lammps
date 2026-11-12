@@ -34,100 +34,11 @@ _texture( pos_tex,float4);
 _texture_2d( pos_tex,int4);
 #endif
 
-#ifdef NV_KERNEL
-#if (__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ >= 2)
-// Issue with incorrect results in CUDA >= 11.2
+// same settings with lal_neighbor.h
+// the neighbor list build with subgroup support is not used on macOS
+#if defined(__APPLE__)
 #define LAL_USE_OLD_NEIGHBOR
 #endif
-#endif
-
-#ifdef USE_HIP
-#define LAL_USE_OLD_NEIGHBOR
-#endif
-
-/*
-  compute the id of the cell where the atoms belong to
-x: atom coordinates
-cell_id: cell ids
-particle_id:
-boxlo[0-2]: the lower left corner of the local box
-ncell[xyz]: the number of cells in xyz dims
-i_cell_size is the inverse cell size
-inum = the number of the local atoms that are ported to the device
-nall = the number of the local+ghost atoms that are ported to the device
-cells_in_cutoff = the number of cells that are within the cutoff
-*/
-
-__kernel void calc_cell_id(const numtyp4 *restrict x_,
-                           unsigned *restrict cell_id,
-                           int *restrict particle_id,
-                           numtyp boxlo0, numtyp boxlo1, numtyp boxlo2,
-                           numtyp i_cell_size, int ncellx, int ncelly,
-                           int ncellz, int inum, int nall,
-                           int cells_in_cutoff) {
-  int i = threadIdx.x + blockIdx.x*blockDim.x;
-
-  if (i < nall) {
-    numtyp4 p;
-    fetch4(p,i,pos_tex); //x_[i];
-
-    p.x -= boxlo0;
-    p.y -= boxlo1;
-    p.z -= boxlo2;
-
-    int ix = int(p.x*i_cell_size+cells_in_cutoff);
-    int iy = int(p.y*i_cell_size+cells_in_cutoff);
-    int iz = int(p.z*i_cell_size+cells_in_cutoff);
-
-    int offset_lo, offset_hi;
-    if (i<inum) {
-      offset_lo=cells_in_cutoff;
-      offset_hi=cells_in_cutoff+1;
-    } else {
-      offset_lo=0;
-      offset_hi=1;
-    }
-
-    ix = max(ix,offset_lo);
-    ix = min(ix,ncellx-offset_hi);
-    iy = max(iy,offset_lo);
-    iy = min(iy,ncelly-offset_hi);
-    iz = max(iz,offset_lo);
-    iz = min(iz,ncellz-offset_hi);
-
-    cell_id[i] = ix+iy*ncellx+iz*ncellx*ncelly;
-    particle_id[i] = i;
-  }
-}
-
-// compute the number of atoms in each cell
-
-__kernel void kernel_calc_cell_counts(const unsigned *restrict cell_id,
-                                      int *restrict cell_counts,
-                                      int nall, int ncell) {
-  int idx = threadIdx.x + blockIdx.x * blockDim.x;
-  if (idx < nall) {
-    int id = cell_id[idx];
-
-    // handle boundary cases
-    if (idx == 0) {
-      for (int i = 0; i < id + 1; i++)
-        cell_counts[i] = 0;
-    }
-    if (idx == nall - 1) {
-      for (int i = id+1; i <= ncell; i++)
-        cell_counts[i] = nall;
-    }
-
-    if (idx > 0 && idx < nall) {
-      int id_l = cell_id[idx-1];
-      if (id != id_l) {
-        for (int i = id_l+1; i <= id; i++)
-          cell_counts[i] = idx;
-      }
-    }
-  }
-}
 
 #else
 #define pos_tex x_
@@ -180,7 +91,7 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
                             __global int *nbor_list,
                             __global int *host_nbor_list,
                             __global int *host_numj,
-                            int neigh_bin_size, numtyp cutoff_neigh,
+                            int _max_nbors, numtyp cutoff_neigh,
                             int ncellx, int ncelly, int ncellz,
                             int inum, int nt, int nall, int t_per_atom,
                             int cells_in_cutoff,
@@ -284,7 +195,7 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
     } else {
       stride=0;
       neigh_counts=host_numj+pid_i-inum;
-      neigh_list=host_nbor_list+(pid_i-inum)*neigh_bin_size;
+      neigh_list=host_nbor_list+(pid_i-inum)*_max_nbors;
     }
 
     // loop through neighbors
@@ -343,9 +254,8 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
 #endif
 
         r2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-//USE CUTOFFSQ?
         if (r2 < cutoff_neigh*cutoff_neigh && pid_j != pid_i && pid_i < nt) {
-          if (cnt < neigh_bin_size) {
+          if (cnt < _max_nbors) {
             cnt++;
             *neigh_list = pid_j;
             neigh_list++;
@@ -372,7 +282,7 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
                                 __global int *nbor_list,
                                 __global int *host_nbor_list,
                                 __global int *host_numj,
-                                int neigh_bin_size, numtyp cell_size,
+                                int _max_nbors, numtyp cutoff_neigh,
                                 int ncellx, int ncelly, int ncellz,
                                 int inum, int nt, int nall, int t_per_atom,
                                 int cells_in_cutoff)
@@ -420,7 +330,7 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
     } else {
       stride=0;
       neigh_counts=host_numj+pid_i-inum;
-      neigh_list=host_nbor_list+(pid_i-inum)*neigh_bin_size;
+      neigh_list=host_nbor_list+(pid_i-inum)*_max_nbors;
     }
 
     // loop through neighbors
@@ -460,9 +370,9 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
                 diff.z = atom_i.z - pos_sh[j].z;
 
                 r2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-                if (r2 < cell_size*cell_size && pid_j != pid_i) {
+                if (r2 < cutoff_neigh*cutoff_neigh && pid_j != pid_i) {
                   cnt++;
-                  if (cnt <= neigh_bin_size) {
+                  if (cnt <= _max_nbors) {
                     *neigh_list = pid_j;
                     neigh_list++;
                     if ((cnt & (t_per_atom-1))==0)
@@ -487,13 +397,25 @@ __kernel void calc_neigh_list_cell(const __global numtyp4 *restrict x_,
 #define UNROLL_FACTOR_LIST 4
 #define UNROLL_FACTOR_SPECIAL 2
 
-__kernel void kernel_special(__global int *dev_nbor,
+ucl_inline int minimum_image_check(numtyp dx, numtyp dy, numtyp dz,
+                                   numtyp xprd_half, numtyp yprd_half, numtyp zprd_half,
+                                   int xperiodic, int yperiodic, int zperiodic) {
+  if (xperiodic && ucl_abs(dx) > xprd_half) return 1;
+  if (yperiodic && ucl_abs(dy) > yprd_half) return 1;
+  if (zperiodic && ucl_abs(dz) > zprd_half) return 1;
+  return 0;
+}
+
+__kernel void kernel_special(const __global numtyp4 *restrict x_,
+                             __global int *dev_nbor,
                              __global int *host_nbor_list,
                              const __global int *host_numj,
                              const __global tagint *restrict tag,
                              const __global int *restrict nspecial,
                              const __global tagint *restrict special,
-                             int inum, int nt, int max_nbors, int t_per_atom) {
+                             int inum, int nt, int max_nbors, int t_per_atom,
+                             numtyp xprd_half, numtyp yprd_half, numtyp zprd_half,
+                             int xperiodic, int yperiodic, int zperiodic) {
   int tid=THREAD_ID_X;
   int ii=fast_mul((int)BLOCK_ID_X,(int)(BLOCK_SIZE_X)/t_per_atom);
   ii+=tid/t_per_atom;
@@ -506,6 +428,9 @@ __kernel void kernel_special(__global int *dev_nbor,
     int n1=nspecial[ii*3];
     int n2=nspecial[ii*3+1];
     int n3=nspecial[ii*3+2];
+
+    numtyp4 atom_i;
+    fetch4(atom_i,ii,pos_tex); //pos[i];
 
     int myj;
     if (ii < inum) {
@@ -534,6 +459,7 @@ __kernel void kernel_special(__global int *dev_nbor,
     for (int m=0; m<myj; m+=UNROLL_FACTOR_LIST) {
       int nbor[UNROLL_FACTOR_LIST];
       tagint jtag[UNROLL_FACTOR_LIST];
+      numtyp4 jpos[UNROLL_FACTOR_LIST];
       __global int* list_addr[UNROLL_FACTOR_LIST];
       int lmax = myj - m;
       for (int l=0; l<UNROLL_FACTOR_LIST; l++) {
@@ -542,8 +468,10 @@ __kernel void kernel_special(__global int *dev_nbor,
           nbor[l] = *list_addr[l];
       }
       for (int l=0; l<UNROLL_FACTOR_LIST; l++) {
-        if (l < lmax)
+        if (l < lmax) {
           jtag[l] = tag[nbor[l]];
+          fetch4(jpos[l],nbor[l],pos_tex); //pos[j];
+        }
       }
 
       for (int i=0, j=0; i<n3; i+=UNROLL_FACTOR_SPECIAL, j++) {
@@ -554,12 +482,11 @@ __kernel void kernel_special(__global int *dev_nbor,
           which[c] = 1;
           if (i + c < n3)
           {
-#if SPECIAL_DATA_PRELOAD_SIZE > 0
+            #if SPECIAL_DATA_PRELOAD_SIZE > 0
             if ((c == 0) && (j < SPECIAL_DATA_PRELOAD_SIZE)) {
               special_data[c] = special_preload[j];
-            }
-            else
-#endif
+            } else
+            #endif
               special_data[c] = special[ii + (i+c)*nt];
           }
         }
@@ -579,7 +506,13 @@ __kernel void kernel_special(__global int *dev_nbor,
           if (i + c < n3) {
             for (int l=0; l<UNROLL_FACTOR_LIST; l++) {
               if (l < lmax && special_data[c] == jtag[l]) {
-                nbor[l]=nbor[l] ^ which[c];
+                numtyp dx = atom_i.x - jpos[l].x;
+                numtyp dy = atom_i.y - jpos[l].y;
+                numtyp dz = atom_i.z - jpos[l].z;
+                int min_image = minimum_image_check(dx, dy, dz,
+                  xprd_half, yprd_half, zprd_half, xperiodic, yperiodic, zperiodic);
+                if (min_image != 1)
+                  nbor[l]=nbor[l] ^ which[c];
               }
             }
           }

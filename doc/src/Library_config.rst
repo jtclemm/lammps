@@ -6,28 +6,33 @@ This section documents the following functions:
 - :cpp:func:`lammps_version`
 - :cpp:func:`lammps_get_os_info`
 - :cpp:func:`lammps_config_has_mpi_support`
+- :cpp:func:`lammps_config_has_omp_support`
 - :cpp:func:`lammps_config_has_gzip_support`
 - :cpp:func:`lammps_config_has_png_support`
 - :cpp:func:`lammps_config_has_jpeg_support`
 - :cpp:func:`lammps_config_has_ffmpeg_support`
+- :cpp:func:`lammps_config_has_curl_support`
 - :cpp:func:`lammps_config_has_exceptions`
 - :cpp:func:`lammps_config_has_package`
 - :cpp:func:`lammps_config_package_count`
 - :cpp:func:`lammps_config_package_name`
 - :cpp:func:`lammps_config_accelerator`
 - :cpp:func:`lammps_has_gpu_device`
-- :cpp:func:`lammps_gpu_device_info`
+- :cpp:func:`lammps_get_gpu_device_info`
 - :cpp:func:`lammps_has_style`
 - :cpp:func:`lammps_style_count`
 - :cpp:func:`lammps_style_name`
 - :cpp:func:`lammps_has_id`
 - :cpp:func:`lammps_id_count`
 - :cpp:func:`lammps_id_name`
+- :cpp:func:`lammps_plugin_count`
+- :cpp:func:`lammps_plugin_name`
 
 --------------------
 
 These library functions can be used to query the LAMMPS library for
-compile time settings and included packages and styles.  This enables
+compile time settings, available external programs, and included
+packages and styles.  This enables
 programs that use the library interface to determine whether the
 linked LAMMPS library is compatible with the requirements of the
 application without crashing during the LAMMPS functions (e.g. due to
@@ -89,6 +94,11 @@ approach.
 
 -----------------------
 
+.. doxygenfunction:: lammps_config_has_omp_support
+   :project: progguide
+
+-----------------------
+
 .. doxygenfunction:: lammps_config_has_gzip_support
    :project: progguide
 
@@ -105,6 +115,11 @@ approach.
 -----------------------
 
 .. doxygenfunction:: lammps_config_has_ffmpeg_support
+   :project: progguide
+
+-----------------------
+
+.. doxygenfunction:: lammps_config_has_curl_support
    :project: progguide
 
 -----------------------
@@ -170,5 +185,15 @@ approach.
 -----------------------
 
 .. doxygenfunction:: lammps_id_name
+   :project: progguide
+
+-----------------------
+
+.. doxygenfunction:: lammps_plugin_count
+   :project: progguide
+
+-----------------------
+
+.. doxygenfunction:: lammps_plugin_name
    :project: progguide
 

@@ -33,10 +33,10 @@ class PairEDIPMulti : public Pair {
   void coeff(int, char **) override;
   double init_one(int, int) override;
   void init_style() override;
+  void setup() override;
 
   static constexpr int NPARAMS_PER_LINE = 20;
 
- protected:
   struct Param {
     double A, B;              // coefficients for pair interaction I-J
     double cutoffA;           // cut-off distance for pair interaction I-J
@@ -53,6 +53,7 @@ class PairEDIPMulti : public Pair {
     int ielement, jelement, kelement, dummy;    // dummy added for better alignment
   };
 
+ protected:
   double *preForceCoord;
 
   double cutmax;    // max cutoff for all elements
@@ -63,7 +64,6 @@ class PairEDIPMulti : public Pair {
   void deallocatePreLoops();
 
   void read_file(char *);
-  void setup() override;
 
   void edip_pair(double, double, const Param &, double &, double &, double &);
   void edip_fc(double, const Param &, double &, double &);

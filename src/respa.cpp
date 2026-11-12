@@ -17,6 +17,7 @@
 
 #include "respa.h"
 
+#include "accelerator_kokkos.h"
 #include "angle.h"
 #include "atom.h"
 #include "atom_vec.h"
@@ -49,16 +50,18 @@ Respa::Respa(LAMMPS *lmp, int narg, char **arg) :
     hybrid_compute(nullptr), newton(nullptr), fix_respa(nullptr)
 {
   nhybrid_styles = 0;
-  if (narg < 1) error->all(FLERR, "Illegal run_style respa command");
+  if (narg < 1) utils::missing_cmd_args(FLERR, "run_style respa", error);
 
   nlevels = utils::inumeric(FLERR, arg[0], false, lmp);
-  if (nlevels < 1) error->all(FLERR, "Respa levels must be >= 1");
+  if (nlevels < 1) error->all(FLERR, 1, "Number of rRESPA levels must be >= 1");
 
-  if (narg < nlevels) error->all(FLERR, "Illegal run_style respa command");
+  if (narg < nlevels) error->all(FLERR, 1, "Not enough rRESPA loop factors provided");
   loop = new int[nlevels];
   for (int iarg = 1; iarg < nlevels; iarg++) {
     loop[iarg - 1] = utils::inumeric(FLERR, arg[iarg], false, lmp);
-    if (loop[iarg - 1] <= 0) error->all(FLERR, "Illegal run_style respa command");
+    if (loop[iarg - 1] <= 0)
+      error->all(FLERR, iarg + 1, "Invalid rRESPA loop factor {} for level {}", loop[iarg - 1],
+                 iarg);
   }
   loop[nlevels - 1] = 1;
 
@@ -78,53 +81,54 @@ Respa::Respa(LAMMPS *lmp, int narg, char **arg) :
   int iarg = nlevels;
   while (iarg < narg) {
     if (strcmp(arg[iarg], "bond") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa bond", error);
       level_bond = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "angle") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa angle", error);
       level_angle = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "dihedral") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa dihedral", error);
       level_dihedral = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "improper") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa improper", error);
       level_improper = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "pair") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa pair", error);
       level_pair = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "inner") == 0) {
-      if (iarg + 4 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 4 > narg) utils::missing_cmd_args(FLERR, "run_style respa inner", error);
       level_inner = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       cutoff[0] = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
       cutoff[1] = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
       iarg += 4;
     } else if (strcmp(arg[iarg], "middle") == 0) {
-      if (iarg + 4 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 4 > narg) utils::missing_cmd_args(FLERR, "run_style respa middle", error);
       level_middle = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       cutoff[2] = utils::numeric(FLERR, arg[iarg + 2], false, lmp);
       cutoff[3] = utils::numeric(FLERR, arg[iarg + 3], false, lmp);
       iarg += 4;
     } else if (strcmp(arg[iarg], "outer") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa outer", error);
       level_outer = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "kspace") == 0) {
-      if (iarg + 2 > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + 2 > narg) utils::missing_cmd_args(FLERR, "run_style respa kspace", error);
       level_kspace = utils::inumeric(FLERR, arg[iarg + 1], false, lmp) - 1;
       iarg += 2;
     } else if (strcmp(arg[iarg], "hybrid") == 0) {
       // the hybrid keyword requires a hybrid pair style
       if (!utils::strmatch(force->pair_style, "^hybrid"))
-        error->all(FLERR, "Illegal run_style respa command");
+        error->all(FLERR, iarg + 1, "Cannot use hybrid keyword without hybrid pair style");
       auto *hybrid = dynamic_cast<PairHybrid *>(force->pair);
       nhybrid_styles = hybrid->nstyles;
       // each hybrid sub-style needs to be assigned to a respa level
-      if (iarg + nhybrid_styles > narg) error->all(FLERR, "Illegal run_style respa command");
+      if (iarg + nhybrid_styles > narg)
+        utils::missing_cmd_args(FLERR, "run_style respa hybrid", error);
       delete[] hybrid_level;
       delete[] hybrid_compute;
       hybrid_level = new int[nhybrid_styles];
@@ -135,7 +139,7 @@ Respa::Respa(LAMMPS *lmp, int narg, char **arg) :
       }
       ++iarg;
     } else
-      error->all(FLERR, "Illegal run_style respa command");
+      error->all(FLERR, iarg + 1, "Unknown run_style respa keyword {}", arg[iarg]);
   }
 
   // cannot specify both pair and inner/middle/outer
@@ -157,9 +161,7 @@ Respa::Respa(LAMMPS *lmp, int narg, char **arg) :
 
   if ((nhybrid_styles > 0) &&
       (level_pair >= 0 || level_inner >= 0 || level_middle >= 0 || level_outer >= 0))
-    error->all(FLERR,
-               "Cannot set respa hybrid and "
-               "any of pair/inner/middle/outer");
+    error->all(FLERR, "Cannot set respa hybrid and any of pair/inner/middle/outer");
 
   // set defaults if user did not specify level
   // bond to innermost level
@@ -287,9 +289,15 @@ void Respa::init()
 {
   Integrate::init();
 
+  // rRESPA works from the plain LAMMPS arrays without the host/device
+  // transfers that run_style verlet/kk performs; the KOKKOS package refuses
+  // the configurations where that gives wrong forces
+
+  if (lmp->kokkos) lmp->kokkos->respa_check();
+
   // warn if no fixes
 
-  if (modify->nfix == 0 && comm->me == 0)
+  if (modify->get_fix_list().empty() && comm->me == 0)
     error->warning(FLERR, "No fixes defined, atoms won't move");
 
   // create fix needed for storing atom-based respa level forces
@@ -304,7 +312,7 @@ void Respa::init()
 
   if (level_inner >= 0)
     if (force->pair && force->pair->respa_enable == 0)
-      error->all(FLERR, "Pair style does not support rRESPA inner/middle/outer");
+      error->all(FLERR, Error::NOLASTLINE, "Pair style does not support rRESPA inner/middle/outer");
 
   // virial_style = VIRIAL_PAIR (explicit)
   //   since never computed implicitly with virial_fdotr_compute() like Verlet
@@ -374,9 +382,8 @@ void Respa::setup(int flag)
         mesg += fmt::format(" {}:{}", ilevel + 1, step[ilevel]);
 
       mesg += "\n  r-RESPA fixes :";
-      for (int l = 0; l < modify->n_post_force_respa; ++l) {
-        Fix *f = modify->get_fix_by_index(modify->list_post_force_respa[l]);
-        if (f->respa_level >= 0)
+      for (const auto &f : modify->get_fix_list()) {
+        if ((modify->get_fix_mask(f) & FixConst::POST_FORCE_RESPA) && (f->respa_level >= 0))
           mesg += fmt::format(" {}:{}[{}]", MIN(f->respa_level + 1, nlevels), f->style, f->id);
       }
       mesg += "\n";
@@ -537,7 +544,7 @@ void Respa::run(int n)
 
     sum_flevel_f();
 
-    if (modify->n_end_of_step) {
+    if (modify->has_fixes(FixConst::END_OF_STEP)) {
       timer->stamp();
       modify->end_of_step();
       timer->stamp(Timer::MODIFY);
@@ -582,7 +589,7 @@ void Respa::recurse(int ilevel)
 
     timer->stamp();
     modify->initial_integrate_respa(vflag, ilevel, iloop);
-    if (modify->n_post_integrate_respa) modify->post_integrate_respa(ilevel, iloop);
+    if (modify->has_fixes(FixConst::POST_INTEGRATE_RESPA)) modify->post_integrate_respa(ilevel, iloop);
     timer->stamp(Timer::MODIFY);
 
     // at outermost level, check on rebuilding neighbor list
@@ -592,7 +599,7 @@ void Respa::recurse(int ilevel)
     if (ilevel == nlevels - 1) {
       int nflag = neighbor->decide();
       if (nflag) {
-        if (modify->n_pre_exchange) {
+        if (modify->has_fixes(FixConst::PRE_EXCHANGE)) {
           timer->stamp();
           modify->pre_exchange();
           timer->stamp(Timer::MODIFY);
@@ -610,13 +617,13 @@ void Respa::recurse(int ilevel)
         comm->borders();
         if (triclinic) domain->lamda2x(atom->nlocal + atom->nghost);
         timer->stamp(Timer::COMM);
-        if (modify->n_pre_neighbor) {
+        if (modify->has_fixes(FixConst::PRE_NEIGHBOR)) {
           modify->pre_neighbor();
           timer->stamp(Timer::MODIFY);
         }
         neighbor->build(1);
         timer->stamp(Timer::NEIGH);
-        if (modify->n_post_neighbor) {
+        if (modify->has_fixes(FixConst::POST_NEIGHBOR)) {
           modify->post_neighbor();
           timer->stamp(Timer::MODIFY);
         }
@@ -647,7 +654,7 @@ void Respa::recurse(int ilevel)
     // when potentials are invoked at same level
 
     force_clear();
-    if (modify->n_pre_force_respa) {
+    if (modify->has_fixes(FixConst::PRE_FORCE_RESPA)) {
       timer->stamp();
       modify->pre_force_respa(vflag, ilevel, iloop);
       timer->stamp(Timer::MODIFY);
@@ -696,7 +703,7 @@ void Respa::recurse(int ilevel)
       timer->stamp(Timer::KSPACE);
     }
 
-    if (modify->n_pre_reverse) {
+    if (modify->has_fixes(FixConst::PRE_REVERSE)) {
       modify->pre_reverse(eflag, vflag);
       timer->stamp(Timer::MODIFY);
     }
@@ -706,7 +713,7 @@ void Respa::recurse(int ilevel)
       timer->stamp(Timer::COMM);
     }
     timer->stamp();
-    if (modify->n_post_force_respa_any) modify->post_force_respa(vflag, ilevel, iloop);
+    if (modify->has_fixes(FixConst::POST_FORCE_RESPA_ANY)) modify->post_force_respa(vflag, ilevel, iloop);
     modify->final_integrate_respa(ilevel, iloop);
     timer->stamp(Timer::MODIFY);
   }
