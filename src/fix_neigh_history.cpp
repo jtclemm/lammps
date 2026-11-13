@@ -47,6 +47,8 @@ FixNeighHistory::FixNeighHistory(LAMMPS *lmp, int narg, char **arg) :
 
   newton_pair = force->newton_pair;
 
+  peratom_data_stored = 0;
+
   dnum = utils::inumeric(FLERR, arg[3], false, lmp);
   dnumbytes = dnum * sizeof(double);
 
@@ -237,12 +239,23 @@ void FixNeighHistory::setup_post_neighbor()
 
 void FixNeighHistory::pre_exchange()
 {
+
+  // If data already copied to peratom storage, skip
+  //   this can happen in some niche scenarios due to write_restart calling lmp->init()
+  //   If Neighbor::init_pair() decides to recreate the NeightList objects (e.g. if the
+  //   cutoff changed due to MDR or growing atoms), the new lists inum = 0 and are not built
+  //   before this method is called, thus clearing peratom data
+
+  if (peratom_data_stored) return;
+
   if (onesided)
     pre_exchange_onesided();
   else if (newton_pair)
     pre_exchange_newton();
   else
     pre_exchange_no_newton();
+
+  peratom_data_stored = 1;
 }
 
 /* ----------------------------------------------------------------------
@@ -702,6 +715,8 @@ void FixNeighHistory::post_neighbor()
       nn += dnum;
     }
   }
+
+  peratom_data_stored = 0; // data copied back to page files
 }
 
 /* ---------------------------------------------------------------------- */

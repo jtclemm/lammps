@@ -86,6 +86,7 @@ class FixNeighHistory : public Fix {
   tagint **partner;         // global atom IDs for the partners
   double **valuepartner;    // values for the partners
   int maxpartner;           // max # of partners for any of my atoms
+  int peratom_data_stored;  // flag to indicate whether history is currently stored by atoms
 
   // per-atom data structs pointed to by partner & valuepartner
 
