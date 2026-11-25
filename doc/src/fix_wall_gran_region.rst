@@ -308,7 +308,7 @@ LAMMPS was built with that package.  See the :doc:`Build package <Build_package>
 .. versionadded:: TBD
 
 The *wall/gran/region/kk* style currently supports only the
-*hooke/history* force interaction and regions of style *block*,
+*hooke/history* and *hertz/history* force interactions and regions of style *block*,
 *cone*, *cylinder*, *plane*, or *sphere* (moving, rotating, or
 changing in size is allowed).  It does
 not support the *contacts* keyword, rigid bodies, or regions of style

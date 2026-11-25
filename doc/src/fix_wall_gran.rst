@@ -342,6 +342,11 @@ equal-style variable.
 The *wall/gran/kk* style does not support the *contacts* keyword, and
 stops with an error when it is given.
 
+.. versionchanged:: TBD
+
+The *wall/gran/kk* style currently supports only the *hooke/history*
+and *hertz/history* force interactions.
+
 Related commands
 """"""""""""""""
 
