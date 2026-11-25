@@ -80,6 +80,15 @@ void FixWallGranKokkos<DeviceType>::post_force(int /*vflag*/)
   history_update = 1;
   if (update->setupflag) history_update = 0;
 
+  // contact model coefficients for the kernel
+
+  coeffs.kn = static_cast<KK_FLOAT>(kn);
+  coeffs.kt = static_cast<KK_FLOAT>(kt);
+  coeffs.gamman = static_cast<KK_FLOAT>(gamman);
+  coeffs.gammat = static_cast<KK_FLOAT>(gammat);
+  coeffs.xmu = static_cast<KK_FLOAT>(xmu);
+  coeffs.dt = static_cast<KK_FLOAT>(dt);
+
   // set position of wall to initial settings and velocity to 0.0
   // if wiggle or shear, set wall position and velocity accordingly
 
@@ -152,12 +161,6 @@ void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallSt
 
   const KK_FLOAT cylradius_kk = static_cast<KK_FLOAT>(cylradius);
   const KK_FLOAT vshear_kk = static_cast<KK_FLOAT>(vshear);
-  const KK_FLOAT gamman_kk = static_cast<KK_FLOAT>(gamman);
-  const KK_FLOAT gammat_kk = static_cast<KK_FLOAT>(gammat);
-  const KK_FLOAT kn_kk = static_cast<KK_FLOAT>(kn);
-  const KK_FLOAT kt_kk = static_cast<KK_FLOAT>(kt);
-  const KK_FLOAT xmu_kk = static_cast<KK_FLOAT>(xmu);
-  const KK_FLOAT dt_kk = static_cast<KK_FLOAT>(dt);
 
   if (mask[i] & groupbit) {
     KK_FLOAT radius = d_radius(i);
@@ -204,109 +207,22 @@ void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallSt
         for (int j = 0; j < 3; j++)
           d_history_one(i,j) = 0.0;
     } else {
-      // meff = effective mass of sphere
-      KK_FLOAT meff = rmass(i);
-      KK_FLOAT r = Kokkos::sqrt(rsq);
-      KK_FLOAT rinv = static_cast<KK_FLOAT>(1.0)/r;
-      KK_FLOAT rsqinv = static_cast<KK_FLOAT>(1.0)/rsq;
+      // meff = effective mass of sphere = rmass(i)
 
-      // relative translational velocity
+      const KK_FLOAT vi[3] = {v(i,0), v(i,1), v(i,2)};
+      const KK_FLOAT wi[3] = {d_omega(i,0), d_omega(i,1), d_omega(i,2)};
+      KK_FLOAT fi[3], ti[3];
 
-      KK_FLOAT vr1 = v(i,0) - vwall_[0];
-      KK_FLOAT vr2 = v(i,1) - vwall_[1];
-      KK_FLOAT vr3 = v(i,2) - vwall_[2];
+      WallGranKokkos::hooke_history(dx, dy, dz, rsq, vwall_, vi, wi, radius, rmass(i),
+                                    d_history_one(i,0), d_history_one(i,1), d_history_one(i,2),
+                                    history_update, coeffs, fi, ti);
 
-      // normal component
-
-      KK_FLOAT vnnr = vr1*dx + vr2*dy + vr3*dz;
-      KK_FLOAT vn1 = dx*vnnr * rsqinv;
-      KK_FLOAT vn2 = dy*vnnr * rsqinv;
-      KK_FLOAT vn3 = dz*vnnr * rsqinv;
-
-      // tangential component
-
-      KK_FLOAT vt1 = vr1 - vn1;
-      KK_FLOAT vt2 = vr2 - vn2;
-      KK_FLOAT vt3 = vr3 - vn3;
-
-      // relative rotational velocity
-
-      KK_FLOAT wr1 = radius*d_omega(i,0) * rinv;
-      KK_FLOAT wr2 = radius*d_omega(i,1) * rinv;
-      KK_FLOAT wr3 = radius*d_omega(i,2) * rinv;
-
-      // normal forces = Hookian contact + normal velocity damping
-
-      KK_FLOAT damp = meff*gamman_kk*vnnr*rsqinv;
-      KK_FLOAT ccel = kn_kk*(radius-r)*rinv - damp;
-
-      // relative velocities
-
-      KK_FLOAT vtr1 = vt1 - (dz*wr2-dy*wr3);
-      KK_FLOAT vtr2 = vt2 - (dx*wr3-dz*wr1);
-      KK_FLOAT vtr3 = vt3 - (dy*wr1-dx*wr2);
-      KK_FLOAT vrel = vtr1*vtr1 + vtr2*vtr2 + vtr3*vtr3;
-      vrel = Kokkos::sqrt(vrel);
-
-      // shear history effects
-
-      if (history_update) {
-        d_history_one(i,0) += vtr1*dt_kk;
-        d_history_one(i,1) += vtr2*dt_kk;
-        d_history_one(i,2) += vtr3*dt_kk;
-      }
-      KK_FLOAT shrmag = Kokkos::sqrt(d_history_one(i,0)*d_history_one(i,0) + d_history_one(i,1)*d_history_one(i,1) + d_history_one(i,2)*d_history_one(i,2));
-
-      // rotate shear displacements
-
-      KK_FLOAT rsht = d_history_one(i,0)*dx + d_history_one(i,1)*dy + d_history_one(i,2)*dz;
-      rsht = rsht*rsqinv;
-      if (history_update) {
-        d_history_one(i,0) -= rsht*dx;
-        d_history_one(i,1) -= rsht*dy;
-        d_history_one(i,2) -= rsht*dz;
-      }
-
-      // tangential forces = shear + tangential velocity damping
-
-      KK_FLOAT fs1 = - (kt_kk*d_history_one(i,0) + meff*gammat_kk*vtr1);
-      KK_FLOAT fs2 = - (kt_kk*d_history_one(i,1) + meff*gammat_kk*vtr2);
-      KK_FLOAT fs3 = - (kt_kk*d_history_one(i,2) + meff*gammat_kk*vtr3);
-
-      // rescale frictional displacements and forces if needed
-
-      KK_FLOAT fs = Kokkos::sqrt(fs1*fs1 + fs2*fs2 + fs3*fs3);
-      KK_FLOAT fn = xmu_kk * Kokkos::fabs(ccel*r);
-
-      if (fs > fn) {
-        if (shrmag != static_cast<KK_FLOAT>(0.0)) {
-          d_history_one(i,0) = (fn/fs) * (d_history_one(i,0) + meff*gammat_kk*vtr1/kt_kk) -
-            meff*gammat_kk*vtr1/kt_kk;
-          d_history_one(i,1) = (fn/fs) * (d_history_one(i,1) + meff*gammat_kk*vtr2/kt_kk) -
-            meff*gammat_kk*vtr2/kt_kk;
-          d_history_one(i,2) = (fn/fs) * (d_history_one(i,2) + meff*gammat_kk*vtr3/kt_kk) -
-            meff*gammat_kk*vtr3/kt_kk;
-          fs1 *= fn/fs ;
-          fs2 *= fn/fs;
-          fs3 *= fn/fs;
-        } else fs1 = fs2 = fs3 = 0.0;
-      }
-
-      // forces & torques
-
-      KK_FLOAT fx = dx*ccel + fs1;
-      KK_FLOAT fy = dy*ccel + fs2;
-      KK_FLOAT fz = dz*ccel + fs3;
-      f(i,0) += static_cast<KK_ACC_FLOAT>(fx);
-      f(i,1) += static_cast<KK_ACC_FLOAT>(fy);
-      f(i,2) += static_cast<KK_ACC_FLOAT>(fz);
-
-      KK_FLOAT tor1 = rinv * (dy*fs3 - dz*fs2);
-      KK_FLOAT tor2 = rinv * (dz*fs1 - dx*fs3);
-      KK_FLOAT tor3 = rinv * (dx*fs2 - dy*fs1);
-      torque(i,0) -= static_cast<KK_ACC_FLOAT>(radius*tor1);
-      torque(i,1) -= static_cast<KK_ACC_FLOAT>(radius*tor2);
-      torque(i,2) -= static_cast<KK_ACC_FLOAT>(radius*tor3);
+      f(i,0) += static_cast<KK_ACC_FLOAT>(fi[0]);
+      f(i,1) += static_cast<KK_ACC_FLOAT>(fi[1]);
+      f(i,2) += static_cast<KK_ACC_FLOAT>(fi[2]);
+      torque(i,0) += static_cast<KK_ACC_FLOAT>(ti[0]);
+      torque(i,1) += static_cast<KK_ACC_FLOAT>(ti[1]);
+      torque(i,2) += static_cast<KK_ACC_FLOAT>(ti[2]);
     }
   }
 }

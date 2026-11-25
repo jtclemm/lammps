@@ -116,6 +116,22 @@ class RegSphereKokkos : public RegSphere, public KokkosBase  {
     return ncontact;
   }
 
+  // device version of RegSphere::velocity_contact_shape()
+  // add velocity due to shape change to wall velocity
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  void velocity_contact_shape_kokkos(double *vwall, const double *xc, double dt) const
+  {
+    const double delx = (xc[0] - xcenter[0]) * (1 - rprev / radius);
+    const double dely = (xc[1] - xcenter[1]) * (1 - rprev / radius);
+    const double delz = (xc[2] - xcenter[2]) * (1 - rprev / radius);
+
+    vwall[0] += delx / dt;
+    vwall[1] += dely / dt;
+    vwall[2] += delz / dt;
+  }
+
 
  private:
   int groupbit;

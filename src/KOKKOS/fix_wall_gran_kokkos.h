@@ -26,6 +26,7 @@ FixStyle(wall/gran/kk/host,FixWallGranKokkos<LMPHostType>)
 #include "fix_wall_gran_old.h"
 #include "kokkos_type.h"
 #include "kokkos_base.h"
+#include "fix_wall_gran_models_kokkos.h"
 
 namespace LAMMPS_NS {
 
@@ -81,6 +82,7 @@ class FixWallGranKokkos : public FixWallGranOld, public KokkosBase {
   KK_FLOAT wlo;
   KK_FLOAT whi;
   KK_FLOAT vwall[3];
+  WallGranKokkos::Coeffs coeffs;
 
   typename AT::t_kkfloat_1d_3_lr x;
   typename AT::t_kkfloat_1d_3 v;

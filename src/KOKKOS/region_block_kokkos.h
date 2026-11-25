@@ -120,6 +120,14 @@ class RegBlockKokkos : public RegBlock, public KokkosBase  {
     return ncontact;
   }
 
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  void velocity_contact_shape_kokkos(double * /*vwall*/, const double * /*xc*/,
+                                     double /*dt*/) const
+  {
+    // a block cannot change its shape
+  }
+
 
  private:
   int groupbit;
