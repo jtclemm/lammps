@@ -30,8 +30,8 @@ FixStyle(wall/gran/kk/host,FixWallGranKokkos<LMPHostType>)
 
 namespace LAMMPS_NS {
 
-template<int WallStyle>
-struct TagFixWallGranHookeHistory{};
+template<int WallStyle, int Hertz>
+struct TagFixWallGranHistory{};
 
 struct TagFixWallGranPackExchange{};
 struct TagFixWallGranUnpackExchange{};
@@ -55,10 +55,10 @@ class FixWallGranKokkos : public FixWallGranOld, public KokkosBase {
   int pack_restart(int, double *) override;
   void unpack_restart(int, int) override;
 
-  template <int WallStyle>
+  template <int WallStyle, int Hertz>
 // NOLINTNEXTLINE
   KOKKOS_INLINE_FUNCTION
-  void operator()(TagFixWallGranHookeHistory<WallStyle>, const int&) const;
+  void operator()(TagFixWallGranHistory<WallStyle, Hertz>, const int&) const;
 
 // NOLINTNEXTLINE
   KOKKOS_INLINE_FUNCTION
@@ -79,6 +79,9 @@ class FixWallGranKokkos : public FixWallGranOld, public KokkosBase {
                               ExecutionSpace space) override;
 
  private:
+  template <int Hertz>
+  void launch(int);
+
   KK_FLOAT wlo;
   KK_FLOAT whi;
   KK_FLOAT vwall[3];

@@ -25,14 +25,19 @@ namespace WallGranKokkos {
 
 struct Coeffs {
   KK_FLOAT kn, kt, gamman, gammat, xmu, dt;
+  int limit_damping;
 };
 
 /* ----------------------------------------------------------------------
-   hooke/history interaction of one sphere with one wall contact
+   hooke/history (HERTZ = 0) or hertz/history (HERTZ = 1) interaction of
+   one sphere with one wall contact, see FixWallGranOld::hooke_history()
+   and FixWallGranOld::hertz_history()
    shared by fix wall/gran/kk and fix wall/gran/region/kk
 
    dx,dy,dz = vector from the contact point on the wall to the sphere center
    rsq = dx*dx + dy*dy + dz*dz, the sphere must overlap the wall
+   rwall = radius of curvature of the wall, only used for hertz/history
+     rwall = 0 is a flat wall, rwall < 0 a concave wall (inside a cylinder)
    vwall = velocity of the wall at the contact point
    v, w = velocity and angular velocity of the sphere
    h0,h1,h2 = tangential (shear) history of this contact, updated in place
@@ -40,13 +45,15 @@ struct Coeffs {
    on return, fout = force and tout = torque to add to the sphere
 ------------------------------------------------------------------------- */
 
+template <int HERTZ>
+// NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
-void hooke_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, const KK_FLOAT rsq,
-                   const KK_FLOAT *vwall, const KK_FLOAT *v, const KK_FLOAT *w,
-                   const KK_FLOAT radius, const KK_FLOAT meff,
-                   KK_FLOAT &h0, KK_FLOAT &h1, KK_FLOAT &h2,
-                   const int history_update, const Coeffs &p,
-                   KK_FLOAT *fout, KK_FLOAT *tout)
+void classic_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, const KK_FLOAT rsq,
+                     const KK_FLOAT *vwall, const KK_FLOAT *v, const KK_FLOAT *w,
+                     const KK_FLOAT rwall, const KK_FLOAT radius, const KK_FLOAT meff,
+                     KK_FLOAT &h0, KK_FLOAT &h1, KK_FLOAT &h2,
+                     const int history_update, const Coeffs &p,
+                     KK_FLOAT *fout, KK_FLOAT *tout)
 {
   KK_FLOAT r = Kokkos::sqrt(rsq);
   KK_FLOAT rinv = static_cast<KK_FLOAT>(1.0)/r;
@@ -77,10 +84,19 @@ void hooke_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, cons
   KK_FLOAT wr2 = radius*w[1] * rinv;
   KK_FLOAT wr3 = radius*w[2] * rinv;
 
-  // normal forces = Hookian contact + normal velocity damping
+  // normal forces = Hookian or Hertzian contact + normal velocity damping
+  // for hertz/history, rwall = 0 is the flat wall case
+  //   rwall positive or negative is a curved wall
 
   KK_FLOAT damp = meff*p.gamman*vnnr*rsqinv;
   KK_FLOAT ccel = p.kn*(radius-r)*rinv - damp;
+  KK_FLOAT polyhertz = 1.0;
+  if (HERTZ) {
+    if (rwall == static_cast<KK_FLOAT>(0.0)) polyhertz = Kokkos::sqrt((radius-r)*radius);
+    else polyhertz = Kokkos::sqrt((radius-r)*radius*rwall/(rwall+radius));
+    ccel *= polyhertz;
+  }
+  if (p.limit_damping && (ccel < static_cast<KK_FLOAT>(0.0))) ccel = 0.0;
 
   // relative velocities
 
@@ -109,9 +125,16 @@ void hooke_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, cons
 
   // tangential forces = shear + tangential velocity damping
 
-  KK_FLOAT fs1 = - (p.kt*h0 + meff*p.gammat*vtr1);
-  KK_FLOAT fs2 = - (p.kt*h1 + meff*p.gammat*vtr2);
-  KK_FLOAT fs3 = - (p.kt*h2 + meff*p.gammat*vtr3);
+  KK_FLOAT fs1, fs2, fs3;
+  if (HERTZ) {
+    fs1 = -polyhertz * (p.kt*h0 + meff*p.gammat*vtr1);
+    fs2 = -polyhertz * (p.kt*h1 + meff*p.gammat*vtr2);
+    fs3 = -polyhertz * (p.kt*h2 + meff*p.gammat*vtr3);
+  } else {
+    fs1 = - (p.kt*h0 + meff*p.gammat*vtr1);
+    fs2 = - (p.kt*h1 + meff*p.gammat*vtr2);
+    fs3 = - (p.kt*h2 + meff*p.gammat*vtr3);
+  }
 
   // rescale frictional displacements and forces if needed
 
@@ -141,6 +164,32 @@ void hooke_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, cons
   tout[0] = -(radius*tor1);
   tout[1] = -(radius*tor2);
   tout[2] = -(radius*tor3);
+}
+
+// NOLINTNEXTLINE
+KOKKOS_INLINE_FUNCTION
+void hooke_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, const KK_FLOAT rsq,
+                   const KK_FLOAT *vwall, const KK_FLOAT *v, const KK_FLOAT *w,
+                   const KK_FLOAT radius, const KK_FLOAT meff,
+                   KK_FLOAT &h0, KK_FLOAT &h1, KK_FLOAT &h2,
+                   const int history_update, const Coeffs &p,
+                   KK_FLOAT *fout, KK_FLOAT *tout)
+{
+  classic_history<0>(dx, dy, dz, rsq, vwall, v, w, 0.0, radius, meff, h0, h1, h2,
+                     history_update, p, fout, tout);
+}
+
+// NOLINTNEXTLINE
+KOKKOS_INLINE_FUNCTION
+void hertz_history(const KK_FLOAT dx, const KK_FLOAT dy, const KK_FLOAT dz, const KK_FLOAT rsq,
+                   const KK_FLOAT *vwall, const KK_FLOAT *v, const KK_FLOAT *w,
+                   const KK_FLOAT rwall, const KK_FLOAT radius, const KK_FLOAT meff,
+                   KK_FLOAT &h0, KK_FLOAT &h1, KK_FLOAT &h2,
+                   const int history_update, const Coeffs &p,
+                   KK_FLOAT *fout, KK_FLOAT *tout)
+{
+  classic_history<1>(dx, dy, dz, rsq, vwall, v, w, rwall, radius, meff, h0, h1, h2,
+                     history_update, p, fout, tout);
 }
 
 }    // namespace WallGranKokkos

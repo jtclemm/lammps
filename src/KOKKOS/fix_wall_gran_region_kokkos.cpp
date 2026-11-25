@@ -39,8 +39,9 @@ FixWallGranRegionKokkos<DeviceType>::FixWallGranRegionKokkos(LAMMPS *lmp, int na
 {
   if (wallstyle != REGION)
     error->all(FLERR, "Fix {} requires the region keyword", style);
-  if (pairstyle != HOOKE_HISTORY)
-    error->all(FLERR, "Fix {} currently supports only the hooke/history interaction", style);
+  if ((pairstyle != HOOKE_HISTORY) && (pairstyle != HERTZ_HISTORY))
+    error->all(FLERR, "Fix {} currently supports only the hooke/history and hertz/history "
+               "interactions", style);
 
   // the per-atom array of the "contacts" keyword is not maintained here
 
@@ -159,6 +160,7 @@ void FixWallGranRegionKokkos<DeviceType>::post_force(int /*vflag*/)
   coeffs.gammat = static_cast<KK_FLOAT>(gammat);
   coeffs.xmu = static_cast<KK_FLOAT>(xmu);
   coeffs.dt = static_cast<KK_FLOAT>(dt);
+  coeffs.limit_damping = limit_damping;
   dt_region = update->dt;
 
   // the KOKKOS regions store the periodic box in prematch(), so it is called
@@ -196,23 +198,17 @@ void FixWallGranRegionKokkos<DeviceType>::post_force(int /*vflag*/)
   copymode = 1;
   region->copymode = 1;
 
-  if (auto *regionKK = RegBlockKokkos<DeviceType>::cast(region)) {
-    FixWallGranRegionKokkosFunctor<DeviceType, RegBlockKokkos<DeviceType>> functor(this, regionKK);
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
-  } else if (auto *regionKK = RegSphereKokkos<DeviceType>::cast(region)) {
-    FixWallGranRegionKokkosFunctor<DeviceType, RegSphereKokkos<DeviceType>> functor(this, regionKK);
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
-  } else if (auto *regionKK = RegPlaneKokkos<DeviceType>::cast(region)) {
-    FixWallGranRegionKokkosFunctor<DeviceType, RegPlaneKokkos<DeviceType>> functor(this, regionKK);
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
-  } else if (auto *regionKK = RegCylinderKokkos<DeviceType>::cast(region)) {
-    FixWallGranRegionKokkosFunctor<DeviceType, RegCylinderKokkos<DeviceType>> functor(this,
-                                                                                      regionKK);
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
-  } else if (auto *regionKK = RegConeKokkos<DeviceType>::cast(region)) {
-    FixWallGranRegionKokkosFunctor<DeviceType, RegConeKokkos<DeviceType>> functor(this, regionKK);
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
-  }
+  if (auto *regionKK = RegBlockKokkos<DeviceType>::cast(region))
+    nerror = launch(regionKK, nlocal);
+  else if (auto *regionKK = RegSphereKokkos<DeviceType>::cast(region))
+    nerror = launch(regionKK, nlocal);
+  else if (auto *regionKK = RegPlaneKokkos<DeviceType>::cast(region))
+    nerror = launch(regionKK, nlocal);
+  else if (auto *regionKK = RegCylinderKokkos<DeviceType>::cast(region))
+    nerror = launch(regionKK, nlocal);
+  else if (auto *regionKK = RegConeKokkos<DeviceType>::cast(region))
+    nerror = launch(regionKK, nlocal);
+
 
 
   region->copymode = 0;
@@ -224,6 +220,26 @@ void FixWallGranRegionKokkos<DeviceType>::post_force(int /*vflag*/)
   k_history_many.template modify<DeviceType>();
 
   if (nerror) error->one(FLERR, "Too many wall/gran/region contacts for one particle");
+}
+
+/* ----------------------------------------------------------------------
+   run the kernel for one KOKKOS region class and the force interaction
+   return the # of particles touching more walls than the history can hold
+------------------------------------------------------------------------- */
+
+template<class DeviceType>
+template<class RegionKK>
+int FixWallGranRegionKokkos<DeviceType>::launch(RegionKK *regionKK, int nlocal)
+{
+  int nerror = 0;
+  if (pairstyle == HERTZ_HISTORY) {
+    FixWallGranRegionKokkosFunctor<DeviceType, RegionKK, 1> functor(this, regionKK);
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
+  } else {
+    FixWallGranRegionKokkosFunctor<DeviceType, RegionKK, 0> functor(this, regionKK);
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
+  }
+  return nerror;
 }
 
 /* ----------------------------------------------------------------------
@@ -270,7 +286,7 @@ void FixWallGranRegionKokkos<DeviceType>::velocity_contact(const RegionKK &regio
 ------------------------------------------------------------------------- */
 
 template<class DeviceType>
-template<class RegionKK>
+template<class RegionKK, int Hertz>
 // NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
 void FixWallGranRegionKokkos<DeviceType>::wall_particle(const RegionKK &regionKK, const int i,
@@ -374,9 +390,10 @@ void FixWallGranRegionKokkos<DeviceType>::wall_particle(const RegionKK &regionKK
 
     const int s = slot[ic];
     KK_FLOAT fi[3], ti[3];
-    WallGranKokkos::hooke_history(dx, dy, dz, rsq, vw, vi, wi, radius, meff,
-                                  d_history_many(i,s,0), d_history_many(i,s,1),
-                                  d_history_many(i,s,2), history_update, coeffs, fi, ti);
+    const KK_FLOAT rwall = static_cast<KK_FLOAT>(contact[ic].radius);
+    WallGranKokkos::classic_history<Hertz>(dx, dy, dz, rsq, vw, vi, wi, rwall, radius, meff,
+                                           d_history_many(i,s,0), d_history_many(i,s,1),
+                                           d_history_many(i,s,2), history_update, coeffs, fi, ti);
 
     f(i,0) += static_cast<KK_ACC_FLOAT>(fi[0]);
     f(i,1) += static_cast<KK_ACC_FLOAT>(fi[1]);

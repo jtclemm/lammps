@@ -71,10 +71,10 @@ class FixWallGranRegionKokkos : public FixWallGranOld, public KokkosBase {
                               ExecutionSpace space) override;
 
   // interaction of one particle with all its contacts with the region
-  // RegionKK is the KOKKOS region class, error is set if a particle
-  // touches more walls than the history can hold
+  // RegionKK is the KOKKOS region class, Hertz = 1 for hertz/history,
+  // error is set if a particle touches more walls than the history can hold
 
-  template<class RegionKK>
+  template<class RegionKK, int Hertz>
 // NOLINTNEXTLINE
   KOKKOS_INLINE_FUNCTION
   void wall_particle(const RegionKK &, const int, int &) const;
@@ -126,6 +126,8 @@ class FixWallGranRegionKokkos : public FixWallGranOld, public KokkosBase {
   typename AT::t_int_1d d_indices;
 
   int region_supported() const;
+  template<class RegionKK>
+  int launch(RegionKK *, int);
   void sync_history_host();
   void modify_history_host();
 
@@ -136,7 +138,7 @@ class FixWallGranRegionKokkos : public FixWallGranOld, public KokkosBase {
                         double *) const;
 };
 
-template <class DeviceType, class RegionKK>
+template <class DeviceType, class RegionKK, int Hertz>
 struct FixWallGranRegionKokkosFunctor {
   typedef DeviceType device_type;
   typedef int value_type;
@@ -153,7 +155,7 @@ struct FixWallGranRegionKokkosFunctor {
 // NOLINTNEXTLINE
   KOKKOS_INLINE_FUNCTION
   void operator()(const int i, int &error) const {
-    c.wall_particle(regionKK, i, error);
+    c.template wall_particle<RegionKK, Hertz>(regionKK, i, error);
   }
 };
 

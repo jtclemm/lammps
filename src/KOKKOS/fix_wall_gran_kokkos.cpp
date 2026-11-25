@@ -88,6 +88,7 @@ void FixWallGranKokkos<DeviceType>::post_force(int /*vflag*/)
   coeffs.gammat = static_cast<KK_FLOAT>(gammat);
   coeffs.xmu = static_cast<KK_FLOAT>(xmu);
   coeffs.dt = static_cast<KK_FLOAT>(dt);
+  coeffs.limit_damping = limit_damping;
 
   // set position of wall to initial settings and velocity to 0.0
   // if wiggle or shear, set wall position and velocity accordingly
@@ -125,17 +126,10 @@ void FixWallGranKokkos<DeviceType>::post_force(int /*vflag*/)
 
   if (pairstyle == HOOKE)
     error->all(FLERR, "Fix wall/gran/kk doesn't yet support hooke style");
-  else if (pairstyle == HOOKE_HISTORY) {
-    if (wallstyle == XPLANE)
-      Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType,TagFixWallGranHookeHistory<XPLANE>>(0,nlocal),*this);
-    else if (wallstyle == YPLANE)
-      Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType,TagFixWallGranHookeHistory<YPLANE>>(0,nlocal),*this);
-    else if (wallstyle == ZPLANE)
-      Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType,TagFixWallGranHookeHistory<ZPLANE>>(0,nlocal),*this);
-    else if (wallstyle == ZCYLINDER)
-      Kokkos::parallel_for(Kokkos::RangePolicy<DeviceType,TagFixWallGranHookeHistory<ZCYLINDER>>(0,nlocal),*this);
-  } else if (pairstyle == HERTZ_HISTORY)
-    error->all(FLERR, "Fix wall/gran/kk doesn't yet support hertz/history style");
+  else if (pairstyle == HOOKE_HISTORY)
+    launch<0>(nlocal);
+  else if (pairstyle == HERTZ_HISTORY)
+    launch<1>(nlocal);
   else if (pairstyle == GRANULAR)
     error->all(FLERR, "Fix wall/gran/kk doesn't yet support granular style");
 
@@ -146,13 +140,35 @@ void FixWallGranKokkos<DeviceType>::post_force(int /*vflag*/)
   copymode = 0;
 }
 
+/* ----------------------------------------------------------------------
+   run the kernel for the wall style, Hertz = 1 for hertz/history
+------------------------------------------------------------------------- */
+
+template<class DeviceType>
+template<int Hertz>
+void FixWallGranKokkos<DeviceType>::launch(int nlocal)
+{
+  if (wallstyle == XPLANE)
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<DeviceType, TagFixWallGranHistory<XPLANE, Hertz>>(0, nlocal), *this);
+  else if (wallstyle == YPLANE)
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<DeviceType, TagFixWallGranHistory<YPLANE, Hertz>>(0, nlocal), *this);
+  else if (wallstyle == ZPLANE)
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<DeviceType, TagFixWallGranHistory<ZPLANE, Hertz>>(0, nlocal), *this);
+  else if (wallstyle == ZCYLINDER)
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<DeviceType, TagFixWallGranHistory<ZCYLINDER, Hertz>>(0, nlocal), *this);
+}
+
 /* ---------------------------------------------------------------------- */
 
 template<class DeviceType>
-template<int WallStyle>
+template<int WallStyle, int Hertz>
 // NOLINTNEXTLINE
 KOKKOS_INLINE_FUNCTION
-void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallStyle>, const int &i) const
+void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHistory<WallStyle, Hertz>, const int &i) const
 {
   KK_FLOAT vwall_[3];
   vwall_[0] = vwall[0];
@@ -168,6 +184,10 @@ void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallSt
     KK_FLOAT dx = 0.0;
     KK_FLOAT dy = 0.0;
     KK_FLOAT dz = 0.0;
+
+    // rwall = radius of curvature of the wall, only used by hertz/history
+
+    KK_FLOAT rwall = 0.0;
 
     if (WallStyle == XPLANE) {
       KK_FLOAT del1 = x(i,0) - wlo;
@@ -192,6 +212,8 @@ void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallSt
       } else {
         dx = -delr/delxy * x(i,0);
         dy = -delr/delxy * x(i,1);
+        // rwall = -2r_c if inside cylinder, 2r_c outside
+        rwall = (delxy < cylradius_kk) ? -2*cylradius_kk : 2*cylradius_kk;
        if (wshear && axis != 2) {
           vwall_[0] += vshear_kk * x(i,1)/delxy;
           vwall_[1] += -vshear_kk * x(i,0)/delxy;
@@ -213,9 +235,9 @@ void FixWallGranKokkos<DeviceType>::operator()(TagFixWallGranHookeHistory<WallSt
       const KK_FLOAT wi[3] = {d_omega(i,0), d_omega(i,1), d_omega(i,2)};
       KK_FLOAT fi[3], ti[3];
 
-      WallGranKokkos::hooke_history(dx, dy, dz, rsq, vwall_, vi, wi, radius, rmass(i),
-                                    d_history_one(i,0), d_history_one(i,1), d_history_one(i,2),
-                                    history_update, coeffs, fi, ti);
+      WallGranKokkos::classic_history<Hertz>(dx, dy, dz, rsq, vwall_, vi, wi, rwall, radius,
+                                             rmass(i), d_history_one(i,0), d_history_one(i,1),
+                                             d_history_one(i,2), history_update, coeffs, fi, ti);
 
       f(i,0) += static_cast<KK_ACC_FLOAT>(fi[0]);
       f(i,1) += static_cast<KK_ACC_FLOAT>(fi[1]);
