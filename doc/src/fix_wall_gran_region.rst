@@ -1,7 +1,10 @@
 .. index:: fix wall/gran/region
+.. index:: fix wall/gran/region/kk
 
 fix wall/gran/region command
 ============================
+
+Accelerator Variants: *wall/gran/region/kk*
 
 Syntax
 """"""
@@ -213,6 +216,12 @@ conduction model defined in :doc:`pair_style granular <pair_granular>`,
 heat flow, and :doc:`fix heat/flow <fix_heat_flow>` to integrate heat
 flow.
 
+----------
+
+.. include:: accel_styles.rst
+
+----------
+
 Restart, fix_modify, output, run start/stop, minimize info
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -295,6 +304,14 @@ Restrictions
 
 This fix is part of the GRANULAR package.  It is only enabled if
 LAMMPS was built with that package.  See the :doc:`Build package <Build_package>` page for more info.
+
+.. versionadded:: TBD
+
+The *wall/gran/region/kk* style currently supports only the
+*hooke/history* force interaction and regions of style *block* or
+*sphere* (moving, rotating, or changing in size is allowed).  It does
+not support the *contacts* keyword, rigid bodies, or regions of style
+*union* or *intersect*, and stops with an error in those cases.
 
 Related commands
 """"""""""""""""
