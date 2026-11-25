@@ -33,16 +33,20 @@ namespace LAMMPS_NS {
 
 struct TagRegPlaneMatchAll{};
 
-// device-side region matching only: fix wall/region/kk additionally needs
-// the surface contact machinery (cf. region block/kk), which is not ported
-
 template<class DeviceType>
 class RegPlaneKokkos : public RegPlane, public KokkosBase {
  public:
   typedef DeviceType device_type;
   typedef ArrayTypes<DeviceType> AT;
 
+  // maximum number of contacts a particle can have with this region, i.e. the
+  // length of the contact list the caller has to provide.  matches RegPlane::cmax
+
+  static constexpr int MAXCONTACT = 1;
+
   RegPlaneKokkos(class LAMMPS *, int, char **);
+  // checked conversion from a base class pointer, see the .cpp file
+  static RegPlaneKokkos<DeviceType> *cast(class Region *);
 
   void match_all_kokkos(int, DAT::tdual_int_1d) override;
 
@@ -66,6 +70,60 @@ class RegPlaneKokkos : public RegPlane, public KokkosBase {
     return !(k_inside(x,y,z) ^ interior);
   }
 
+  // device version of Region::surface()
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  int surface_kokkos(double x, double y, double z, double cutoff, Contact *contact) const
+  {
+    int ncontact;
+    double xs, ys, zs;
+    double xnear[3], xorig[3];
+
+    boxremap.remap(x, y, z);
+
+    xorig[0] = x; xorig[1] = y; xorig[2] = z;
+    if (dynamic)
+      inverse_transform(x, y, z);
+
+    xnear[0] = x; xnear[1] = y; xnear[2] = z;
+
+    if (!openflag) {
+      if (interior)
+        ncontact = surface_interior_kokkos(xnear, cutoff, contact);
+      else
+        ncontact = surface_exterior_kokkos(xnear, cutoff, contact);
+    } else {
+      // most of the time, one of surface_int/ext() will return 0
+      //   however, when exactly on top of a periodic boundary
+      //   both could return 1, so run exterior then interior
+      ncontact = surface_exterior_kokkos(xnear, cutoff, contact);
+      if (ncontact == 0) ncontact = surface_interior_kokkos(xnear, cutoff, contact);
+    }
+
+    if (rotateflag && ncontact) {
+      for (int i = 0; i < ncontact; i++) {
+        xs = xnear[0] - contact[i].delx;
+        ys = xnear[1] - contact[i].dely;
+        zs = xnear[2] - contact[i].delz;
+        forward_transform(xs, ys, zs);
+        contact[i].delx = xorig[0] - xs;
+        contact[i].dely = xorig[1] - ys;
+        contact[i].delz = xorig[2] - zs;
+      }
+    }
+
+    return ncontact;
+  }
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  void velocity_contact_shape_kokkos(double * /*vwall*/, const double * /*xc*/,
+                                     double /*dt*/) const
+  {
+    // like RegPlane, no wall velocity is added for a changing plane
+  }
+
  private:
   int groupbit;
   RegionRemapKokkos boxremap;
@@ -81,6 +139,58 @@ class RegPlaneKokkos : public RegPlane, public KokkosBase {
 
     if (dot >= 0.0) return 1;
     return 0;
+  }
+
+  // device versions of RegPlane::surface_interior() and surface_exterior()
+  // one contact if 0 <= x < cutoff from the normal (interior) or
+  //   non-normal (exterior) side of the plane
+  // delxyz = vector from nearest projected point on plane to x
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  int surface_interior_kokkos(double *x, double cutoff, Contact *contact) const
+  {
+    double dot = (x[0] - xp) * normal[0] + (x[1] - yp) * normal[1] + (x[2] - zp) * normal[2];
+    if (dot < cutoff && dot >= 0.0) {
+      contact[0].r = dot;
+      contact[0].delx = dot * normal[0];
+      contact[0].dely = dot * normal[1];
+      contact[0].delz = dot * normal[2];
+      contact[0].radius = 0;
+      contact[0].iwall = 0;
+      return 1;
+    }
+    return 0;
+  }
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  int surface_exterior_kokkos(double *x, double cutoff, Contact *contact) const
+  {
+    double dot = (x[0] - xp) * normal[0] + (x[1] - yp) * normal[1] + (x[2] - zp) * normal[2];
+    dot = -dot;
+    if (dot < cutoff && dot >= 0.0) {
+      contact[0].r = dot;
+      contact[0].delx = -dot * normal[0];
+      contact[0].dely = -dot * normal[1];
+      contact[0].delz = -dot * normal[2];
+      contact[0].radius = 0;
+      contact[0].iwall = 0;
+      return 1;
+    }
+    return 0;
+  }
+
+// NOLINTNEXTLINE
+  KOKKOS_INLINE_FUNCTION
+  void forward_transform(double &x, double &y, double &z) const
+  {
+    if (rotateflag) rotate(x, y, z, theta);
+    if (moveflag) {
+      x += dx;
+      y += dy;
+      z += dz;
+    }
   }
 
 // NOLINTNEXTLINE

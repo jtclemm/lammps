@@ -62,6 +62,20 @@ void RegConeKokkos<DeviceType>::operator()(TagRegConeMatchAll, const int &i) con
   }
 }
 
+/* ----------------------------------------------------------------------
+   convert a pointer to the base class into one to this class, nullptr if
+   it points to an instance of another class.  this must be done here,
+   where the class is explicitly instantiated: elsewhere the dynamic_cast
+   uses a hidden local copy of the type information with the C++ ABI of
+   macOS on arm64, so the linker warns about different visibility settings
+------------------------------------------------------------------------- */
+
+template<class DeviceType>
+RegConeKokkos<DeviceType> *RegConeKokkos<DeviceType>::cast(Region *ptr)
+{
+  return dynamic_cast<RegConeKokkos<DeviceType> *>(ptr);
+}
+
 /* ---------------------------------------------------------------------- */
 
 namespace LAMMPS_NS {

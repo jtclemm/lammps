@@ -20,6 +20,9 @@
 #include "error.h"
 #include "memory_kokkos.h"
 #include "region_block_kokkos.h"
+#include "region_cone_kokkos.h"
+#include "region_cylinder_kokkos.h"
+#include "region_plane_kokkos.h"
 #include "region_sphere_kokkos.h"
 #include "update.h"
 
@@ -96,6 +99,9 @@ int FixWallGranRegionKokkos<DeviceType>::region_supported() const
 {
   if (RegBlockKokkos<DeviceType>::cast(region)) return 1;
   if (RegSphereKokkos<DeviceType>::cast(region)) return 1;
+  if (RegPlaneKokkos<DeviceType>::cast(region)) return 1;
+  if (RegCylinderKokkos<DeviceType>::cast(region)) return 1;
+  if (RegConeKokkos<DeviceType>::cast(region)) return 1;
   return 0;
 }
 
@@ -133,7 +139,8 @@ void FixWallGranRegionKokkos<DeviceType>::init()
   }
 
   if (!region_supported())
-    error->all(FLERR, "Fix {} requires region style block/kk or sphere/kk", style);
+    error->all(FLERR, "Fix {} requires region style block/kk, cone/kk, cylinder/kk, "
+               "plane/kk, or sphere/kk", style);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -195,7 +202,18 @@ void FixWallGranRegionKokkos<DeviceType>::post_force(int /*vflag*/)
   } else if (auto *regionKK = RegSphereKokkos<DeviceType>::cast(region)) {
     FixWallGranRegionKokkosFunctor<DeviceType, RegSphereKokkos<DeviceType>> functor(this, regionKK);
     Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
+  } else if (auto *regionKK = RegPlaneKokkos<DeviceType>::cast(region)) {
+    FixWallGranRegionKokkosFunctor<DeviceType, RegPlaneKokkos<DeviceType>> functor(this, regionKK);
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
+  } else if (auto *regionKK = RegCylinderKokkos<DeviceType>::cast(region)) {
+    FixWallGranRegionKokkosFunctor<DeviceType, RegCylinderKokkos<DeviceType>> functor(this,
+                                                                                      regionKK);
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
+  } else if (auto *regionKK = RegConeKokkos<DeviceType>::cast(region)) {
+    FixWallGranRegionKokkosFunctor<DeviceType, RegConeKokkos<DeviceType>> functor(this, regionKK);
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<DeviceType>(0, nlocal), functor, nerror);
   }
+
 
   region->copymode = 0;
   copymode = 0;

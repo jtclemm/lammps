@@ -26,6 +26,9 @@
 #include "memory_kokkos.h"
 #include "region.h"
 #include "region_block_kokkos.h"
+#include "region_cone_kokkos.h"
+#include "region_cylinder_kokkos.h"
+#include "region_plane_kokkos.h"
 #include "region_sphere_kokkos.h"
 
 #include <type_traits>
@@ -71,8 +74,12 @@ void FixWallRegionKokkos<DeviceType>::init()
   // no wall forces and undefined energy/virial contributions
 
   if (!RegBlockKokkos<DeviceType>::cast(region) &&
-      !RegSphereKokkos<DeviceType>::cast(region))
-    error->all(FLERR,"Fix wall/region/kk requires region style block/kk or sphere/kk");
+      !RegSphereKokkos<DeviceType>::cast(region) &&
+      !RegPlaneKokkos<DeviceType>::cast(region) &&
+      !RegCylinderKokkos<DeviceType>::cast(region) &&
+      !RegConeKokkos<DeviceType>::cast(region))
+    error->all(FLERR,"Fix wall/region/kk requires region style block/kk, cone/kk, "
+               "cylinder/kk, plane/kk, or sphere/kk");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -130,8 +137,18 @@ void FixWallRegionKokkos<DeviceType>::post_force(int vflag)
   if (auto *regionKK = RegBlockKokkos<DeviceType>::cast(region)) {
     FixWallRegionKokkosFunctor<DeviceType,class RegBlockKokkos<DeviceType>> functor(this,regionKK);
     Kokkos::parallel_reduce(nlocal,functor,result);
-  } else if (auto *regionKK = RegSphereKokkos<DeviceType>::cast(region)){
+  } else if (auto *regionKK = RegSphereKokkos<DeviceType>::cast(region)) {
     FixWallRegionKokkosFunctor<DeviceType,class RegSphereKokkos<DeviceType>> functor(this,regionKK);
+    Kokkos::parallel_reduce(nlocal,functor,result);
+  } else if (auto *regionKK = RegPlaneKokkos<DeviceType>::cast(region)) {
+    FixWallRegionKokkosFunctor<DeviceType,class RegPlaneKokkos<DeviceType>> functor(this,regionKK);
+    Kokkos::parallel_reduce(nlocal,functor,result);
+  } else if (auto *regionKK = RegCylinderKokkos<DeviceType>::cast(region)) {
+    FixWallRegionKokkosFunctor<DeviceType,class RegCylinderKokkos<DeviceType>>
+      functor(this,regionKK);
+    Kokkos::parallel_reduce(nlocal,functor,result);
+  } else if (auto *regionKK = RegConeKokkos<DeviceType>::cast(region)) {
+    FixWallRegionKokkosFunctor<DeviceType,class RegConeKokkos<DeviceType>> functor(this,regionKK);
     Kokkos::parallel_reduce(nlocal,functor,result);
   }
 

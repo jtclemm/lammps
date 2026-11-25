@@ -27,6 +27,9 @@ FixStyle(wall/region/kk/host,FixWallRegionKokkos<LMPHostType>);
 
 #include "kokkos_type.h"
 #include "region_block_kokkos.h"
+#include "region_cone_kokkos.h"
+#include "region_cylinder_kokkos.h"
+#include "region_plane_kokkos.h"
 #include "region_sphere_kokkos.h"
 
 namespace LAMMPS_NS {
