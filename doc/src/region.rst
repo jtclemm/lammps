@@ -426,9 +426,14 @@ sub-regions can be defined with the *open* keyword.
 
 .. note::
 
-  Currently, only *block* and *sphere* style regions are supported by KOKKOS.  The
-  code using the region (such as a fix or compute) must also be
-  supported by KOKKOS or no acceleration will occur.
+  All region styles listed above support KOKKOS when the code using
+  the region (such as a fix or compute) only checks whether particles
+  are inside the region.  Fixes that compute particle interactions
+  with the region surface, such as :doc:`fix wall/region/kk
+  <fix_wall_region>` and :doc:`fix wall/gran/region/kk
+  <fix_wall_gran_region>`, support only the *block*, *cone*,
+  *cylinder*, *plane*, and *sphere* styles.  The code using the region
+  must also be supported by KOKKOS or no acceleration will occur.
 
 ----------
 

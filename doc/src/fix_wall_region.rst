@@ -252,7 +252,10 @@ visualized using the *region* keyword of *dump image*.
 
 Restrictions
 """"""""""""
-none
+
+The *wall/region/kk* style supports only regions of style *block*,
+*cone*, *cylinder*, *plane*, or *sphere*, and stops with an error for
+other region styles.
 
 Related commands
 """"""""""""""""
