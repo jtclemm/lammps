@@ -69,6 +69,36 @@ NPairStyle(skip/trim/ghost/kk/host,
            NP_NSQ | NP_BIN | NP_MULTI |
            NP_NEWTON | NP_NEWTOFF | NP_ORTHO | NP_TRI | NP_TRIM | NP_GHOST | NP_KOKKOS_HOST);
 
+// granular size lists, the skip build is the same as for point particles
+
+using NPairKokkosSkipSizeDevice = NPairSkipKokkos<LMPDeviceType,0>;
+NPairStyle(skip/half/size/kk/device,
+           NPairKokkosSkipSizeDevice,
+           NP_SKIP | NP_SIZE | NP_HALF | NP_FULL |
+           NP_NSQ | NP_BIN | NP_MULTI |
+           NP_NEWTON | NP_NEWTOFF | NP_ORTHO | NP_TRI | NP_KOKKOS_DEVICE);
+
+using NPairKokkosSkipSizeHost = NPairSkipKokkos<LMPHostType,0>;
+NPairStyle(skip/half/size/kk/host,
+           NPairKokkosSkipSizeHost,
+           NP_SKIP | NP_SIZE | NP_HALF | NP_FULL |
+           NP_NSQ | NP_BIN | NP_MULTI |
+           NP_NEWTON | NP_NEWTOFF | NP_ORTHO | NP_TRI | NP_KOKKOS_HOST);
+
+using NPairKokkosSkipTrimSizeDevice = NPairSkipKokkos<LMPDeviceType,1>;
+NPairStyle(skip/trim/half/size/kk/device,
+           NPairKokkosSkipTrimSizeDevice,
+           NP_SKIP | NP_SIZE | NP_HALF | NP_FULL |
+           NP_NSQ | NP_BIN | NP_MULTI |
+           NP_NEWTON | NP_NEWTOFF | NP_ORTHO | NP_TRI | NP_TRIM | NP_KOKKOS_DEVICE);
+
+using NPairKokkosSkipTrimSizeHost = NPairSkipKokkos<LMPHostType,1>;
+NPairStyle(skip/trim/half/size/kk/host,
+           NPairKokkosSkipTrimSizeHost,
+           NP_SKIP | NP_SIZE | NP_HALF | NP_FULL |
+           NP_NSQ | NP_BIN | NP_MULTI |
+           NP_NEWTON | NP_NEWTOFF | NP_ORTHO | NP_TRI | NP_TRIM | NP_KOKKOS_HOST);
+
 // clang-format on
 #else
 

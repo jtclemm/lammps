@@ -170,7 +170,8 @@ void PairGranHertzHistoryKokkos<DeviceType>::compute(int eflag_in, int vflag_in)
   d_firsttouch = fix_historyKK->k_firstflag.template view<DeviceType>();
   d_firstshear = fix_historyKK->k_firstvalue.template view<DeviceType>();
 
-  Kokkos::deep_copy(d_firsttouch,0);
+  // d_firsttouch is written for every (i,jj) the history fix reads, so it
+  // is not cleared here; this matters under pair hybrid with many sub-styles
 
   EV_FLOAT ev;
 
@@ -298,7 +299,10 @@ void PairGranHertzHistoryKokkos<DeviceType>::operator()(TagPairGranHertzHistoryC
     KK_FLOAT factor_lj = static_cast<KK_FLOAT>(special_lj[sbmask(j)]);
     j &= NEIGHMASK;
 
-    if (factor_lj == 0) continue;
+    if (factor_lj == 0) {
+      d_firsttouch(i,jj) = 0;
+      continue;
+    }
 
     const KK_FLOAT delx = xtmp - x(j,0);
     const KK_FLOAT dely = ytmp - x(j,1);
@@ -311,6 +315,7 @@ void PairGranHertzHistoryKokkos<DeviceType>::operator()(TagPairGranHertzHistoryC
     // check for touching neighbors
 
     if (rsq >= radsum * radsum) {
+      d_firsttouch(i,jj) = 0;
       d_firstshear(i,3*jj) = 0;
       d_firstshear(i,3*jj+1) = 0;
       d_firstshear(i,3*jj+2) = 0;
